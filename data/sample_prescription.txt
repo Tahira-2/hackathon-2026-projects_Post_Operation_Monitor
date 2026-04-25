@@ -1,0 +1,19 @@
+Patient: 67-year-old, post-CABG day 2.
+
+Background: Hypertensive, on metoprolol (beta-blocker) and lisinopril.
+Baseline resting HR has historically run a touch high in clinic (low 80s)
+but is well controlled on beta-blocker; expect resting HR 60-78 at home.
+Warn me if sustained HR exceeds 95, page critical above 110 — this patient
+runs into trouble fast when tachycardic post-op.
+
+HRV: chronically blunted by beta-blocker. Baseline 30-50 ms is fine.
+A sharp drop below 25 should warn, below 20 is critical.
+
+Respiratory rate: normal range 12-18. Watch for sustained increase
+above 22 — early sign of fluid overload or PE in this population.
+Anything above 26 needs immediate attention.
+
+SpO2 should stay above 94. Page critical below 90.
+
+Body temperature normal. Anything above 38 C is concerning for
+post-surgical infection — call critical above 38.5.
