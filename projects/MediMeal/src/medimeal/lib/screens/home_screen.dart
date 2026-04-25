@@ -30,6 +30,35 @@ class _HomeScreenState extends State<HomeScreen> {
     medications = MockDataService.getMedications();
   }
 
+  String buildPlanMyDaySummary() {
+    if (latestSummary == null) {
+      return 'No actions logged yet. Mark a medication as taken to begin today’s care flow.';
+    }
+
+    final workflowCount = activeWorkflows.length;
+    final careSummary = latestCareState?.summary ?? 'No active care state.';
+    final caution = latestCareState?.caution ?? '';
+
+    return '''
+$latestSummary
+
+$currentWorkflowText(workflowCount)
+
+Care status: $careSummary
+${caution.isNotEmpty ? '\nCaution: $caution' : ''}
+''';
+  }
+
+  String currentWorkflowText(int count) {
+    if (count == 0) {
+      return 'No active workflows are running yet.';
+    } else if (count == 1) {
+      return '1 active workflow is supporting today’s routine.';
+    } else {
+      return '$count active workflows are supporting today’s routine.';
+    }
+  }
+
   void onMedicationTaken(Medication medication) {
     final result = WorkflowEngine.processMedicationTaken(medication);
 
@@ -72,6 +101,21 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Text(
+              'Plan My Day',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  buildPlanMyDaySummary(),
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
             const Text(
               'Today’s Medications',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -179,6 +223,47 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
               ),
             ),
+            const SizedBox(height: 24),
+            const Text(
+              'Active Workflows',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            if (activeWorkflows.isEmpty)
+              const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('No active workflows yet.'),
+                ),
+              )
+            else
+              ...activeWorkflows.map(
+                (workflow) => Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          workflow.title,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(workflow.description),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Status: ${workflow.status}',
+                          style: const TextStyle(fontStyle: FontStyle.italic),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
