@@ -85,10 +85,15 @@ export default function Triage({ onBack, onSave }) {
     try {
       const apiMessages = updatedMessages.map(({ role, content }) => ({ role, content }))
 
-      const response = await fetch('http://localhost:3000/api/chat', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ messages: apiMessages }),
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            ...apiMessages,
+          ],
+        }),
       })
 
       if (!response.ok) {
