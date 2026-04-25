@@ -18,10 +18,10 @@ import random
 from dataclasses import dataclass
 from pathlib import Path
 
-SAMPLE_INTERVAL_MIN = 2
-SAMPLES_PER_HOUR = 60 // SAMPLE_INTERVAL_MIN  # 30
+SAMPLE_INTERVAL_MIN = 3                            # device transmits every 3 min
+SAMPLES_PER_HOUR = 60 // SAMPLE_INTERVAL_MIN       # 20
 TOTAL_HOURS = 24
-TOTAL_SAMPLES = TOTAL_HOURS * SAMPLES_PER_HOUR  # 720
+TOTAL_SAMPLES = TOTAL_HOURS * SAMPLES_PER_HOUR     # 480
 
 CRISIS_ONSET_HOUR = 18
 TACHY_PEAK_HOUR = 20

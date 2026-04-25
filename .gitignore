@@ -26,3 +26,5 @@ Thumbs.db
 
 # Word doc lives outside the repo (proposal lives in PROPOSAL.md)
 GuardianPost-Op_Proposal.docx
+# Word's lock files (the tilde-dollar prefix shows up while a doc is open)
+~$*

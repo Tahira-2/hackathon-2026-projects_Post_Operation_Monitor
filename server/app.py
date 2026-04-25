@@ -17,6 +17,8 @@ from pathlib import Path
 
 from flask import Flask, g, jsonify, request, send_from_directory
 
+from flask import Response
+
 from .auth import (
     issue_session,
     make_secret,
@@ -35,7 +37,12 @@ from .db import close_db, get_db, init_db
 from .id_verification import get_verifier
 from . import scheduler
 from .sim_runner import reset_all, stream_for
-from .summary import deliver_to_consenting_doctors, generate_summary_for_patient
+from .summary import (
+    deliver_to_consenting_doctors,
+    generate_summary_for_patient,
+    parse_doctors_note,
+    summary_to_csv,
+)
 
 
 def _normalize_phone(s: str) -> str:
@@ -102,14 +109,23 @@ def create_app() -> Flask:
         if existing:
             return jsonify({"error": "phone already registered"}), 409
 
+        # If the patient pasted a prescription on signup, parse it now so
+        # the AI envelope is ready for the first analysis cycle. If they
+        # left it blank, a doctor will write the note later via
+        # /api/doctor/patients/<id>/note.
+        envelope_csv = ""
+        if prescription:
+            _, envelope_csv, _ = parse_doctors_note(prescription)
+
         device_hash, device_salt = make_secret(device_number)
         cur = db.execute(
             """INSERT INTO patients
                (phone, phone_normalized, device_number, device_secret, device_salt,
-                full_name, prescription, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                full_name, prescription, envelope_csv, envelope_set_at, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (phone, phone_norm, device_number, device_hash, device_salt,
-             full_name, prescription, int(time.time())),
+             full_name, prescription, envelope_csv,
+             int(time.time()) if envelope_csv else None, int(time.time())),
         )
         db.commit()
         token = issue_session("patient", cur.lastrowid)
@@ -300,6 +316,57 @@ def create_app() -> Flask:
             } for s in samples],
         })
 
+    @app.get("/api/patient/doctor-note")
+    @require_role("patient")
+    def patient_doctor_note():
+        """The latest clinician-written note attached to this patient.
+        Patient sees the note text, NEVER the parsed envelope CSV."""
+        db = get_db()
+        row = db.execute(
+            """SELECT p.prescription, p.envelope_set_at,
+                      d.full_name AS doctor_name, d.email AS doctor_email
+               FROM patients p
+               LEFT JOIN doctors d ON d.id = p.envelope_set_by
+               WHERE p.id = ?""",
+            (g.user["id"],),
+        ).fetchone()
+        if row is None:
+            return jsonify({"doctors_note": "", "doctor_name": None, "set_at": None})
+        return jsonify({
+            "doctors_note": row["prescription"] or "",
+            "doctor_name":  row["doctor_name"],
+            "doctor_email": row["doctor_email"],
+            "set_at":       row["envelope_set_at"],
+        })
+
+    @app.get("/api/patient/alerts/active")
+    @require_role("patient")
+    def patient_active_alerts():
+        """Live alerts emitted in the last hour and not yet acked by the
+        patient — drives the in-app notification banner."""
+        db = get_db()
+        rows = db.execute(
+            """SELECT * FROM live_alerts
+               WHERE patient_id = ? AND acked_by_patient_at IS NULL
+               ORDER BY created_at DESC LIMIT 20""",
+            (g.user["id"],),
+        ).fetchall()
+        return jsonify({"alerts": [dict(r) for r in rows]})
+
+    @app.post("/api/patient/alerts/ack")
+    @require_role("patient")
+    def patient_ack_alerts():
+        """Mark all current unacked alerts as seen by the patient."""
+        db = get_db()
+        db.execute(
+            """UPDATE live_alerts
+               SET acked_by_patient_at = ?
+               WHERE patient_id = ? AND acked_by_patient_at IS NULL""",
+            (int(time.time()), g.user["id"]),
+        )
+        db.commit()
+        return jsonify({"ok": True})
+
     @app.get("/api/patient/doctors")
     @require_role("patient")
     def patient_my_doctors():
@@ -371,10 +438,9 @@ def create_app() -> Flask:
     def doctor_list_patients():
         db = get_db()
         did = g.user["id"]
-        # Patient list enriched with summary metadata for this doctor — number
-        # of unread sends, status of the most recent send, when it arrived.
-        # Lets the master list show a "needs attention" badge without the
-        # client having to fetch every patient's summaries upfront.
+        # Patient list enriched with summary + live-alert metadata for this
+        # doctor. Lets the master list show "needs attention" badges without
+        # the client having to fetch every patient's data upfront.
         rows = db.execute(
             """SELECT p.id, p.phone, p.full_name,
                       cl.permission_granted, cl.permission_changed_at,
@@ -389,7 +455,12 @@ def create_app() -> Flask:
                         ORDER BY ss.sent_at DESC LIMIT 1) AS last_status,
                       (SELECT MAX(ss.sent_at) FROM summary_sends ss
                          JOIN summaries s ON s.id = ss.summary_id
-                        WHERE ss.doctor_id = ? AND s.patient_id = p.id) AS last_received_at
+                        WHERE ss.doctor_id = ? AND s.patient_id = p.id) AS last_received_at,
+                      (SELECT COUNT(*) FROM live_alerts la
+                        WHERE la.patient_id = p.id
+                          AND la.acked_by_doctor_at IS NULL) AS open_alerts_count,
+                      (SELECT MAX(la.created_at) FROM live_alerts la
+                        WHERE la.patient_id = p.id) AS last_alert_at
                FROM care_links cl
                JOIN patients p ON p.id = cl.patient_id
                WHERE cl.doctor_id = ?
@@ -398,6 +469,44 @@ def create_app() -> Flask:
             (did, did, did, did),
         ).fetchall()
         return jsonify({"patients": [dict(r) for r in rows]})
+
+    @app.get("/api/doctor/patients/<int:patient_id>/live-alerts")
+    @require_role("doctor")
+    def doctor_patient_live_alerts(patient_id: int):
+        db = get_db()
+        link = db.execute(
+            "SELECT id FROM care_links WHERE doctor_id = ? AND patient_id = ?",
+            (g.user["id"], patient_id),
+        ).fetchone()
+        if link is None:
+            return jsonify({"error": "patient not in your list"}), 404
+        rows = db.execute(
+            """SELECT * FROM live_alerts
+               WHERE patient_id = ?
+               ORDER BY created_at DESC LIMIT 50""",
+            (patient_id,),
+        ).fetchall()
+        return jsonify({"alerts": [dict(r) for r in rows]})
+
+    @app.post("/api/doctor/patients/<int:patient_id>/live-alerts/ack")
+    @require_role("doctor")
+    def doctor_ack_live_alerts(patient_id: int):
+        db = get_db()
+        link = db.execute(
+            "SELECT id FROM care_links WHERE doctor_id = ? AND patient_id = ?",
+            (g.user["id"], patient_id),
+        ).fetchone()
+        if link is None:
+            return jsonify({"error": "patient not in your list"}), 404
+        now = int(time.time())
+        db.execute(
+            """UPDATE live_alerts
+               SET acked_by_doctor_id = ?, acked_by_doctor_at = ?
+               WHERE patient_id = ? AND acked_by_doctor_at IS NULL""",
+            (g.user["id"], now, patient_id),
+        )
+        db.commit()
+        return jsonify({"ok": True})
 
     @app.get("/api/doctor/patients/<int:patient_id>/summaries")
     @require_role("doctor")
@@ -449,6 +558,7 @@ def create_app() -> Flask:
             return jsonify({"error": "doctor must complete ID verification first"}), 403
         body = request.get_json(force=True, silent=True) or {}
         phone = (body.get("phone") or "").strip()
+        doctors_note = (body.get("doctors_note") or "").strip()
         if not phone:
             return jsonify({"error": "patient phone is required"}), 400
 
@@ -477,13 +587,150 @@ def create_app() -> Flask:
                VALUES (?, ?, 0, ?, ?)""",
             (g.user["id"], patient["id"], now, now),
         )
+        # If the doctor wrote a note while adding, parse it into the
+        # envelope and store both on the patient (so analysis picks it up
+        # immediately).
+        envelope_source = None
+        if doctors_note:
+            _, envelope_csv, envelope_source = parse_doctors_note(doctors_note)
+            db.execute(
+                """UPDATE patients
+                   SET prescription = ?, envelope_csv = ?,
+                       envelope_set_by = ?, envelope_set_at = ?
+                   WHERE id = ?""",
+                (doctors_note, envelope_csv, g.user["id"], now, patient["id"]),
+            )
         db.commit()
         return jsonify({
             "patient_id": int(patient["id"]),
             "full_name": patient["full_name"],
             "permission_granted": False,
             "needs_permission_decision": True,
+            "doctors_note_saved": bool(doctors_note),
+            "envelope_source": envelope_source,
         })
+
+    @app.get("/api/doctor/patients/<int:patient_id>/note")
+    @require_role("doctor")
+    def doctor_get_note(patient_id: int):
+        db = get_db()
+        link = db.execute(
+            "SELECT id FROM care_links WHERE doctor_id = ? AND patient_id = ?",
+            (g.user["id"], patient_id),
+        ).fetchone()
+        if link is None:
+            return jsonify({"error": "patient not in your list"}), 404
+        row = db.execute(
+            """SELECT prescription, envelope_csv, envelope_set_by,
+                      envelope_set_at, full_name, phone
+               FROM patients WHERE id = ?""",
+            (patient_id,),
+        ).fetchone()
+        return jsonify({
+            "patient_id": patient_id,
+            "patient_name": row["full_name"],
+            "patient_phone": row["phone"],
+            "doctors_note": row["prescription"],
+            "envelope_csv": row["envelope_csv"],
+            "envelope_set_by": row["envelope_set_by"],
+            "envelope_set_at": row["envelope_set_at"],
+        })
+
+    @app.put("/api/doctor/patients/<int:patient_id>/note")
+    @require_role("doctor")
+    def doctor_set_note(patient_id: int):
+        body = request.get_json(force=True, silent=True) or {}
+        note = (body.get("doctors_note") or "").strip()
+        db = get_db()
+        link = db.execute(
+            "SELECT id FROM care_links WHERE doctor_id = ? AND patient_id = ?",
+            (g.user["id"], patient_id),
+        ).fetchone()
+        if link is None:
+            return jsonify({"error": "patient not in your list"}), 404
+        envelope_csv = ""
+        source = None
+        if note:
+            _, envelope_csv, source = parse_doctors_note(note)
+        now = int(time.time())
+        db.execute(
+            """UPDATE patients
+               SET prescription = ?, envelope_csv = ?,
+                   envelope_set_by = ?, envelope_set_at = ?
+               WHERE id = ?""",
+            (note, envelope_csv, g.user["id"], now, patient_id),
+        )
+        db.commit()
+        return jsonify({"ok": True, "envelope_source": source})
+
+    @app.get("/api/doctor/patients/<int:patient_id>/envelope.csv")
+    @require_role("doctor")
+    def doctor_download_envelope(patient_id: int):
+        db = get_db()
+        link = db.execute(
+            "SELECT id FROM care_links WHERE doctor_id = ? AND patient_id = ?",
+            (g.user["id"], patient_id),
+        ).fetchone()
+        if link is None:
+            return jsonify({"error": "patient not in your list"}), 404
+        row = db.execute(
+            "SELECT envelope_csv, full_name FROM patients WHERE id = ?",
+            (patient_id,),
+        ).fetchone()
+        text = row["envelope_csv"] or ""
+        if not text.strip():
+            return jsonify({"error": "no envelope set yet — write a doctor's note first"}), 404
+        slug = (row["full_name"] or f"patient-{patient_id}").replace(" ", "_")
+        return Response(
+            text,
+            mimetype="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{slug}-envelope.csv"'},
+        )
+
+    @app.get("/api/doctor/summaries/<int:summary_id>/download.csv")
+    @require_role("doctor")
+    def doctor_download_summary(summary_id: int):
+        """Doctor-side download of the summary as a CSV that opens in Excel.
+        Verifies the doctor was a recipient of this summary."""
+        db = get_db()
+        send = db.execute(
+            "SELECT id FROM summary_sends WHERE summary_id = ? AND doctor_id = ?",
+            (summary_id, g.user["id"]),
+        ).fetchone()
+        if send is None:
+            return jsonify({"error": "summary not delivered to you"}), 404
+        s = db.execute("SELECT * FROM summaries WHERE id = ?", (summary_id,)).fetchone()
+        if s is None:
+            return jsonify({"error": "no such summary"}), 404
+        p = db.execute("SELECT * FROM patients WHERE id = ?", (s["patient_id"],)).fetchone()
+        if p is None:
+            return jsonify({"error": "patient gone"}), 404
+        text = summary_to_csv(dict(s), dict(p))
+        slug = (p["full_name"] or f"patient-{p['id']}").replace(" ", "_")
+        return Response(
+            text,
+            mimetype="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{slug}-summary-{summary_id}.csv"'},
+        )
+
+    @app.get("/api/patient/summaries/<int:summary_id>/download.csv")
+    @require_role("patient")
+    def patient_download_summary(summary_id: int):
+        """Patient-side download of one of their own summaries."""
+        db = get_db()
+        s = db.execute(
+            "SELECT * FROM summaries WHERE id = ? AND patient_id = ?",
+            (summary_id, g.user["id"]),
+        ).fetchone()
+        if s is None:
+            return jsonify({"error": "no such summary"}), 404
+        text = summary_to_csv(dict(s), dict(g.user))
+        slug = (g.user["full_name"] or f"patient-{g.user['id']}").replace(" ", "_")
+        return Response(
+            text,
+            mimetype="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{slug}-summary-{summary_id}.csv"'},
+        )
 
     @app.post("/api/doctor/patients/<int:patient_id>/permission")
     @require_role("doctor")
@@ -533,6 +780,7 @@ def create_app() -> Flask:
         """
         init_db(reset=True)
         reset_all()
+        scheduler.reset_state()
         db = get_db()
 
         # Doctor
@@ -548,21 +796,26 @@ def create_app() -> Flask:
         )
         doctor_id = cur.lastrowid
 
-        # Patient with the proposal's sample prescription
+        # Patient with the proposal's sample prescription. Parse the note
+        # immediately so the analysis pipeline has an envelope on first run.
         sample_prescription = (
             Path(__file__).resolve().parent.parent / "data" / "sample_prescription.txt"
         ).read_text(encoding="utf-8")
+        _, sample_envelope_csv, _ = parse_doctors_note(sample_prescription)
         patient_phone  = "+1-555-0200"
         patient_device = "GPO-2026-0001"
         p_dev_hash, p_dev_salt = make_secret(patient_device)
+        now_ts = int(time.time())
         cur = db.execute(
             """INSERT INTO patients
                (phone, phone_normalized, device_number, device_secret, device_salt,
-                full_name, prescription, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                full_name, prescription, envelope_csv, envelope_set_by,
+                envelope_set_at, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (patient_phone, _normalize_phone(patient_phone),
              patient_device, p_dev_hash, p_dev_salt,
-             "Patient One", sample_prescription, int(time.time())),
+             "Patient One", sample_prescription, sample_envelope_csv,
+             doctor_id, now_ts, now_ts),
         )
         patient_id = cur.lastrowid
 
@@ -582,10 +835,11 @@ def create_app() -> Flask:
 
     @app.post("/api/admin/tick")
     def admin_tick():
-        """Force one pass of the auto-summary scheduler — useful in demos
-        when you don't want to wait the full 12 simulated hours."""
-        summarized = scheduler.tick_once()
-        return jsonify({"summarized_patient_ids": summarized})
+        """Force one pass of the scheduler — useful in demos when you
+        don't want to wait for new samples or the full 12-hour summary
+        cadence to elapse on its own."""
+        result = scheduler.tick_once()
+        return jsonify(result)
 
     @app.post("/api/admin/force-summary/<int:patient_id>")
     def admin_force_summary(patient_id: int):

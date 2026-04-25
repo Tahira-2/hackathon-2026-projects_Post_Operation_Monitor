@@ -144,10 +144,9 @@
       $sub.textContent = state.me
         ? `Doctor — ${state.me.full_name || state.me.email}${state.me.verified ? '' : '  (unverified)'}`
         : 'Doctor';
-      addNav('Patients', '#/doctor');
-      // Verification is part of the signup journey — no permanent nav entry.
-      // An unverified doctor still sees an inline banner on the dashboard
-      // with a link back to /doctor/verify if they need it.
+      // No persistent nav links — the only doctor-facing screen is the
+      // patient list, which is the landing target for /doctor; verification
+      // shows an inline dashboard banner if needed.
     }
     const out = document.createElement('button');
     out.className = 'ghost'; out.textContent = 'Sign out';
@@ -404,13 +403,24 @@
     const config = state.config || (state.config = await api('/api/admin/config', { auth: false }));
 
     const shell = html`
+      <div id="alerts-banner-host"></div>
+
+      <div class="card">
+        <h2 class="card-title">Doctor's note</h2>
+        <p class="card-sub">
+          What your clinician has said to expect during your recovery. The AI
+          uses this note to decide what counts as out-of-range for you.
+        </p>
+        <div id="doctors-note-host"></div>
+      </div>
+
       <div class="row">
         <div class="card" style="flex:2;min-width:320px;">
           <h2 class="card-title">Live vitals
             <span class="pill brand" id="sim-pill">sim hr —</span>
           </h2>
           <p class="card-sub">
-            The wearable streams vitals every 2 simulated minutes. The buffer
+            The wearable streams vitals every 3 simulated minutes. The buffer
             below shows the last 30 simulated minutes — exactly the window the
             on-device firmware would push over BLE.
           </p>
@@ -447,7 +457,7 @@
 
       <div class="card">
         <h2 class="card-title">My recent summaries</h2>
-        <p class="card-sub">Each summary is a 12-hour rollup of your vitals.</p>
+        <p class="card-sub">Each summary is a 12-hour rollup of your vitals. Download as CSV (opens in Excel) for your records.</p>
         <div id="summaries-host"></div>
       </div>
     `;
@@ -455,10 +465,62 @@
     document.getElementById('send-btn').onclick = onManualSend;
 
     await refreshLive();
+    await refreshDoctorsNote();
     await refreshDoctors();
     await refreshSummaries();
+    await refreshAlertsBanner();
 
-    state.livePollHandle = setInterval(refreshLive, 2000);
+    state.livePollHandle = setInterval(() => {
+      refreshLive();
+      refreshAlertsBanner();
+    }, 2000);
+  }
+
+  async function refreshDoctorsNote() {
+    const host = document.getElementById('doctors-note-host');
+    if (!host) return;
+    let r;
+    try { r = await api('/api/patient/doctor-note'); } catch (_) { return; }
+    if (!r.doctors_note) {
+      host.innerHTML = '<div class="empty">Your clinician hasn’t saved a note yet.</div>';
+      return;
+    }
+    const author = r.doctor_name
+      ? `<span class="muted" style="font-size:12.5px;">From ${escapeHtml(r.doctor_name)}${r.set_at ? ` &middot; ${escapeHtml(fmtTimestamp(r.set_at))}` : ''}</span>`
+      : '';
+    host.innerHTML = `${author}<pre class="narrative" style="margin-top:6px;">${escapeHtml(r.doctors_note)}</pre>`;
+  }
+
+  async function refreshAlertsBanner() {
+    const host = document.getElementById('alerts-banner-host');
+    if (!host) return;
+    let r;
+    try { r = await api('/api/patient/alerts/active'); } catch (_) { return; }
+    const alerts = r.alerts || [];
+    if (!alerts.length) {
+      host.innerHTML = '';
+      return;
+    }
+    const critCount = alerts.filter(a => a.status === 'CRITICAL').length;
+    const cls = critCount > 0 ? 'crit' : 'warn';
+    const top = alerts[0];
+    host.innerHTML = `
+      <div class="banner ${cls}">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+          <div>
+            <strong>${alerts.length} live alert${alerts.length === 1 ? '' : 's'} from your wearable</strong>
+            ${critCount ? ` &middot; <strong>${critCount} CRITICAL</strong>` : ''}
+            <div style="font-size:13px;margin-top:4px;">Most recent: <span class="kbd">${escapeHtml(top.message)}</span></div>
+          </div>
+          <button id="ack-banner-btn" class="ghost" style="border:1px solid currentColor;color:inherit;background:transparent;">Acknowledge</button>
+        </div>
+      </div>`;
+    document.getElementById('ack-banner-btn').onclick = async () => {
+      try {
+        await api('/api/patient/alerts/ack', { method: 'POST' });
+        host.innerHTML = '';
+      } catch (e) { toast(e.message, 'error'); }
+    };
   }
 
   async function refreshLive() {
@@ -529,16 +591,18 @@
       return;
     }
     const tbl = document.createElement('table');
-    tbl.innerHTML = '<thead><tr><th>Generated</th><th>Sim window</th><th>Status</th><th>Crit / Warn cycles</th><th>HR avg</th><th>SpO2 avg</th></tr></thead>';
+    tbl.innerHTML = '<thead><tr><th>Generated</th><th>Sim window</th><th>Status</th><th>Crit / Warn cycles</th><th>HR avg</th><th>SpO2 avg</th><th></th></tr></thead>';
     const tb = document.createElement('tbody');
     for (const s of r.summaries) {
       const tr = document.createElement('tr');
+      const url = `/api/patient/summaries/${s.id}/download.csv?token=${encodeURIComponent(state.token)}`;
       tr.innerHTML = `<td class="muted">${escapeHtml(fmtTimestamp(s.generated_at))}</td>
                       <td>${fmt(s.sim_hour_start, 1)} – ${fmt(s.sim_hour_end, 1)}</td>
                       <td><span class="pill ${statusPillClass(s.status_overall)}">${escapeHtml(s.status_overall)}</span></td>
                       <td>${s.alert_count_critical} / ${s.alert_count_warn}</td>
                       <td>${fmt(s.hr_avg, 1)} bpm</td>
-                      <td>${fmt(s.spo2_avg, 1)} %</td>`;
+                      <td>${fmt(s.spo2_avg, 1)} %</td>
+                      <td><a class="btn ghost" style="font-size:12px;" href="${url}" download>CSV</a></td>`;
       tb.appendChild(tr);
     }
     tbl.appendChild(tb);
@@ -794,12 +858,18 @@
         </p>
         <div id="patients-host"></div>
         <hr class="sep" />
-        <form id="add-form" style="flex-direction:row;align-items:end;flex-wrap:wrap;">
-          <label style="flex:1;min-width:220px;">Add a patient by phone
-            <span class="helper">the patient must have paired their device first</span>
-            <input name="phone" type="tel" required ${state.me.verified ? '' : 'disabled'} />
+        <form id="add-form">
+          <label>Patient phone <span class="helper">required — they must have paired their device first</span>
+            <input name="phone" type="tel" required ${state.me.verified ? '' : 'disabled'} placeholder="+1-555-0299" />
           </label>
-          <button type="submit" ${state.me.verified ? '' : 'disabled'}>Add patient</button>
+          <label>Doctor's note <span class="helper">what to expect from this patient — the AI parses this into the safe-range envelope used for live monitoring and the 12-hour summaries</span>
+            <textarea name="doctors_note" rows="6" ${state.me.verified ? '' : 'disabled'}
+              placeholder="e.g. Post-CABG day 2, on metoprolol. Expect resting HR 60-78. Warn if HR sustained above 95, page critical above 110. SpO2 should stay above 94…"></textarea>
+          </label>
+          <div class="btn-row">
+            <button type="submit" ${state.me.verified ? '' : 'disabled'}>Add patient</button>
+            <span class="muted" style="font-size:12.5px;">You can edit the note any time after adding.</span>
+          </div>
         </form>
       </div>
 
@@ -824,11 +894,19 @@
     document.getElementById('add-form').onsubmit = async (e) => {
       e.preventDefault();
       const phone = e.target.phone.value.trim();
+      const doctors_note = e.target.doctors_note.value.trim();
       try {
-        const r = await api('/api/doctor/patients/add', { method: 'POST', body: { phone } });
-        toast(`Added ${r.full_name || r.patient_id}. Decide on summary permission.`, 'ok');
+        const r = await api('/api/doctor/patients/add', {
+          method: 'POST', body: { phone, doctors_note },
+        });
+        const noteSuffix = r.doctors_note_saved
+          ? ` Note saved (parsed via ${r.envelope_source || 'fallback'}).`
+          : ' No note attached — set one from the patient detail panel.';
+        toast(`Added ${r.full_name || r.patient_id}.${noteSuffix}`, 'ok');
         e.target.reset();
         await refreshDoctorView();
+        // Auto-open the new patient so the doctor can see / edit the note + envelope.
+        await selectPatient(r.patient_id);
       } catch (err) { toast(err.message, 'error'); }
     };
 
@@ -884,6 +962,9 @@
       const unreadBadge = p.unread_count > 0
         ? `<span class="pill brand" style="margin-left:6px;">${p.unread_count} new</span>`
         : '';
+      const alertBadge = p.open_alerts_count > 0
+        ? `<span class="pill crit" style="margin-left:6px;">${p.open_alerts_count} live alerts</span>`
+        : '';
       const lastTime = p.last_received_at
         ? `<div class="muted" style="font-size:11.5px;">${escapeHtml(fmtTimestamp(p.last_received_at))}</div>`
         : '';
@@ -892,7 +973,7 @@
         <td>
           <a href="#" class="patient-link" data-pid="${p.id}" style="color:var(--brand);font-weight:600;text-decoration:none;">
             ${escapeHtml(p.full_name || '—')}
-          </a>${unreadBadge}
+          </a>${alertBadge}${unreadBadge}
         </td>
         <td class="muted">${escapeHtml(p.phone)}</td>
         <td>${lastStatusPill}${lastTime}</td>
@@ -958,25 +1039,31 @@
   async function refreshSelectedPatient(pid, { silent }) {
     const host = document.getElementById('patient-detail-host');
     if (!host) return;
-    let r;
+
+    // Fetch in parallel.
+    let summaries, note, alerts;
     try {
-      r = await api(`/api/doctor/patients/${pid}/summaries`);
+      [summaries, note, alerts] = await Promise.all([
+        api(`/api/doctor/patients/${pid}/summaries`),
+        api(`/api/doctor/patients/${pid}/note`),
+        api(`/api/doctor/patients/${pid}/live-alerts`),
+      ]);
     } catch (e) {
       if (!silent) toast(e.message, 'error');
       return;
     }
-    // Find this patient's name from the table for the detail header.
-    const link = document.querySelector(`a.patient-link[data-pid="${pid}"]`);
-    const name = link ? link.textContent.trim() : `Patient ${pid}`;
 
-    const items = r.items || [];
-    let body;
-    if (!items.length) {
-      body = `<div class="empty">No summaries delivered yet for this patient.
-        Click <strong>Force now</strong> to generate one immediately, or wait
-        for the next 12-hour auto cycle.</div>`;
-    } else {
-      body = items.map(item => `
+    const items = summaries.items || [];
+    const liveAlerts = alerts.alerts || [];
+    const openAlerts = liveAlerts.filter(a => a.acked_by_doctor_at == null);
+    const name = note.patient_name || `Patient ${pid}`;
+    const phone = note.patient_phone || '';
+
+    const summariesBody = items.length === 0
+      ? `<div class="empty">No summaries delivered yet for this patient. Click
+         <strong>Force summary now</strong> to generate one immediately, or wait
+         for the next 12-hour auto cycle.</div>`
+      : items.map(item => `
         <div class="card" style="margin-bottom:10px;padding:14px 16px;">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
             <div>
@@ -990,36 +1077,82 @@
                 ${item.read_at ? '' : '&nbsp;·&nbsp;<span class="pill brand">unread</span>'}
               </div>
             </div>
-            <div class="muted" style="font-size:12.5px;text-align:right;">
-              crit ${item.alert_count_critical} · warn ${item.alert_count_warn}<br />
-              HR ${fmt(item.hr_avg,1)} · HRV ${fmt(item.hrv_avg,1)} · RR ${fmt(item.rr_avg,1)} · SpO2 ${fmt(item.spo2_avg,1)} · ${fmt(item.temp_avg,2)}°C
+            <div style="text-align:right;">
+              <div class="muted" style="font-size:12.5px;">
+                crit ${item.alert_count_critical} · warn ${item.alert_count_warn}<br />
+                HR ${fmt(item.hr_avg,1)} · HRV ${fmt(item.hrv_avg,1)} · RR ${fmt(item.rr_avg,1)} · SpO2 ${fmt(item.spo2_avg,1)} · ${fmt(item.temp_avg,2)}°C
+              </div>
+              <a class="btn ghost" style="margin-top:6px;font-size:12px;" href="/api/doctor/summaries/${item.id}/download.csv?token=${encodeURIComponent(state.token)}" download>Download CSV</a>
             </div>
           </div>
           <pre class="narrative" style="margin-top:10px;">${escapeHtml(item.narrative)}</pre>
+        </div>`).join('');
+
+    const alertsBody = openAlerts.length === 0
+      ? `<div class="muted" style="font-size:13px;">No open live alerts.</div>`
+      : `
+        <div class="banner crit">
+          ${openAlerts.length} open live alert${openAlerts.length === 1 ? '' : 's'}.
+          <button id="ack-alerts-btn" class="ghost" style="float:right;color:white;background:transparent;border:1px solid white;">Mark all reviewed</button>
         </div>
-      `).join('');
-    }
+        <div style="max-height:200px;overflow:auto;font-size:12.5px;">
+          <table>
+            <thead><tr><th>Sim hr</th><th>Status</th><th>Vital</th><th>Reading</th><th>Note</th></tr></thead>
+            <tbody>
+              ${openAlerts.slice(0, 30).map(a => `
+                <tr>
+                  <td>${fmt(a.sim_hour, 2)}</td>
+                  <td><span class="pill ${a.status === 'CRITICAL' ? 'crit' : 'warn'}">${escapeHtml(a.status)}</span></td>
+                  <td>${escapeHtml(a.vital)}</td>
+                  <td>${fmt(a.value, 2)}</td>
+                  <td class="muted">${escapeHtml(a.message)}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+          ${openAlerts.length > 30 ? `<div class="muted" style="text-align:center;padding:6px;">…and ${openAlerts.length - 30} more</div>` : ''}
+        </div>`;
+
+    const noteSetAt = note.envelope_set_at
+      ? `Last updated ${escapeHtml(fmtTimestamp(note.envelope_set_at))}`
+      : 'No note saved yet';
+    const downloadEnvelopeUrl = `/api/doctor/patients/${pid}/envelope.csv?token=${encodeURIComponent(state.token)}`;
 
     host.innerHTML = `
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
           <div>
             <h2 class="card-title" style="margin-bottom:2px;">${escapeHtml(name)}</h2>
-            <div class="muted" style="font-size:12.5px;">${items.length} summary item(s) delivered to you</div>
+            <div class="muted" style="font-size:12.5px;">${escapeHtml(phone)} &nbsp;·&nbsp; ${items.length} summary item(s) &nbsp;·&nbsp; ${openAlerts.length} open alert(s)</div>
           </div>
           <div class="btn-row">
             <button id="force-detail-btn" class="secondary">Force summary now</button>
             <button id="close-detail-btn" class="ghost">Close</button>
           </div>
         </div>
+
         <hr class="sep" />
-        <div id="detail-summaries-host">${body}</div>
+        <h3 style="margin:0 0 6px 0;font-size:14px;">Doctor's note &amp; envelope</h3>
+        <div class="muted" style="font-size:12.5px;margin-bottom:8px;">${noteSetAt}. The AI parses your note into a CSV envelope used for live monitoring + the 12-hour summaries. The patient sees the note text but never the CSV.</div>
+        <textarea id="note-edit" rows="6" style="width:100%;">${escapeHtml(note.doctors_note || '')}</textarea>
+        <div class="btn-row" style="margin-top:8px;">
+          <button id="save-note-btn">Save note &amp; re-parse envelope</button>
+          ${note.envelope_csv ? `<a class="btn secondary" href="${downloadEnvelopeUrl}" download>Download envelope CSV</a>` : ''}
+        </div>
+
+        <hr class="sep" />
+        <h3 style="margin:0 0 6px 0;font-size:14px;">Live alerts (per 3-min sample)</h3>
+        ${alertsBody}
+
+        <hr class="sep" />
+        <h3 style="margin:0 0 6px 0;font-size:14px;">12-hour summaries delivered to you</h3>
+        <div id="detail-summaries-host">${summariesBody}</div>
       </div>
     `;
+
     document.getElementById('force-detail-btn').onclick = async () => {
       try {
-        await api(`/api/admin/force-summary/${pid}`, { method: 'POST', auth: false });
-        toast('Summary generated.', 'ok');
+        const r = await api(`/api/admin/force-summary/${pid}`, { method: 'POST', auth: false });
+        toast('Summary generated. Use Download CSV on the new entry.', 'ok');
         await refreshSelectedPatient(pid, { silent: true });
         await refreshPatients();
       } catch (e) { toast(e.message, 'error'); }
@@ -1028,6 +1161,25 @@
       state.selectedPatientId = null;
       host.innerHTML = '';
       refreshPatients();
+    };
+    document.getElementById('save-note-btn').onclick = async () => {
+      const text = document.getElementById('note-edit').value;
+      try {
+        const r = await api(`/api/doctor/patients/${pid}/note`, {
+          method: 'PUT', body: { doctors_note: text },
+        });
+        toast(`Note saved (parsed via ${r.envelope_source || 'fallback'}).`, 'ok');
+        await refreshSelectedPatient(pid, { silent: true });
+      } catch (e) { toast(e.message, 'error'); }
+    };
+    const ackBtn = document.getElementById('ack-alerts-btn');
+    if (ackBtn) ackBtn.onclick = async () => {
+      try {
+        await api(`/api/doctor/patients/${pid}/live-alerts/ack`, { method: 'POST' });
+        toast('Alerts marked reviewed.', 'ok');
+        await refreshSelectedPatient(pid, { silent: true });
+        await refreshPatients();
+      } catch (e) { toast(e.message, 'error'); }
     };
   }
 
