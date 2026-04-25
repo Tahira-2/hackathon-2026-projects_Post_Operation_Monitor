@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Heart, Clock, Calendar, FileText, Activity, Zap, AlertCircle } from 'lucide-react'
+import { Clock, Activity, Zap, BookOpen, MessageCircle } from 'lucide-react'
 
 import PatientSidebar from '../components/PatientSidebar'
 import PatientTopNav from '../components/PatientTopNav'
@@ -38,23 +38,23 @@ function PatientDashboardPage() {
             <section className="mb-12 grid gap-8 lg:grid-cols-3">
               {/* Left Side - Large Featured Section */}
               <div className="lg:col-span-2">
-                {/* Health Recovery Compliance Card */}
+                {/* Therapy Performance Card */}
                 <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-sm mb-8">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="text-sm font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">Recovery Compliance</h3>
+                      <h3 className="text-sm font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">Your Therapy Score</h3>
                       <p className="mt-4 text-5xl font-bold text-[var(--color-primary)]">85%</p>
-                      <p className="mt-2 text-sm text-[var(--color-text-muted)]">Weekly session completion rate</p>
+                      <p className="mt-2 text-sm text-[var(--color-text-muted)]">Posture accuracy & exercise completion</p>
                       
                       {/* Metrics Row */}
                       <div className="mt-6 grid grid-cols-2 gap-6">
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">Consistency</p>
-                          <p className="mt-2 text-2xl font-bold text-[var(--color-accent)]">12 Days</p>
+                          <p className="mt-2 text-2xl font-bold text-[var(--color-accent)]">12 Sessions</p>
                         </div>
                         <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">Mobility Gain</p>
-                          <p className="mt-2 text-2xl font-bold text-[var(--color-success)]">+4.2 pts</p>
+                          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">This Week</p>
+                          <p className="mt-2 text-2xl font-bold text-[var(--color-success)]">4/6 Done</p>
                         </div>
                       </div>
                     </div>
@@ -66,31 +66,36 @@ function PatientDashboardPage() {
                   </div>
                 </div>
 
-                {/* Today's Exercise Queue */}
+                {/* Assigned Therapy Exercises */}
                 <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-xl font-bold text-[var(--color-text)]">Today's Exercise Queue</h3>
-                      <p className="mt-1 text-sm text-[var(--color-text-muted)]">3 exercises remaining • 25 mins total</p>
+                      <h3 className="text-xl font-bold text-[var(--color-text)]">Assigned Therapy Plan</h3>
+                      <p className="mt-1 text-sm text-[var(--color-text-muted)]">Post-ACL Rehabilitation • Assigned by Dr. Sarah Johnson</p>
                     </div>
                     <button className="text-sm font-semibold text-[var(--color-primary)] hover:underline">
-                      View all exercises →
+                      View full plan →
                     </button>
                   </div>
                   <div className="mt-6 space-y-3">
                     {[
-                      { name: 'Quad Strengthening', duration: '8 mins' },
-                      { name: 'Knee Mobility Drills', duration: '10 mins' },
-                      { name: 'Balance & Stability', duration: '7 mins' }
+                      { name: 'Quad Strengthening', sets: '3x12', difficulty: 'Intermediate', status: 'pending' },
+                      { name: 'Knee Mobility Drills', sets: '3x10', difficulty: 'Beginner', status: 'pending' },
+                      { name: 'Balance & Stability', sets: '2x30s', difficulty: 'Intermediate', status: 'completed' }
                     ].map((exercise, idx) => (
-                      <div key={idx} className="flex items-center justify-between rounded-lg bg-[var(--color-bg)] p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-primary)] bg-opacity-20">
-                            <Activity className="h-3 w-3 text-[var(--color-primary)]" />
+                      <div key={idx} className={`flex items-center justify-between rounded-lg p-4 ${exercise.status === 'completed' ? 'border border-[var(--color-accent)] border-opacity-20 bg-[var(--color-surface)]' : 'bg-[var(--color-bg)]'}`}>
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className={`flex h-6 w-6 items-center justify-center rounded-full ${exercise.status === 'completed' ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-primary)] bg-opacity-20'}`}>
+                            <Activity className={`h-3 w-3 ${exercise.status === 'completed' ? 'text-white' : 'text-[var(--color-primary)]'}`} />
                           </div>
-                          <span className="text-sm font-medium text-[var(--color-text)]">{exercise.name}</span>
+                          <div>
+                            <span className="text-sm font-medium text-[var(--color-text)]">{exercise.name}</span>
+                            <p className="text-xs text-[var(--color-text-muted)]">{exercise.sets} • {exercise.difficulty}</p>
+                          </div>
                         </div>
-                        <span className="text-xs text-[var(--color-text-muted)]">{exercise.duration}</span>
+                        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${exercise.status === 'completed' ? 'bg-[var(--color-accent)] bg-opacity-20 text-[var(--color-accent)]' : 'bg-[var(--color-warning)] bg-opacity-20 text-[var(--color-warning)]'}`}>
+                          {exercise.status === 'completed' ? '✓ Done' : 'Pending'}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -104,36 +109,36 @@ function PatientDashboardPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.1em] text-gray-400">Next Session</p>
-                      <h3 className="mt-3 text-2xl font-bold">Post-ACL Mobility</h3>
+                      <h3 className="mt-3 text-2xl font-bold">Quad Strengthening</h3>
                       <div className="mt-4 flex items-center gap-2">
                         <Clock className="h-4 w-4" />
-                        <span className="text-sm">Starts in 15 mins</span>
+                        <span className="text-sm">Today at 2:30 PM</span>
                       </div>
                     </div>
                   </div>
-                  <button className="btn-primary mt-6 w-full bg-white text-[var(--color-text)]">
-                    Start Routine
+                  <button className="btn-primary mt-6 w-full bg-white text-[var(--color-text)] font-semibold hover:shadow-lg transition-shadow">
+                    Start Session
                   </button>
                 </div>
 
                 {/* Divider Line */}
                 <div className="border-b border-[var(--color-border)]"></div>
 
-                {/* Bottom Card - Health Vitals */}
+                {/* Bottom Card - Doctor Feedback */}
                 <div className="rounded-b-2xl border border-[var(--color-border)] border-t-0 bg-[var(--color-surface)] p-8 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">Current Status</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">Doctor Feedback</p>
                   <div className="mt-4 space-y-4">
                     <div>
-                      <p className="text-xs text-[var(--color-text-muted)]">Blood Pressure</p>
-                      <p className="mt-1 text-xl font-bold text-[var(--color-primary)]">120/80 mmHg</p>
+                      <p className="text-xs text-[var(--color-text-muted)]">Latest Review</p>
+                      <p className="mt-1 text-lg font-semibold text-[var(--color-text)]">Keep your knee aligned during the full movement range.</p>
                     </div>
                     <div>
-                      <p className="text-xs text-[var(--color-text-muted)]">Heart Rate</p>
-                      <p className="mt-1 text-xl font-bold text-[var(--color-primary)]">72 bpm</p>
+                      <p className="text-xs text-[var(--color-text-muted)]">Review Date</p>
+                      <p className="mt-1 text-xl font-bold text-[var(--color-primary)]">Apr 26, 2026</p>
                     </div>
                     <div className="pt-2">
-                      <span className="inline-flex rounded-full bg-[var(--color-success)] bg-opacity-20 px-3 py-1 text-xs font-semibold text-[var(--color-success)]">
-                        All Normal
+                      <span className="inline-flex rounded-full bg-[var(--color-accent)] bg-opacity-20 px-3 py-1 text-xs font-semibold text-[var(--color-accent)]">
+                        Session Ready
                       </span>
                     </div>
                   </div>
@@ -148,14 +153,12 @@ function PatientDashboardPage() {
                   <Zap className="h-5 w-5" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-[var(--color-text)]">Health Insights</h3>
+                  <h3 className="font-semibold text-[var(--color-text)]">AI Therapy Insights</h3>
                   <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-                    Based on your recent vitals and activity, your blood pressure remains stable at 120/80 mmHg. 
-                    Continue with your current medication routine and maintain regular exercise. Your next checkup 
-                    with Dr. Sarah Johnson is in 3 days.
+                    Your posture accuracy has improved by 8% since last week! Keep focusing on maintaining proper knee alignment during quad exercises. The AI detected slight forward lean in your last session—try engaging your core more actively. Continue this pace and you'll reach your mobility goals 2 weeks ahead of schedule.
                   </p>
                   <button className="mt-4 text-sm font-semibold text-[var(--color-primary)] hover:underline">
-                    Learn more →
+                    View detailed analysis →
                   </button>
                 </div>
               </div>
@@ -166,16 +169,16 @@ function PatientDashboardPage() {
               <h3 className="mb-4 text-lg font-bold text-[var(--color-text)]">Quick Actions</h3>
               <div className="flex flex-wrap gap-3">
                 <button className="btn-primary flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Schedule Appointment
+                  <Activity className="h-4 w-4" />
+                  Start Therapy Now
                 </button>
                 <button className="btn-secondary flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  View Medical Records
+                  <BookOpen className="h-4 w-4" />
+                  Browse Exercises
                 </button>
                 <button className="btn-secondary flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4" />
-                  View Lab Results
+                  <MessageCircle className="h-4 w-4" />
+                  Chat with CareBot
                 </button>
               </div>
             </section>

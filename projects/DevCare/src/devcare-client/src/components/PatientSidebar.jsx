@@ -1,16 +1,18 @@
 import { useState } from 'react'
-import { Heart, Calendar, Pill, FileText, BarChart3, Settings, LogOut, Menu, X } from 'lucide-react'
+import { 
+  Heart, Calendar, BarChart3, LogOut, Menu, X, 
+  BookOpen, MessageCircle
+} from 'lucide-react'
 
-function PatientSidebar({ username, onLogout }) {
+function PatientSidebar({ onLogout }) {
   const [isOpen, setIsOpen] = useState(false)
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Heart, href: '#' },
-    { id: 'appointments', label: 'Appointments', icon: Calendar, href: '#' },
-    { id: 'prescriptions', label: 'Prescriptions', icon: Pill, href: '#' },
-    { id: 'records', label: 'Medical Records', icon: FileText, href: '#' },
-    { id: 'vitals', label: 'Vitals History', icon: BarChart3, href: '#' },
-    { id: 'settings', label: 'Settings', icon: Settings, href: '#' },
+    { id: 'dashboard', label: 'Dashboard', icon: Heart, href: '/dashboard/patient' },
+    { id: 'therapy-library', label: 'Therapy Library', icon: BookOpen, href: '/therapy-library' },
+    { id: 'my-sessions', label: 'My Sessions', icon: Calendar, href: '/my-sessions' },
+    { id: 'progress', label: 'Progress & History', icon: BarChart3, href: '/progress' },
+    { id: 'feedback', label: 'Feedback', icon: MessageCircle, href: '/feedback' },
   ]
 
   return (
@@ -31,18 +33,17 @@ function PatientSidebar({ username, onLogout }) {
       >
         {/* Sidebar Header */}
         <div className="border-b border-[var(--color-border)] p-6">
-          <h2 className="text-xl font-bold text-[var(--color-primary)]">DevCare</h2>
-          <p className="mt-2 text-sm text-[var(--color-text-muted)]">Patient Portal</p>
+          <img src="/src/assets/Devcare-logo.png" alt="DevCare Logo" className="h-10 object-contain" />
         </div>
 
         {/* User Info */}
         <div className="border-b border-[var(--color-border)] p-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-primary)] text-white font-semibold">
-              {(username || 'P').charAt(0).toUpperCase()}
+              U
             </div>
             <div>
-              <p className="text-sm font-semibold text-[var(--color-text)]">{username || 'Patient'}</p>
+              <p className="text-sm font-semibold text-[var(--color-text)]">User</p>
               <p className="text-xs text-[var(--color-text-muted)]">Active</p>
             </div>
           </div>
