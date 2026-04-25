@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Symptom Router</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 16px; }
+    h1 { font-size: 1.4rem; }
+    textarea { width: 100%; height: 80px; padding: 8px; font-size: 1rem; box-sizing: border-box; }
+    button { margin-top: 8px; padding: 10px 24px; font-size: 1rem; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #result { margin-top: 24px; }
+    .banner { padding: 16px; border-radius: 8px; font-weight: bold; font-size: 1.1rem; margin-bottom: 12px; }
+    .EMERGENCY { background: #fee2e2; color: #991b1b; }
+    .URGENT    { background: #fef9c3; color: #854d0e; }
+    .ROUTINE   { background: #dcfce7; color: #166534; }
+    .disclaimer { margin-top: 16px; font-size: 0.8rem; color: #555; border-top: 1px solid #ddd; padding-top: 8px; }
+    .error { color: #991b1b; background: #fee2e2; padding: 12px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Smart Symptom Router</h1>
+  <p>Describe your symptoms and we'll help you find the right care.</p>
+  <textarea id="symptoms" placeholder="e.g. I have a severe headache, stiff neck, and sensitivity to light..."></textarea>
+  <br/>
+  <button id="submit-btn" onclick="assess()">Assess Symptoms</button>
+  <div id="result"></div>
+
+  <script>
+    // Renders the triage result from the API into the result div
+    function renderResult(data) {
+      const flags = data.red_flags.map(f => `<li>${f}</li>`).join('');
+      document.getElementById('result').innerHTML = `
+        <div class="banner ${data.urgency}">
+          ${data.urgency} &mdash; ${data.care_setting}
+          <span style="font-weight:normal; font-size:0.9rem"> (Confidence: ${data.confidence})</span>
+        </div>
+        <p>${data.explanation}</p>
+        <p><strong>Watch for these red flags:</strong></p>
+        <ul>${flags}</ul>
+        <div class="disclaimer">${data.disclaimer}</div>
+      `;
+    }
+
+    // Renders an error message into the result div
+    function renderError(message) {
+      document.getElementById('result').innerHTML = `<div class="error">${message}</div>`;
+    }
+
+    // Sends symptoms to /api/triage and displays the result
+    async function assess() {
+      const symptoms = document.getElementById('symptoms').value.trim();
+      if (!symptoms) return alert('Please describe your symptoms first.');
+
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      document.getElementById('result').innerHTML = '<p>Assessing...</p>';
+
+      try {
+        const res = await fetch('/api/triage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symptoms })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          renderError(data.error || 'An error occurred. Please try again.');
+        } else {
+          renderResult(data);
+        }
+      } catch (err) {
+        renderError('Could not reach the server. Please check your connection and try again.');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
