@@ -13,15 +13,17 @@ CureIT is a prototype telehealth workflow platform focused on one clean end-to-e
 - If the preferred doctor is unavailable, the system can recommend the next available option.
 - Patient books a short 15-30 minute consultation slot for chat or video call.
 - Doctor views appointment, runs a consultation simulation, and generates a structured SOAP note.
-- Doctor can issue a digital prescription from the consultation workflow.
-- SOAP note and prescription data are converted into FHIR R4-style JSON, including `MedicationRequest`, for interoperable EMR export.
+- Doctor can issue a compliant digital prescription from the consultation workflow (general/non-controlled medicines only).
+- Controlled substances are hard-blocked by policy in the virtual prescription path.
+- Consultation data is routed through internal systems for consent/compliance, clinical signer review, and care navigation coordination.
+- SOAP note and prescription data are converted into FHIR R4-style JSON bundle resources, including `Consent`, `Composition`, and `MedicationRequest`, for interoperable EMR export.
 
 This project is a workflow/documentation prototype and is not a diagnostic tool. It is designed for hackathon speed with clear team boundaries across frontend, API, core logic, and database layers, and it targets independent clinics and licensed practitioners rather than hospital system workflows.
 
 Tech Stack -
 - Frontend: Next.js, React, TypeScript, Tailwind CSS
 - API Gateway: FastAPI, Pydantic
-- Core Logic: Pure Python 3.12, dataclasses, deterministic rule-based processing (SOAP parsing + FHIR formatter)
+- Core Logic: Pure Python 3.12, dataclasses, deterministic rule-based processing (care navigation mapping, SOAP parsing, compliance-safe FHIR bundling)
 - Database: Supabase (PostgreSQL)
-- Data Standard: FHIR R4 JSON (including `MedicationRequest` for digital prescription output)
-- Security/Compliance Approach: role-based route separation, mock auth for demo, HIPAA-aware handling principles in design
+- Data Standard: FHIR R4 JSON bundle (`Consent`, `Composition`, `MedicationRequest`)
+- Security/Compliance Approach: role-based route separation, mock auth for demo, HIPAA-aware handling principles, and controlled-substance prescription blocking
