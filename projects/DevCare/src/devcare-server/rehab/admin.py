@@ -1,9 +1,11 @@
 from django.contrib import admin
 
 from .models import (
+	ExerciseResult,
 	ExerciseSession,
 	ExerciseTemplate,
-
+	RehabPlan,
+	RehabPlanExercise,
 )
 
 
@@ -30,3 +32,8 @@ class ExerciseSessionAdmin(admin.ModelAdmin):
 	list_display = ("id", "patient", "plan", "started_at", "completed_at")
 	search_fields = ("patient__username", "plan__name")
 
+
+@admin.register(ExerciseResult)
+class ExerciseResultAdmin(admin.ModelAdmin):
+	list_display = ("id", "session", "exercise", "order", "reps", "accuracy", "duration")
+	search_fields = ("session__patient__username", "exercise__name")
