@@ -63,5 +63,36 @@ Activity logging for traceability
 
 Designed with awareness of regulations such as:
 HIPAA
+
 Setup Instructions - How to run your project locally.
+
+### Backend Setup 🚀
+
+1. **Navigate to the Backend Folder**
+   ```bash
+   cd projects/Code-and-Cure
+   ```
+
+2. **Set Up Virtual Environment**
+   ```powershell
+   # Create the environment
+   python -m venv .venv
+
+   # Activate (Windows)
+   .\.venv\Scripts\activate
+
+   # Activate (Mac/Linux)
+   source .venv/bin/activate
+   ```
+
+3. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Run the Server**
+   ```bash
+   uvicorn main:app --reload
+   ```
+
 Demo - Link to a demo video, live deployment, or screenshots.
