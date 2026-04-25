@@ -1,0 +1,15 @@
+AI.md
+context.md
+HEAD
+.env
+questions.md
+biggerscope.md
+__pycache__/
+*.pyc
+teammate.md
+
+.cursorrules
+.env
+.env.local
+.env.*.local
+refs/rewritten/origin-Eric-2

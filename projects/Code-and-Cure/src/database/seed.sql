@@ -1,0 +1,194 @@
+-- Doctor users (3)
+insert into users (email, password_hash, full_name, role)
+values
+  ('derm.doc@test.com', 'hash', 'Dr. Alice Skinner', 'doctor'),
+  ('cardio.doc@test.com', 'hash', 'Dr. Brian Heart', 'doctor'),
+  ('neuro.doc@test.com', 'hash', 'Dr. Clara Neuro', 'doctor');
+
+-- Patient users (2)
+insert into users (email, password_hash, full_name, role)
+values
+  ('patient.one@test.com', 'hash', 'Pat One', 'patient'),
+  ('patient.two@test.com', 'hash', 'Pat Two', 'patient');
+
+-- Doctor profiles (licensed + review metadata)
+insert into doctors (
+  user_id,
+  full_name,
+  specialty,
+  license_no,
+  is_licensed,
+  rating,
+  review_count,
+  review_source,
+  lat,
+  lng,
+  address,
+  availability
+)
+values
+  (
+    (select id from users where email = 'derm.doc@test.com'),
+    'Dr. Alice Skinner',
+    'Dermatology',
+    'LIC-DERM-1001',
+    true,
+    4.8,
+    126,
+    'google',
+    29.4260,
+    -98.4895,
+    '120 Skin St, San Antonio, TX',
+    '{"monday":["09:00","10:00"],"wednesday":["13:00","14:00"]}'::jsonb
+  ),
+  (
+    (select id from users where email = 'cardio.doc@test.com'),
+    'Dr. Brian Heart',
+    'Cardiology',
+    'LIC-CARD-1002',
+    true,
+    4.7,
+    98,
+    'google',
+    29.4241,
+    -98.4936,
+    '221 Heart Ave, San Antonio, TX',
+    '{"tuesday":["09:30","11:30"],"thursday":["15:00","16:00"]}'::jsonb
+  ),
+  (
+    (select id from users where email = 'neuro.doc@test.com'),
+    'Dr. Clara Neuro',
+    'Neurology',
+    'LIC-NEUR-1003',
+    true,
+    4.9,
+    143,
+    'google',
+    29.4305,
+    -98.4950,
+    '98 Brain Blvd, San Antonio, TX',
+    '{"friday":["10:00","11:00"],"saturday":["12:00"]}'::jsonb
+  );
+
+-- 1 completed appointment
+insert into appointments (patient_id, doctor_id, scheduled_at, status, notes)
+values (
+  (select id from users where email = 'patient.one@test.com'),
+  (select id from doctors where specialty = 'Cardiology'),
+  now() - interval '1 day',
+  'completed',
+  'Follow-up visit for chest discomfort.'
+);
+
+-- 1 intake form
+insert into intake_forms (appointment_id, patient_id, symptoms, allergies, medications, medical_history)
+values (
+  (select id from appointments order by created_at desc limit 1),
+  (select id from users where email = 'patient.one@test.com'),
+  'Mild chest pain during exercise.',
+  'Penicillin',
+  'Atorvastatin 10mg daily',
+  'Family history of hypertension.'
+);
+
+-- 1 approved SOAP note
+insert into soap_notes (
+  appointment_id,
+  doctor_id,
+  subjective,
+  objective,
+  assessment,
+  plan,
+  raw_transcript,
+  clinic_name,
+  provider_display_name,
+  provider_license_id,
+  clinic_logo_url,
+  soap_pdf_generated_at,
+  document_reference_id,
+  approved,
+  approved_at
+)
+values (
+  (select id from appointments order by created_at desc limit 1),
+  (select id from doctors where specialty = 'Cardiology'),
+  'Patient reports intermittent chest tightness with exertion.',
+  'Vitals stable, normal ECG in clinic.',
+  'Likely stable angina; low immediate risk.',
+  'Schedule stress test, continue statin, follow-up in two weeks.',
+  'Auto-transcribed consultation text goes here.',
+  'CareIT Virtual Clinic - San Antonio',
+  'Dr. Brian Heart, MD',
+  'LIC-CARD-1002',
+  'https://example.com/logo-careit.png',
+  now(),
+  'DOC-SOAP-0001',
+  true,
+  now()
+);
+
+-- 1 FHIR record
+insert into fhir_records (soap_note_id, fhir_json)
+values (
+  (select id from soap_notes order by created_at desc limit 1),
+  '{
+    "resourceType":"Composition",
+    "status":"final",
+    "type":{"text":"Clinical Note"},
+    "title":"Cardiology Follow-Up SOAP Note"
+  }'::jsonb
+);
+
+-- Medication policy reference support (general/non-controlled + controlled)
+insert into medication_policies (medication_name, category, is_allowed, reference_source, notes)
+values
+  ('Acetaminophen', 'general', true, 'internal_demo_policy_v1', 'Non-controlled pain reliever allowed for telehealth demo.'),
+  ('Ibuprofen', 'general', true, 'internal_demo_policy_v1', 'Non-controlled anti-inflammatory allowed.'),
+  ('Amoxicillin', 'general', true, 'internal_demo_policy_v1', 'Common antibiotic example.'),
+  ('Oxycodone', 'controlled', false, 'internal_demo_policy_v1', 'Controlled substance blocked by policy.'),
+  ('Adderall', 'controlled', false, 'internal_demo_policy_v1', 'Controlled stimulant blocked by policy.');
+
+-- Prescription order status persistence sample rows
+insert into prescriptions (
+  appointment_id,
+  patient_id,
+  doctor_id,
+  requested_medication,
+  approval_status,
+  block_reason,
+  clinic_name,
+  provider_display_name,
+  provider_license_id,
+  clinic_logo_url,
+  prescription_pdf_generated_at,
+  document_reference_id
+)
+values
+  (
+    (select id from appointments order by created_at desc limit 1),
+    (select id from users where email = 'patient.one@test.com'),
+    (select id from doctors where specialty = 'Cardiology'),
+    'Acetaminophen',
+    'approved',
+    null,
+    'CareIT Virtual Clinic - San Antonio',
+    'Dr. Brian Heart, MD',
+    'LIC-CARD-1002',
+    'https://example.com/logo-careit.png',
+    now(),
+    'DOC-RX-0001'
+  ),
+  (
+    (select id from appointments order by created_at desc limit 1),
+    (select id from users where email = 'patient.one@test.com'),
+    (select id from doctors where specialty = 'Cardiology'),
+    'Oxycodone',
+    'blocked',
+    'Controlled medications are blocked by telehealth policy.',
+    'CareIT Virtual Clinic - San Antonio',
+    'Dr. Brian Heart, MD',
+    'LIC-CARD-1002',
+    'https://example.com/logo-careit.png',
+    null,
+    'DOC-RX-0002'
+  );
