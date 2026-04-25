@@ -1,15 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-} from 'recharts';
 import './App.css';
 
 const API_BASE = 'http://localhost:8000';
@@ -26,6 +16,7 @@ function App() {
   const [prediction, setPrediction] = useState(null);
   const [simulation, setSimulation] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [symptomSearch, setSymptomSearch] = useState('');
 
   useEffect(() => {
     axios
@@ -179,7 +170,7 @@ function App() {
                   </div>
                   {lifestyle.smoking && (
                     <p className="text-xs text-red-600 mt-2 font-medium">
-                      +40% risk increase
+                      ⚠️ Increases risk — impact varies by condition
                     </p>
                   )}
                 </div>
@@ -215,9 +206,29 @@ function App() {
                       <span>12h</span>
                     </div>
                   </div>
-                  {lifestyle.sleep_hours < 5 && (
+                  {lifestyle.sleep_hours < 4 && (
                     <p className="text-xs text-red-600 mt-2 font-medium">
-                      +20% risk increase
+                      ⚠️ Severe deprivation — significantly increases risk
+                    </p>
+                  )}
+                  {lifestyle.sleep_hours >= 4 && lifestyle.sleep_hours < 5 && (
+                    <p className="text-xs text-red-600 mt-2 font-medium">
+                      ⚠️ Poor sleep — increases risk for many conditions
+                    </p>
+                  )}
+                  {lifestyle.sleep_hours >= 5 && lifestyle.sleep_hours < 6 && (
+                    <p className="text-xs text-yellow-600 mt-2 font-medium">
+                      Below average — small improvement can help
+                    </p>
+                  )}
+                  {lifestyle.sleep_hours >= 6 && lifestyle.sleep_hours < 7 && (
+                    <p className="text-xs text-yellow-600 mt-2 font-medium">
+                      Slightly below optimal range (7-9h)
+                    </p>
+                  )}
+                  {lifestyle.sleep_hours > 9 && (
+                    <p className="text-xs text-yellow-600 mt-2 font-medium">
+                      Oversleeping may indicate underlying issues
                     </p>
                   )}
                 </div>
@@ -237,18 +248,25 @@ function App() {
                     }
                     className="pollution-select w-full p-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-sm font-medium"
                   >
+                    <option value="very_low">🟢 Very Low</option>
                     <option value="low">🟢 Low</option>
-                    <option value="medium">🟡 Medium</option>
-                    <option value="high">🔴 High</option>
+                    <option value="medium">🟡 Moderate</option>
+                    <option value="high">🟠 High</option>
+                    <option value="very_high">🔴 Very High</option>
                   </select>
-                  {lifestyle.pollution_level === 'high' && (
+                  {lifestyle.pollution_level === 'very_high' && (
                     <p className="text-xs text-red-600 mt-2 font-medium">
-                      +25% risk increase
+                      ⚠️ Significant risk — especially for respiratory conditions
+                    </p>
+                  )}
+                  {lifestyle.pollution_level === 'high' && (
+                    <p className="text-xs text-orange-600 mt-2 font-medium">
+                      ⚠️ Increases risk — impact varies by condition
                     </p>
                   )}
                   {lifestyle.pollution_level === 'medium' && (
                     <p className="text-xs text-yellow-600 mt-2 font-medium">
-                      +10% risk increase
+                      May mildly increase risk for sensitive conditions
                     </p>
                   )}
                 </div>
@@ -268,9 +286,22 @@ function App() {
                   }
                 </span>
               </h3>
-              <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-5 max-h-80 overflow-y-auto custom-scrollbar">
+              <div className="mb-3">
+                <input
+                  type="text"
+                  placeholder="🔍 Search symptoms..."
+                  value={symptomSearch}
+                  onChange={(e) => setSymptomSearch(e.target.value)}
+                  className="w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-sm"
+                />
+              </div>
+              <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-5 max-h-96 overflow-y-auto custom-scrollbar">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                  {symptoms.slice(0, 30).map((symptom) => (
+                  {symptoms
+                    .filter((s) =>
+                      s.replace(/_/g, ' ').toLowerCase().includes(symptomSearch.toLowerCase())
+                    )
+                    .map((symptom) => (
                     <label
                       key={symptom}
                       className="flex items-center space-x-2 p-2.5 hover:bg-white rounded-lg cursor-pointer transition-colors"
@@ -377,6 +408,19 @@ function App() {
               <div className="text-2xl font-bold text-white mb-3">
                 {prediction.disease}
               </div>
+              {prediction.disease_severity && (
+                <div className={`inline-block px-3 py-1 rounded-full text-xs font-bold mb-3 ${
+                  prediction.disease_severity === 'Critical'
+                    ? 'bg-red-500 text-white'
+                    : prediction.disease_severity === 'Serious'
+                    ? 'bg-orange-500 text-white'
+                    : prediction.disease_severity === 'Moderate'
+                    ? 'bg-yellow-500 text-gray-900'
+                    : 'bg-green-500 text-white'
+                }`}>
+                  {prediction.disease_severity === 'Critical' ? '⚠️' : prediction.disease_severity === 'Serious' ? '🚨' : 'ℹ️'} Disease Severity: {prediction.disease_severity}
+                </div>
+              )}
               <div className="text-sm text-indigo-200">
                 Base Probability:{' '}
                 <span className="text-white font-bold">
@@ -538,43 +582,75 @@ function App() {
             )}
           </div>
 
-          {/* 5. Visualization Card */}
+          {/* 5. Risk Breakdown Card */}
           <div className="bg-white rounded-2xl shadow-xl p-6 border-2 border-blue-100">
             <div className="flex items-center gap-3 mb-4">
               <div className="bg-blue-100 p-2 rounded-lg">
                 <span className="text-2xl">📊</span>
               </div>
               <h2 className="text-xl font-bold text-gray-800">
-                Risk Progression
+                Risk Breakdown
               </h2>
             </div>
-            {simulation && simulation.scenarios && (
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={simulation.scenarios}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis
-                    dataKey="name"
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                    fontSize={11}
-                  />
-                  <YAxis domain={[0, 100]} fontSize={12} />
-                  <Tooltip />
-                  <Bar
-                    dataKey="risk_percent"
-                    name="Risk %"
-                    radius={[8, 8, 0, 0]}
-                  >
-                    {simulation.scenarios.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={getSeverityColor(entry.severity)}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+            {prediction.risk_breakdown && prediction.risk_breakdown.length > 0 ? (
+              <div className="space-y-3">
+                {prediction.risk_breakdown.map((item, idx) => {
+                  const maxVal = Math.max(...prediction.risk_breakdown.map(b => b.value), 1);
+                  const barWidth = Math.max((item.value / maxVal) * 100, item.value > 0 ? 8 : 0);
+                  return (
+                    <div key={idx}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-xs font-semibold ${
+                          item.type === 'base' ? 'text-indigo-700'
+                          : item.type === 'total' ? 'text-amber-700'
+                          : 'text-red-600'
+                        }`}>
+                          {item.type === 'factor' ? `↑ ${item.name}` : item.name}
+                        </span>
+                        <span className={`text-sm font-bold ${
+                          item.type === 'base' ? 'text-indigo-700'
+                          : item.type === 'total' ? 'text-amber-700'
+                          : 'text-red-600'
+                        }`}>
+                          {item.type === 'factor' ? `+${item.value}%` : `${item.value}%`}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-3">
+                        <div
+                          className={`h-3 rounded-full transition-all duration-500 ${
+                            item.type === 'base' ? 'bg-indigo-500'
+                            : item.type === 'total' ? 'bg-amber-500'
+                            : 'bg-red-400'
+                          }`}
+                          style={{ width: `${barWidth}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+                {/* Summary */}
+                {prediction.base_risk_percent !== prediction.adjusted_risk_percent && (
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">Lifestyle factors added</span>
+                      <span className="text-sm font-bold text-red-600">
+                        +{(prediction.adjusted_risk_percent - prediction.base_risk_percent).toFixed(1)}% total increase
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {prediction.base_risk_percent === prediction.adjusted_risk_percent && (
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <p className="text-xs text-green-600 font-medium">
+                      ✅ No lifestyle factors are increasing your risk — great job!
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 py-4">
+                <p className="text-sm">No risk breakdown data available</p>
+              </div>
             )}
           </div>
 
@@ -585,31 +661,159 @@ function App() {
                 <span className="text-2xl">💡</span>
               </div>
               <h2 className="text-xl font-bold text-gray-800">
-                Recommendations
+                Personalized Recommendations
               </h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {prediction.recommendations &&
-              prediction.recommendations.length > 0 ? (
-                prediction.recommendations.map((rec, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl border border-blue-200"
-                  >
-                    <div className="bg-indigo-600 text-white font-bold w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
-                      {idx + 1}
-                    </div>
-                    <div className="text-sm text-gray-800 font-medium">
-                      {rec}
-                    </div>
+
+            {prediction.recommendations && (
+              <div className="space-y-6">
+                {/* Urgency Banner */}
+                <div
+                  className={`urgency-banner p-4 rounded-xl border-2 ${
+                    prediction.recommendations.urgency === 'visit_doctor_immediately'
+                      ? 'bg-red-50 border-red-300'
+                      : prediction.recommendations.urgency === 'consult_soon'
+                      ? 'bg-yellow-50 border-yellow-300'
+                      : prediction.recommendations.urgency === 'monitor'
+                      ? 'bg-blue-50 border-blue-300'
+                      : 'bg-green-50 border-green-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-2xl">
+                      {prediction.recommendations.urgency === 'visit_doctor_immediately'
+                        ? '🚨'
+                        : prediction.recommendations.urgency === 'consult_soon'
+                        ? '⚠️'
+                        : prediction.recommendations.urgency === 'monitor'
+                        ? '👁️'
+                        : '✅'}
+                    </span>
+                    <span
+                      className={`font-bold text-sm uppercase tracking-wide ${
+                        prediction.recommendations.urgency === 'visit_doctor_immediately'
+                          ? 'text-red-800'
+                          : prediction.recommendations.urgency === 'consult_soon'
+                          ? 'text-yellow-800'
+                          : prediction.recommendations.urgency === 'monitor'
+                          ? 'text-blue-800'
+                          : 'text-green-800'
+                      }`}
+                    >
+                      {prediction.recommendations.urgency === 'visit_doctor_immediately'
+                        ? 'Immediate Medical Attention Recommended'
+                        : prediction.recommendations.urgency === 'consult_soon'
+                        ? 'Doctor Consultation Recommended'
+                        : prediction.recommendations.urgency === 'monitor'
+                        ? 'Monitor Your Symptoms'
+                        : 'Self-Care & Healthy Habits'}
+                    </span>
                   </div>
-                ))
-              ) : (
-                <div className="col-span-3 text-center text-gray-500 py-4">
-                  <p className="text-sm">Maintain healthy lifestyle habits</p>
+                  <p
+                    className={`text-sm ${
+                      prediction.recommendations.urgency === 'visit_doctor_immediately'
+                        ? 'text-red-700'
+                        : prediction.recommendations.urgency === 'consult_soon'
+                        ? 'text-yellow-700'
+                        : prediction.recommendations.urgency === 'monitor'
+                        ? 'text-blue-700'
+                        : 'text-green-700'
+                    }`}
+                  >
+                    {prediction.recommendations.urgency_message}
+                  </p>
                 </div>
-              )}
-            </div>
+
+                {/* Disease-Specific Advice */}
+                {prediction.recommendations.disease_specific &&
+                  prediction.recommendations.disease_specific.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <span>🎯</span> Advice for {prediction.disease}
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {prediction.recommendations.disease_specific.map(
+                          (tip, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-start gap-3 p-4 bg-indigo-50 rounded-xl border border-indigo-200"
+                            >
+                              <div className="bg-indigo-600 text-white font-bold w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs">
+                                {idx + 1}
+                              </div>
+                              <div className="text-sm text-gray-800">
+                                {tip}
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Lifestyle Tips */}
+                {prediction.recommendations.lifestyle &&
+                  prediction.recommendations.lifestyle.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <span>🌿</span> General Lifestyle Tips
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {prediction.recommendations.lifestyle.map(
+                          (tip, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-start gap-3 p-4 bg-green-50 rounded-xl border border-green-200"
+                            >
+                              <div className="bg-green-600 text-white font-bold w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs">
+                                ✓
+                              </div>
+                              <div className="text-sm text-gray-800">
+                                {tip}
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Risk Awareness */}
+                {prediction.recommendations.risk_awareness &&
+                  prediction.recommendations.risk_awareness.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <span>💬</span> Risk Awareness
+                      </h3>
+                      <div className="space-y-3">
+                        {prediction.recommendations.risk_awareness.map(
+                          (msg, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-start gap-3 p-4 bg-amber-50 rounded-xl border border-amber-200"
+                            >
+                              <span className="text-amber-500 flex-shrink-0 mt-0.5">ℹ️</span>
+                              <div className="text-sm text-gray-700">
+                                {msg}
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Disclaimer */}
+                {prediction.recommendations.disclaimer && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mt-2">
+                    <p className="text-xs text-gray-500 italic flex items-start gap-2">
+                      <span className="flex-shrink-0">⚕️</span>
+                      {prediction.recommendations.disclaimer}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
