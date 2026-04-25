@@ -38,6 +38,17 @@ from .sim_runner import reset_all, stream_for
 from .summary import deliver_to_consenting_doctors, generate_summary_for_patient
 
 
+def _normalize_phone(s: str) -> str:
+    """Reduce a phone number to its digit-only canonical form.
+
+    Lets a doctor add a patient regardless of how the patient typed their
+    phone number on signup ("+1-555-0200", "(555) 020-0", "1 555 020 0"
+    all collapse to "15550200"). Also used for patient login + uniqueness
+    enforcement.
+    """
+    return "".join(c for c in (s or "") if c.isdigit())
+
+
 def create_app() -> Flask:
     init_db()
     app = Flask(__name__, static_folder=None)
@@ -80,20 +91,25 @@ def create_app() -> Flask:
         prescription = (body.get("prescription") or "").strip()
         if not phone or not device_number:
             return jsonify({"error": "phone and device_number are required"}), 400
+        phone_norm = _normalize_phone(phone)
+        if not phone_norm:
+            return jsonify({"error": "phone must contain digits"}), 400
 
         db = get_db()
-        existing = db.execute("SELECT id FROM patients WHERE phone = ?", (phone,)).fetchone()
+        existing = db.execute(
+            "SELECT id FROM patients WHERE phone_normalized = ?", (phone_norm,),
+        ).fetchone()
         if existing:
             return jsonify({"error": "phone already registered"}), 409
 
         device_hash, device_salt = make_secret(device_number)
         cur = db.execute(
             """INSERT INTO patients
-               (phone, device_number, device_secret, device_salt, full_name,
-                prescription, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (phone, device_number, device_hash, device_salt, full_name,
-             prescription, int(time.time())),
+               (phone, phone_normalized, device_number, device_secret, device_salt,
+                full_name, prescription, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (phone, phone_norm, device_number, device_hash, device_salt,
+             full_name, prescription, int(time.time())),
         )
         db.commit()
         token = issue_session("patient", cur.lastrowid)
@@ -108,7 +124,10 @@ def create_app() -> Flask:
             return jsonify({"error": "phone and device_number are required"}), 400
 
         db = get_db()
-        row = db.execute("SELECT * FROM patients WHERE phone = ?", (phone,)).fetchone()
+        row = db.execute(
+            "SELECT * FROM patients WHERE phone_normalized = ?",
+            (_normalize_phone(phone),),
+        ).fetchone()
         if row is None or not verify_secret(device_number, row["device_secret"], row["device_salt"]):
             return jsonify({"error": "invalid phone or device number"}), 401
 
@@ -435,7 +454,8 @@ def create_app() -> Flask:
 
         db = get_db()
         patient = db.execute(
-            "SELECT id, full_name FROM patients WHERE phone = ?", (phone,),
+            "SELECT id, full_name FROM patients WHERE phone_normalized = ?",
+            (_normalize_phone(phone),),
         ).fetchone()
         if patient is None:
             return jsonify({
@@ -537,10 +557,11 @@ def create_app() -> Flask:
         p_dev_hash, p_dev_salt = make_secret(patient_device)
         cur = db.execute(
             """INSERT INTO patients
-               (phone, device_number, device_secret, device_salt, full_name,
-                prescription, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (patient_phone, patient_device, p_dev_hash, p_dev_salt,
+               (phone, phone_normalized, device_number, device_secret, device_salt,
+                full_name, prescription, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (patient_phone, _normalize_phone(patient_phone),
+             patient_device, p_dev_hash, p_dev_salt,
              "Patient One", sample_prescription, int(time.time())),
         )
         patient_id = cur.lastrowid

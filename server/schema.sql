@@ -3,14 +3,15 @@
 -- passed to /api/admin/seed.
 
 CREATE TABLE patients (
-  id              INTEGER PRIMARY KEY AUTOINCREMENT,
-  phone           TEXT    NOT NULL UNIQUE,
-  device_number   TEXT    NOT NULL,            -- printed on the wearable
-  device_secret   TEXT    NOT NULL,            -- pbkdf2 hash of device_number
-  device_salt     TEXT    NOT NULL,
-  full_name       TEXT    NOT NULL DEFAULT '',
-  prescription    TEXT    NOT NULL DEFAULT '', -- raw clinician text
-  created_at      INTEGER NOT NULL              -- unix seconds
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  phone            TEXT    NOT NULL,            -- as typed by patient (display)
+  phone_normalized TEXT    NOT NULL UNIQUE,     -- digits only; used for lookup
+  device_number    TEXT    NOT NULL,            -- printed on the wearable
+  device_secret    TEXT    NOT NULL,            -- pbkdf2 hash of device_number
+  device_salt      TEXT    NOT NULL,
+  full_name        TEXT    NOT NULL DEFAULT '',
+  prescription     TEXT    NOT NULL DEFAULT '', -- raw clinician text
+  created_at       INTEGER NOT NULL             -- unix seconds
 );
 
 CREATE TABLE doctors (
