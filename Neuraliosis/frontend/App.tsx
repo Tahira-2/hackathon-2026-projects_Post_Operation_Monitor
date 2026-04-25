@@ -1,21 +1,25 @@
 import './global.css';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 
-import { DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { useColorScheme } from 'react-native';
-import { useMemo } from 'react';
+import { useEffect } from 'react';
+import { useHealthConnect } from 'hooks/useHealthData';
 
 import 'react-native-gesture-handler';
 
 import Navigation from './navigation';
+import { StatusBar } from 'expo-status-bar';
 
 export default function App() {
   const colorScheme = useColorScheme();
-  const theme = useMemo(() => (colorScheme === 'dark' ? DarkTheme : DefaultTheme), [colorScheme]);
 
   return (
     <SafeAreaProvider>
-      <Navigation theme={theme} />
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      <KeyboardProvider>
+        <Navigation />
+      </KeyboardProvider>
     </SafeAreaProvider>
   );
 }
