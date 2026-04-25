@@ -1,6 +1,6 @@
 # RefAI — Design Documentation
 
-**Stitch project:** https://stitch.withgoogle.com/projects/14186888474559372605
+**Stitch project:** https://stitch.withgoogle.com/projects/16939082103255311905
 
 ---
 
