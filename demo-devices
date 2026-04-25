@@ -1,0 +1,24 @@
+# GuardianPost-Op — demo device numbers
+#
+# These are the device numbers that would, in production, be printed on the
+# underside of physical wearable rings shipped to patients. For the demo,
+# they're just an unallocated pool — pick one when you're showing the
+# new-patient signup flow.
+#
+# Format: one device number per line. Lines starting with "#" are ignored.
+# Already-paired devices (e.g. GPO-2026-0001 used by the seeded demo patient)
+# are filtered out automatically by /api/admin/demo-devices, so the UI only
+# offers ones that still work.
+
+GPO-2026-0001    # used by the seeded demo patient (Jordan Rivera, +1-555-0200)
+GPO-2026-0002
+GPO-2026-0003
+GPO-2026-0004
+GPO-2026-0005
+GPO-2026-0006
+GPO-2026-0007
+GPO-2026-0008
+GPO-2026-0009
+GPO-2026-0010
+GPO-2026-0011
+GPO-2026-0012

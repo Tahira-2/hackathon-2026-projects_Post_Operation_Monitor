@@ -46,16 +46,27 @@ python -m server.app
 # open http://127.0.0.1:5050/
 ```
 
-Then on the landing page click **Reset & seed demo data** — that creates one
-verified doctor and one paired patient, with summary permission already granted:
+Then on the landing page click **Reset & seed demo data**. That creates one
+verified doctor and one paired patient with summary permission already granted,
+then surfaces two one-click sign-in buttons so you don't have to type
+credentials:
 
 | Role | Credentials |
 |---|---|
 | Patient | phone `+1-555-0200`, device `GPO-2026-0001` |
 | Doctor  | email `dr.singh@example.com`, password `demopass1!` |
 
-Open the patient and doctor logins in two browser tabs (or one normal + one
-incognito) to see both sides at once.
+Open the doctor in your main window and the patient in an incognito window
+(localStorage is per-profile) to drive both sides at once.
+
+### Demoing a new-patient signup
+
+The `demo-devices` file at the repo root lists a pool of unique device
+numbers — one per "physical wearable" you'd hand to a demo patient. The
+patient signup view (`#/patient/signup`) reads this file via
+`/api/admin/demo-devices` and renders a clickable chip for each unused
+serial — click one to fill the device-number field. Already-paired serials
+are greyed out automatically. Add more serials by editing the file.
 
 For demo speed the wearable's clock runs much faster than wall time. Set
 `GUARDIAN_TIME_SCALE` to override (default 240 = 1 wall-second is 4 simulated

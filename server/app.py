@@ -558,6 +558,30 @@ def create_app() -> Flask:
             "summary_window_hours": SUMMARY_WINDOW_HOURS,
         })
 
+    @app.get("/api/admin/demo-devices")
+    def admin_demo_devices():
+        """Return the pool of demo device numbers from the `demo-devices` file,
+        minus any that are already paired with a patient. Used by the patient
+        signup view to render clickable chips so the demo presenter doesn't
+        have to read off serials by hand."""
+        path = Path(__file__).resolve().parent.parent / "demo-devices"
+        all_ids: list[str] = []
+        if path.is_file():
+            for raw in path.read_text(encoding="utf-8").splitlines():
+                line = raw.split("#", 1)[0].strip()
+                if line:
+                    all_ids.append(line)
+
+        db = get_db()
+        used_rows = db.execute("SELECT device_number FROM patients").fetchall()
+        used = {r["device_number"] for r in used_rows}
+
+        return jsonify({
+            "all":       all_ids,
+            "available": [d for d in all_ids if d not in used],
+            "used":      [d for d in all_ids if d in used],
+        })
+
     return app
 
 

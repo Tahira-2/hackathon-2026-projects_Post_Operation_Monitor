@@ -203,25 +203,80 @@
         <h2 class="card-title">Demo shortcut</h2>
         <p class="card-sub">
           Reset the database and seed one verified clinician + one paired
-          patient (with summary permission already granted) for demoing.
+          patient (with summary permission already granted), then jump
+          straight into either side without typing credentials.
         </p>
         <div class="btn-row">
           <button id="seed-btn" class="secondary">Reset & seed demo data</button>
-          <span class="muted" id="seed-info"></span>
         </div>
+        <div id="seed-result" style="margin-top:14px;"></div>
       </div>
     `;
     $view.appendChild(frag);
     document.getElementById('seed-btn').onclick = async () => {
-      const out = document.getElementById('seed-info');
-      out.textContent = 'Seeding…';
+      const out = document.getElementById('seed-result');
+      out.innerHTML = '<span class="muted">Seeding…</span>';
       try {
         const r = await api('/api/admin/seed', { method: 'POST', auth: false });
-        out.innerHTML = `<span class="kbd">patient: ${r.patient.phone} / ${r.patient.device_number}</span> &nbsp; ` +
-                        `<span class="kbd">doctor: ${r.doctor.email} / ${r.doctor.password}</span>`;
         toast('Demo data seeded.', 'ok');
-      } catch (e) { toast(e.message, 'error'); out.textContent = ''; }
+        out.innerHTML = `
+          <div class="banner info">
+            Demo data is ready. Pick a side to log in as — credentials are
+            pre-filled.
+          </div>
+          <div class="row" style="gap:10px;">
+            <div class="card" style="flex:1;min-width:240px;margin:0;">
+              <div style="font-weight:600;margin-bottom:4px;">Demo patient</div>
+              <div class="muted" style="font-size:12.5px;">
+                <span class="kbd">${escapeHtml(r.patient.phone)}</span> /
+                <span class="kbd">${escapeHtml(r.patient.device_number)}</span>
+              </div>
+              <div class="btn-row" style="margin-top:10px;">
+                <button id="seed-patient-go">Sign in as patient</button>
+              </div>
+            </div>
+            <div class="card" style="flex:1;min-width:240px;margin:0;">
+              <div style="font-weight:600;margin-bottom:4px;">Demo doctor</div>
+              <div class="muted" style="font-size:12.5px;">
+                <span class="kbd">${escapeHtml(r.doctor.email)}</span> /
+                <span class="kbd">${escapeHtml(r.doctor.password)}</span>
+              </div>
+              <div class="btn-row" style="margin-top:10px;">
+                <button id="seed-doctor-go">Sign in as doctor</button>
+              </div>
+            </div>
+          </div>
+          <p class="muted" style="font-size:12.5px;margin-top:10px;">
+            Tip: open one role here and the other in an incognito window so you
+            can drive both sides at once during the demo.
+          </p>
+        `;
+        document.getElementById('seed-patient-go').onclick = async () => {
+          await loginAndGo('/api/auth/patient/login',
+            { phone: r.patient.phone, device_number: r.patient.device_number },
+            'patient', '/patient');
+        };
+        document.getElementById('seed-doctor-go').onclick = async () => {
+          await loginAndGo('/api/auth/doctor/login',
+            { email: r.doctor.email, password: r.doctor.password },
+            'doctor', '/doctor');
+        };
+      } catch (e) {
+        toast(e.message, 'error');
+        out.innerHTML = '';
+      }
     };
+  }
+
+  async function loginAndGo(endpoint, body, role, route) {
+    try {
+      const r = await api(endpoint, { method: 'POST', auth: false, body });
+      setSession(r.token, role);
+      toast(`Signed in as ${role}.`, 'ok');
+      navigate(route);
+    } catch (e) {
+      toast(e.message, 'error');
+    }
   }
 
   // ------------------------------------------------------------- VIEW: patient login + signup
@@ -255,7 +310,7 @@
     };
   }
 
-  function renderPatientSignup() {
+  async function renderPatientSignup() {
     const frag = html`
       <div class="card" style="max-width:620px;margin:0 auto;">
         <h2 class="card-title">Pair a new device</h2>
@@ -263,10 +318,14 @@
           One-time setup. Your phone number identifies you; the device number
           printed on your wearable is your secret factor.
         </p>
+        <div id="demo-devices-host"></div>
         <form id="f">
           <label>Full name<input name="full_name" type="text" /></label>
-          <label>Phone number<input name="phone" type="tel" required /></label>
-          <label>Device number<input name="device_number" type="text" required /></label>
+          <label>Phone number<input name="phone" type="tel" required placeholder="+1-555-0201" /></label>
+          <label>Device number
+            <span class="helper">printed on the underside of your wearable</span>
+            <input name="device_number" type="text" required placeholder="GPO-2026-…" />
+          </label>
           <label>Clinician's prescription
             <span class="helper">paste the plain-text discharge instructions (the AI parses this into your safe ranges)</span>
             <textarea name="prescription"></textarea>
@@ -278,6 +337,38 @@
         </form>
       </div>`;
     $view.appendChild(frag);
+
+    // Pull the demo device pool and render clickable chips that auto-fill the
+    // device-number input. Helpful when the demo presenter doesn't want to
+    // memorize / read off serial numbers.
+    try {
+      const pool = await api('/api/admin/demo-devices', { auth: false });
+      const host = document.getElementById('demo-devices-host');
+      const $input = document.querySelector('input[name="device_number"]');
+      if (pool.available.length || pool.used.length) {
+        host.innerHTML = `
+          <div class="banner info" style="margin-bottom:14px;">
+            <div style="font-weight:600;margin-bottom:4px;">Demo device pool</div>
+            <div style="font-size:12.5px;margin-bottom:8px;">
+              Click a serial below to fill the device number field. Greyed-out
+              entries are already paired with another patient.
+            </div>
+            <div class="chips" id="device-chips"></div>
+          </div>`;
+        const $chips = document.getElementById('device-chips');
+        for (const d of pool.all) {
+          const used = pool.used.includes(d);
+          const chip = document.createElement(used ? 'span' : 'button');
+          chip.className = 'chip' + (used ? ' chip-used' : '');
+          chip.type = 'button';
+          chip.textContent = d;
+          if (used) chip.title = 'already paired';
+          else chip.onclick = () => { $input.value = d; $input.focus(); };
+          $chips.appendChild(chip);
+        }
+      }
+    } catch (_) { /* if demo-devices file missing, just skip */ }
+
     document.getElementById('f').onsubmit = async (e) => {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(e.target));

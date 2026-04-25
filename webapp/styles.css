@@ -246,3 +246,29 @@ pre.narrative {
   font-family: "SF Mono", Menlo, Consolas, monospace;
   color: var(--ink);
 }
+
+/* ---- Chips (demo device pool, etc.) ---- */
+.chips {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.chip {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  font-weight: 500;
+  background: white;
+  color: var(--brand);
+  border: 1px solid var(--brand);
+  cursor: pointer;
+}
+.chip:hover { background: var(--brand-soft); }
+.chip-used {
+  cursor: not-allowed;
+  background: #eef1f7;
+  color: var(--ink-faint);
+  border-color: #d4dae6;
+  text-decoration: line-through;
+}
+.chip-used:hover { background: #eef1f7; }
