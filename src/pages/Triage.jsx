@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import NearbyFacilities from '../components/NearbyFacilities'
 import styles from './Triage.module.css'
 import { FormattedText, stripMarkdown } from '../textFormatting.jsx'
 import { upsertSession } from '../historyStorage.js'
@@ -282,6 +283,7 @@ export default function Triage({ session, onBack, onSave }) {
               <div className={styles.assessmentDivider} style={{ background: urgency.border }} />
               <p className={styles.assessmentSummary}><FormattedText text={assessment.symptoms_summary} /></p>
               <p className={styles.assessmentRec}><FormattedText text={assessment.recommendation} /></p>
+	      <NearbyFacilities urgencyLevel={assessment.urgency_level} />
               <button className={styles.newSessionBtn} onClick={reset} style={{ borderColor: urgency.border, color: urgency.color }}>
                 Start New Assessment
               </button>
