@@ -211,11 +211,6 @@
           patient (summary permission already granted), so you can jump in
           without typing credentials.
         </p>
-        <p class="card-sub" style="color:var(--warn);">
-          You don't need to click this every time you restart the server —
-          your accounts persist in <span class="kbd">data/guardian.db</span>
-          across restarts. Use this only when you want a clean slate.
-        </p>
         <div class="btn-row">
           <button id="seed-btn" class="secondary">Wipe DB & re-seed demo data</button>
         </div>
