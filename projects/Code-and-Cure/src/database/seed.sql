@@ -100,6 +100,12 @@ insert into soap_notes (
   assessment,
   plan,
   raw_transcript,
+  clinic_name,
+  provider_display_name,
+  provider_license_id,
+  clinic_logo_url,
+  soap_pdf_generated_at,
+  document_reference_id,
   approved,
   approved_at
 )
@@ -111,6 +117,12 @@ values (
   'Likely stable angina; low immediate risk.',
   'Schedule stress test, continue statin, follow-up in two weeks.',
   'Auto-transcribed consultation text goes here.',
+  'CareIT Virtual Clinic - San Antonio',
+  'Dr. Brian Heart, MD',
+  'LIC-CARD-1002',
+  'https://example.com/logo-careit.png',
+  now(),
+  'DOC-SOAP-0001',
   true,
   now()
 );
@@ -143,7 +155,13 @@ insert into prescriptions (
   doctor_id,
   requested_medication,
   approval_status,
-  block_reason
+  block_reason,
+  clinic_name,
+  provider_display_name,
+  provider_license_id,
+  clinic_logo_url,
+  prescription_pdf_generated_at,
+  document_reference_id
 )
 values
   (
@@ -152,7 +170,13 @@ values
     (select id from doctors where specialty = 'Cardiology'),
     'Acetaminophen',
     'approved',
-    null
+    null,
+    'CareIT Virtual Clinic - San Antonio',
+    'Dr. Brian Heart, MD',
+    'LIC-CARD-1002',
+    'https://example.com/logo-careit.png',
+    now(),
+    'DOC-RX-0001'
   ),
   (
     (select id from appointments order by created_at desc limit 1),
@@ -160,5 +184,11 @@ values
     (select id from doctors where specialty = 'Cardiology'),
     'Oxycodone',
     'blocked',
-    'Controlled medications are blocked by telehealth policy.'
+    'Controlled medications are blocked by telehealth policy.',
+    'CareIT Virtual Clinic - San Antonio',
+    'Dr. Brian Heart, MD',
+    'LIC-CARD-1002',
+    'https://example.com/logo-careit.png',
+    null,
+    'DOC-RX-0002'
   );
