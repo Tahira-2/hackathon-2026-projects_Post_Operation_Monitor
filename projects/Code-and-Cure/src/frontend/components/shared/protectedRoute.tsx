@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/lib/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { ReactNode, useEffect } from "react";
 
 export default function ProtectedRoute({

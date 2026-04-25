@@ -1,7 +1,7 @@
 "use client";
 
 import Button from "@/components/shared/Button";
-import { useAuth } from "@/lib/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Home() {
   const { login } = useAuth();

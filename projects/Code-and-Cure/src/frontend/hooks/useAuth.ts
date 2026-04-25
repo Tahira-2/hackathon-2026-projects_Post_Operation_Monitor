@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { mockApi, User, Role } from "./mock_api";
+import { mockApi, User, Role } from "../mock_api";
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
