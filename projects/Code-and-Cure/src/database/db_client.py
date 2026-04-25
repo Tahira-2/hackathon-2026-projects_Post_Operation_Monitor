@@ -207,7 +207,9 @@ def approve_soap_note(note_id: str) -> dict:
 def get_soap_note(note_id: str) -> dict | None:
     res = (
         supabase.table("soap_notes")
-        .select("id,appointment_id,doctor_id,subjective,objective,assessment,plan,raw_transcript,approved,approved_at,created_at")
+        .select(
+            "id,appointment_id,doctor_id,subjective,objective,assessment,plan,raw_transcript,clinic_name,provider_display_name,provider_license_id,clinic_logo_url,soap_pdf_generated_at,document_reference_id,approved,approved_at,created_at"
+        )
         .eq("id", note_id)
         .limit(1)
         .execute()
@@ -307,9 +309,65 @@ def update_prescription_status(
 def get_prescriptions_for_patient(patient_id: str) -> list[dict]:
     res = (
         supabase.table("prescriptions")
-        .select("id,appointment_id,patient_id,doctor_id,requested_medication,approval_status,block_reason,created_at")
+        .select(
+            "id,appointment_id,patient_id,doctor_id,requested_medication,approval_status,block_reason,clinic_name,provider_display_name,provider_license_id,clinic_logo_url,prescription_pdf_generated_at,document_reference_id,created_at"
+        )
         .eq("patient_id", patient_id)
         .order("created_at", desc=True)
         .execute()
     )
     return res.data or []
+
+
+def set_soap_document_metadata(
+    note_id: str,
+    clinic_name: str,
+    provider_display_name: str,
+    provider_license_id: str,
+    clinic_logo_url: str | None,
+    document_reference_id: str,
+) -> dict:
+    generated_at = datetime.now(timezone.utc).isoformat()
+    res = (
+        supabase.table("soap_notes")
+        .update(
+            {
+                "clinic_name": clinic_name,
+                "provider_display_name": provider_display_name,
+                "provider_license_id": provider_license_id,
+                "clinic_logo_url": clinic_logo_url,
+                "soap_pdf_generated_at": generated_at,
+                "document_reference_id": document_reference_id,
+            }
+        )
+        .eq("id", note_id)
+        .execute()
+    )
+    return _first_or_none(res.data) or {}
+
+
+def set_prescription_document_metadata(
+    prescription_id: str,
+    clinic_name: str,
+    provider_display_name: str,
+    provider_license_id: str,
+    clinic_logo_url: str | None,
+    document_reference_id: str,
+) -> dict:
+    generated_at = datetime.now(timezone.utc).isoformat()
+    res = (
+        supabase.table("prescriptions")
+        .update(
+            {
+                "clinic_name": clinic_name,
+                "provider_display_name": provider_display_name,
+                "provider_license_id": provider_license_id,
+                "clinic_logo_url": clinic_logo_url,
+                "prescription_pdf_generated_at": generated_at,
+                "document_reference_id": document_reference_id,
+            }
+        )
+        .eq("id", prescription_id)
+        .execute()
+    )
+    return _first_or_none(res.data) or {}
