@@ -16,6 +16,10 @@ create table doctors (
   full_name text not null,
   specialty text not null,
   license_no text not null,
+  is_licensed boolean not null default true,
+  rating numeric(2, 1) not null default 0.0,
+  review_count integer not null default 0,
+  review_source text not null default 'google',
   lat double precision not null,
   lng double precision not null,
   address text not null,
@@ -66,6 +70,27 @@ create table fhir_records (
   created_at timestamptz not null default now()
 );
 
+create table medication_policies (
+  id uuid primary key default uuid_generate_v4(),
+  medication_name text not null unique,
+  category text not null check (category in ('general', 'controlled')),
+  is_allowed boolean not null,
+  reference_source text not null,
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create table prescriptions (
+  id uuid primary key default uuid_generate_v4(),
+  appointment_id uuid not null references appointments(id) on delete cascade,
+  patient_id uuid not null references users(id) on delete cascade,
+  doctor_id uuid not null references doctors(id) on delete cascade,
+  requested_medication text not null,
+  approval_status text not null default 'pending' check (approval_status in ('pending', 'approved', 'blocked')),
+  block_reason text,
+  created_at timestamptz not null default now()
+);
+
 create table logs (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid not null references users(id),
@@ -78,9 +103,13 @@ create table logs (
 create index idx_users_email on users(email);
 create index idx_doctors_specialty on doctors(specialty);
 create index idx_doctors_location on doctors(lat, lng);
+create index idx_doctors_rating on doctors(rating);
 create index idx_appointments_patient on appointments(patient_id);
 create index idx_appointments_doctor on appointments(doctor_id);
 create index idx_appointments_time on appointments(scheduled_at);
+create index idx_prescriptions_patient on prescriptions(patient_id);
+create index idx_prescriptions_appointment on prescriptions(appointment_id);
+create index idx_prescriptions_status on prescriptions(approval_status);
 create index idx_logs_user on logs(user_id);
 create index idx_logs_created on logs(created_at);
 
@@ -90,6 +119,8 @@ alter table appointments enable row level security;
 alter table intake_forms enable row level security;
 alter table soap_notes enable row level security;
 alter table fhir_records enable row level security;
+alter table medication_policies enable row level security;
+alter table prescriptions enable row level security;
 alter table logs enable row level security;
 
 create policy users_dev_all on users for all using (true) with check (true);
@@ -98,4 +129,6 @@ create policy appointments_dev_all on appointments for all using (true) with che
 create policy intake_forms_dev_all on intake_forms for all using (true) with check (true);
 create policy soap_notes_dev_all on soap_notes for all using (true) with check (true);
 create policy fhir_records_dev_all on fhir_records for all using (true) with check (true);
+create policy medication_policies_dev_all on medication_policies for all using (true) with check (true);
+create policy prescriptions_dev_all on prescriptions for all using (true) with check (true);
 create policy logs_dev_all on logs for all using (true) with check (true);
