@@ -73,6 +73,31 @@ enum BlockType {
   @@schema("scheduling")
 }
 
+enum MedicineForm {
+  TABLET
+  CAPSULE
+  SYRUP
+  INJECTION
+  CREAM
+  OINTMENT
+  DROPS
+  INHALER
+  POWDER
+
+  @@map("medicine_forms")
+  @@schema("catalog")
+}
+
+enum MedicineCategory {
+  PRESCRIPTION
+  OTC
+  CONTROLLED
+  SUPPLEMENT
+
+  @@map("medicine_categories")
+  @@schema("catalog")
+}
+
 model User {
   id        String   @id @default(uuid())
   fullName  String
@@ -130,13 +155,21 @@ model Patient {
 }
 
 model Medicine {
-  id           String  @id @default(uuid())
-  name         String
+  id String @id @default(uuid())
+
+  name       String
+  rxnormCode String?
+
+  drugClass String?
+  category  MedicineCategory?
+  form      MedicineForm
+
   description  String?
   manufacturer String?
   imageUrl     String?
 
   @@index([name])
+  @@index([rxnormCode])
   @@map("medicines")
   @@schema("catalog")
 }
