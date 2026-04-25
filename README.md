@@ -1,88 +1,40 @@
 # GuardianPost-Op
-
 Continuous remote monitoring for high-risk surgical recovery — software demo.
 
-This repository implements the proposal in [PROPOSAL.md](PROPOSAL.md) as two
-deliverables:
+This repository contains the hackathon software pipeline described in [PROPOSAL.md](PROPOSAL.md). The wearable hardware design lives in the proposal document; this codebase implements every layer above the BLE radio.
 
-1. **End-to-end analysis pipeline** (`src/`) — the AI "referee" that turns a
-   24-hour vital-sign stream into a clinician-facing recovery dashboard.
-2. **Gateway PWA** (`server/` + `webapp/`) — the role the proposal's
-   BLE-to-mobile gateway will play once real hardware exists. Two-role login
-   (patient + clinician), third-party ID verification for clinicians, doctor
-   permission gating, automatic 12-hour summary delivery, and manual
-   patient-triggered sends.
+---
 
-```
+## The Problem
+Post-operative recovery is currently a "black box" once a patient leaves the hospital.
+* **Invisible Deterioration:** Sepsis, internal bleeding, and organ rejection often produce minor vital-sign changes hours or days before a patient feels symptomatic.
+* **Unreliable Self-Assessment:** Patients are often fatigued or medicated, making the "call if you feel worse" instruction a dangerous gamble.
+* **Context Blindness:** Generic wearables use population averages. A cardiac patient on beta-blockers needs personalized thresholds that consumer devices cannot provide.
+
+## The Approach
+GuardianPost-Op introduces a **Prescription-Driven Monitoring Model**. Instead of generic alerts, a clinician defines a "safe envelope" for each specific patient. An AI engine parses these instructions and continuously monitors the patient's data against that unique clinical context. If the data drifts, the system triggers a **Dual-Alert Escalation**—notifying both the patient via the wearable and the clinician via a high-priority dashboard.
+
+---
+
+## Architecture
+
+```text
 plain-text prescription
-        │   (LLM parser, src/prescription_parser.py)
-        ▼
-   CSV-1 envelope ──┐
-                    │   30-min analysis cycle:
-   2-min sensor     │     1. average each vital across the window
-   stream  ─────►   ├──►  2. compare to envelope
-   (CSV-2 buffer)   │     3. classify Normal / Warning / Critical
-                    │     4. append to Recovery Log + emit dual alert
-                    └──┐
-                       ▼            ┌────────────────────────────────┐
-              Recovery Log + alerts │ Gateway PWA (server/ + webapp/)│
-                       │            │  - patient app (live vitals,    │
-                       ▼            │    manual send)                 │
-              dashboard.png (PNG)   │  - doctor app (patients,        │
-                                    │    permissions, inbox)          │
-                                    └────────────────────────────────┘
+ |  (LLM parser)
+ v
+CSV-1 envelope ---┐
+ |  30-min analysis cycle (every cycle):
+ 2-min sensor  |  1. average each vital across the window
+ stream ------>|--> 2. compare to envelope
+ (CSV-2 buffer)|  3. classify Normal / Warning / Critical
+ |  4. append to Recovery Log + emit dual alert
+ L----┐
+      v
+ Recovery Log + alerts.jsonl ----> clinician dashboard.png
 ```
 
-## Quick start
-
-```bash
-python -m pip install -r requirements.txt
-```
-
-### Run the gateway PWA (the new bit)
-
-```bash
-python -m server.app
-# open http://127.0.0.1:5050/
-```
-
-Then on the landing page click **Reset & seed demo data**. That creates one
-verified doctor and one paired patient with summary permission already granted,
-then surfaces two one-click sign-in buttons so you don't have to type
-credentials:
-
-| Role | Credentials |
-|---|---|
-| Patient | phone `+1-555-0200`, device `GPO-2026-0001` |
-| Doctor  | email `doctor.one@example.com`, password `demopass1!` |
-
-Open the doctor in your main window and the patient in an incognito window
-(localStorage is per-profile) to drive both sides at once.
-
-### Demoing a new-patient signup
-
-The `demo-devices` file at the repo root lists a pool of unique device
-numbers — one per "physical wearable" you'd hand to a demo patient. The
-patient signup view (`#/patient/signup`) reads this file via
-`/api/admin/demo-devices` and renders a clickable chip for each unused
-serial — click one to fill the device-number field. Already-paired serials
-are greyed out automatically. Add more serials by editing the file.
-
-For demo speed the wearable's clock runs much faster than wall time. Set
-`GUARDIAN_TIME_SCALE` to override (default 240 = 1 wall-second is 4 simulated
-minutes; bump to 4800 for very fast demos):
-
-```bash
-GUARDIAN_TIME_SCALE=4800 python -m server.app
-```
-
-### Run the original analysis pipeline (no server needed)
-
-```bash
-python -m src.run_demo
-```
-
-This runs the full 24h sensor stream through the 30-min cycle and produces:
+### Data Pipeline Components
+Outputs land in:
 
 | Path | What it is |
 |---|---|
@@ -94,97 +46,94 @@ This runs the full 24h sensor stream through the 30-min cycle and produces:
 | `demo_output/dashboard.png`  | Clinician-facing visualization. |
 | `demo_output/transcript.txt` | Cycle-by-cycle human-readable log. |
 
-## Gateway PWA — what each role sees
+---
 
-**Patient app** (`#/patient`):
-- Live vitals tile (HR, HRV, RR, SpO2, body temp), polled every 2 seconds from
-  the in-memory buffer the wearable would push over BLE.
-- "Send summary now" button — generates a 12h summary and delivers it to every
-  doctor with `permission_granted = true`. **403 if no consenting doctor.**
-- List of recent summaries with their overall status pill.
-- List of "my clinicians" with the receiving-summaries pill (doctor controls
-  this — patient just sees the state).
+## Data Sources
+The system monitors six critical vital signs selected for their early-warning value in high-risk recovery:
 
-**Doctor app** (`#/doctor`):
-- Patient list (master view), one row per care-linked patient, showing the
-  most recent summary's status pill and an unread badge if any deliveries
-  haven't been opened yet.
-- Per-patient toggle controls whether GuardianPost-Op delivers that patient's
-  12-hour summaries to this doctor (auto and manual). Toggle is the **only**
-  consent gate; flipping it off immediately stops both delivery paths.
-- Click a patient name → detail panel opens below, listing every summary
-  delivered to this doctor for that patient (full narrative, status,
-  trigger, per-vital averages). Opening the detail clears that patient's
-  unread badge.
-- "Force summary now" button on each patient + a "Run scheduler tick"
-  demo control — both let you skip ahead so the demo doesn't wait the full
-  12 simulated hours.
-- Add patients by phone number (the patient must have signed up first;
-  their device number is the auth secret, never typed by the doctor).
+| Vital Sign | Why It Matters Post-Op |
+| :--- | :--- |
+| **Resting Heart Rate** | Early indicator of infection, pain, or cardiac stress. |
+| **HRV** | Reflects autonomic balance and overall recovery state. |
+| **Respiratory Rate** | Flags fluid overload or pulmonary embolisms. |
+| **Sleep Quality** | Essential for tissue repair and immune function. |
+| **Activity (Steps)** | High risk of site injury vs. high risk of blood clots. |
+| **Blood Pressure** | Essential for kidney and liver perfusion. |
 
-**ID verification** is implemented behind the `IdVerifier` interface in
-[server/id_verification.py](server/id_verification.py). The shipped
-`MockIdVerifier` opens a fake hosted page (`#/verify/mock?session=…`) where
-the demo operator clicks Approve / Reject. Swapping in Persona, Stripe Identity,
-Onfido, or Veriff is a single-class change — the rest of the auth flow already
-matches their session-id + hosted-URL + poll/webhook contract.
+*Note: For the hackathon phase, data is provided via a 24-hour simulated sensor stream replaying a mock cardiac crisis.*
 
-## Auth model summary
+---
 
-| Role | Identity | Secret | Extra step |
-|---|---|---|---|
-| Patient | phone | device number printed on the wearable | — |
-| Doctor  | email | password (8+ chars) | third-party ID verification before adding patients |
+## Prescription Parsing
 
-Sessions are opaque random tokens (32 bytes from `secrets`), stored in the
-`sessions` table with a 12h TTL. Passwords and device numbers are hashed with
-PBKDF2-SHA256 (200k iterations). No JWT, no cookies — the SPA stores the token
-in `localStorage` and sends it as `Authorization: Bearer …`.
+`src/prescription_parser.py` has two paths:
 
-## Scheduler
+1. **Anthropic Claude** (preferred). If `ANTHROPIC_API_KEY` is set in the environment, the parser asks Claude (`claude-sonnet-4-6`) to fill out an envelope schema via a forced `set_envelope` tool call. This is the path the demo uses on stage.
+2. **Deterministic fallback**. If the API key is missing or `anthropic` isn't installed, the parser scans the text sentence-by-sentence, attributing each sentence to a vital (with last-mentioned-vital carry-over) and mining `"warn above N"`, `"critical below N"`, `"stay above N"`, `"N-M"` patterns to fill the envelope. This keeps the demo runnable offline / in CI.
 
-`server/scheduler.py` runs a daemon thread that ticks every 5 wall seconds.
-For each known patient it asks the per-patient `PatientStream` what the current
-simulated time is; if `AUTO_SUMMARY_PERIOD_HOURS` of simulated time has
-elapsed since that patient's last summary, it generates one and inserts a
-`summary_sends` row for every doctor with `permission_granted = 1`.
+The active path is reported in the demo's `[1/4]` line.
+
+---
+
+## What the demo shows
+
+The simulated patient is post-CABG day 2, stable through hour 17, then begins an arrhythmia at hour 18 that escalates to sustained tachycardia at hour 20. The pipeline:
+
+- classifies cycles 0-37 as **NORMAL**,
+- raises a **WARNING** at cycle 38 (HR ≈ 101, SpO2 dipping below 94), and
+- escalates to **CRITICAL** from cycle 39 onward (HR > 110, HRV collapsed, RR climbing, SpO2 in the low-90s).
+
+Each non-normal cycle emits a **dual-alert payload**:
+
+- **device payload** — what the wearable's MCU acts on (yellow/red LED + buzzer pattern + kill-switch state),
+- **push payload** — what the mobile gateway forwards to the clinician dashboard, with `bypass_dnd: true` on critical so it cuts through Do Not Disturb (the "emergency-broadcast-grade" channel from the proposal).
+
+The full demo runs in well under a second on a laptop — the proposal calls for real-time 30-minute cadence, but the demo replays the whole 24 hours back-to-back so you can see the entire story arc in one go.
+
+---
 
 ## Layout
 
-```
-src/                        Original analysis pipeline (unchanged)
-  vitals.py                 vital-sign specs + population defaults
-  prescription_parser.py    plain text -> CSV-1 (Claude or fallback)
-  sensor_simulator.py       24h synthetic stream w/ engineered crisis
-  analysis_engine.py        30-min averaging, classification, recovery log
-  alerts.py                 dual-alert (device + push) payloads
-  dashboard.py              matplotlib clinician visualization
-  run_demo.py               end-to-end orchestrator (one-shot CLI)
-
-server/                     Flask + SQLite gateway
-  config.py                 paths, demo time-scale, summary cadence
-  schema.sql                SQLite schema
-  db.py                     thin sqlite3 wrapper, per-request connection
-  auth.py                   PBKDF2 hashing, session tokens, role decorator
-  id_verification.py        MockIdVerifier + IdVerifier protocol
-  sim_runner.py             one PatientStream per patient — feeds /vitals/live
-  summary.py                generates a 12h summary row + narrative + delivery
-  scheduler.py              background thread for auto-summary every 12h
-  app.py                    Flask routes + entry point
-
-webapp/                     Vanilla-JS PWA frontend
-  index.html
-  app.js                    hash-based router, all views
-  styles.css
-PROPOSAL.md                 full project proposal (clinician track)
+```text
+src/
+  vitals.py              # vital-sign specs + population defaults
+  prescription_parser.py # plain text -> CSV-1 (Claude or fallback)
+  sensor_simulator.py    # 24h synthetic stream w/ engineered crisis
+  analysis_engine.py     # 30-min averaging, classification, recovery log
+  alerts.py              # dual-alert (device + push) payloads
+  dashboard.py           # matplotlib clinician visualization
+  run_demo.py            # end-to-end orchestrator
+data/
+  sample_prescription.txt  # checked-in clinician text for the demo
+PROPOSAL.md              # full project proposal (clinician track)
 ```
 
-## Out of scope (Phase 2)
+---
 
-- Hardware fabrication. The wearable design and BoM are in
-  [PROPOSAL.md](PROPOSAL.md); the in-memory `PatientStream` simulates the BLE
-  feed so the gateway code is real.
-- Real third-party ID verification — `MockIdVerifier` is a drop-in stand-in.
-- Cellular push delivery to clinicians — the inbox is polled in the browser
-  rather than pushed via APNs / FCM. The data shape and delivery gates are
-  already in place.
+## Limitations (Out of scope for Phase 2)
+
+Per the proposal, the hardware itself, the production BLE mobile gateway, and clinical / regulatory validation are documented but not built here. The CSV-2 write in `run_demo.py` simulates the wearable's behavior so the gateway role can be dropped in without changing the analysis or alert layers.
+
+* **Hardware Fabrication:** The forearm ring is fully specified (ESP32-C3, MAX30102 sensors) but currently simulated via software.
+* **Regulatory Pathway:** This is a functional demonstration and has not yet undergone FDA/clinical validation.
+
+---
+
+## Setup Instructions (Quick start)
+
+### Prerequisites
+* Python 3.9+
+
+### Installation & Run
+```bash
+python -m pip install -r requirements.txt
+python -m src.run_demo
+```
+
+---
+
+## Team Credit
+* **MD Siam Ahmed** – Lead & System Architect
+    * *Computer Science, Texas State University*
+* **Tahira Juhair Boshra** - Developer
+    * *Electrical Engineering, Texas State University*
