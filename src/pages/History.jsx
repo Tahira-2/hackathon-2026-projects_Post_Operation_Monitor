@@ -1,6 +1,10 @@
+import { useEffect, useState } from 'react'
 import styles from './History.module.css'
+import { loadHistory } from '../historyStorage.js'
+import { FormattedText } from '../textFormatting.jsx'
 
 const URGENCY_CONFIG = {
+  in_progress: { color: '#6b7fa3', label: 'In Progress', icon: '💬' },
   emergency: { color: '#ef4444', label: 'Emergency', icon: '🚨' },
   urgent: { color: '#f97316', label: 'Urgent', icon: '⚠️' },
   semi_urgent: { color: '#eab308', label: 'Semi-Urgent', icon: '🕐' },
@@ -8,7 +12,15 @@ const URGENCY_CONFIG = {
   self_care: { color: '#22c55e', label: 'Self-Care', icon: '🏠' },
 }
 
-export default function History({ sessions, onBack }) {
+export default function History({ sessions, onBack, onOpenSession }) {
+  const [persistedSessions, setPersistedSessions] = useState(() => loadHistory())
+
+  useEffect(() => {
+    setPersistedSessions(loadHistory())
+  }, [])
+
+  const displayedSessions = persistedSessions.length > 0 ? persistedSessions : sessions
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -21,14 +33,15 @@ export default function History({ sessions, onBack }) {
       </header>
 
       <div className={styles.content}>
-        {sessions.length === 0 ? (
+        {displayedSessions.length === 0 ? (
           <div className={styles.empty}>
             <div className={styles.emptyIcon}>📋</div>
             <p>No sessions yet. Start a triage assessment to see your history here.</p>
           </div>
         ) : (
-          sessions.map((s) => {
+          displayedSessions.map((s) => {
             const cfg = URGENCY_CONFIG[s.urgency_level] || URGENCY_CONFIG.self_care
+            const actionLabel = s.urgency_level === 'in_progress' ? 'Continue Session' : 'View Session'
             return (
               <div key={s.id} className={styles.card}>
                 <div className={styles.cardHeader}>
@@ -37,8 +50,11 @@ export default function History({ sessions, onBack }) {
                   </div>
                   <div className={styles.cardDate}>{s.date}</div>
                 </div>
-                <p className={styles.cardSummary}>{s.symptoms_summary}</p>
-                <p className={styles.cardRec}>{s.recommendation}</p>
+                <p className={styles.cardSummary}><FormattedText text={s.symptoms_summary} /></p>
+                <p className={styles.cardRec}><FormattedText text={s.recommendation} /></p>
+                <button className={styles.cardAction} onClick={() => onOpenSession(s)}>
+                  {actionLabel}
+                </button>
               </div>
             )
           })

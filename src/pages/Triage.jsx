@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import styles from './Triage.module.css'
+import { FormattedText, stripMarkdown } from '../textFormatting.jsx'
+import { upsertSession } from '../historyStorage.js'
 
 const SYSTEM_PROMPT = `You are MedRoute, an AI-powered medical triage assistant. Your job is to assess the urgency of a patient's symptoms through a conversational interview.
 
@@ -30,10 +32,14 @@ const QUICK_SYMPTOMS = [
   'High fever', 'Stomach pain', 'Dizziness', 'Nausea', 'Injury'
 ]
 
+function createSessionId() {
+  return `session-${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
 const URGENCY_CONFIG = {
   emergency: { color: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)', label: 'EMERGENCY', icon: '🚨', action: 'Call 911 immediately' },
   urgent: { color: '#f97316', bg: 'rgba(249,115,22,0.1)', border: 'rgba(249,115,22,0.3)', label: 'URGENT', icon: '⚠️', action: 'Go to urgent care now' },
-  semi_urgent: { color: '#eab308', bg: 'rgba(234,179,8,0.1)', border: 'rgba(234,179,8,0.3)', label: 'SEMI-URGENT', icon: '🕐', action: 'See a doctor within 24–48 hours' },
+  semi_urgent: { color: '#eab308', bg: 'rgba(234,179,8,0.1)', border: 'rgba(234,179,8,0.3)', label: 'SEMI-URGENT', icon: '🕐', action: 'See a doctor within 24-48 hours' },
   non_urgent: { color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.3)', label: 'NON-URGENT', icon: '📅', action: 'Schedule a routine appointment' },
   self_care: { color: '#22c55e', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.3)', label: 'SELF-CARE', icon: '🏠', action: 'Rest and monitor at home' },
 }
@@ -42,26 +48,70 @@ function parseAssessment(text) {
   const match = text.match(/\|\|\|ASSESSMENT\|\|\|([\s\S]*?)\|\|\|END_ASSESSMENT\|\|\|/)
   if (match) {
     const cleanText = text.replace(/\|\|\|ASSESSMENT\|\|\|[\s\S]*?\|\|\|END_ASSESSMENT\|\|\|/, '').trim()
-    const assessmentData = JSON.parse(match[1].trim())
-    return { cleanText, assessmentData }
+    const assessmentData = parseAssessmentJson(match[1])
+    if (assessmentData) return { cleanText, assessmentData }
   }
+
+  const fallbackJson = text.match(/\{[\s\S]*"urgency_level"[\s\S]*\}/)
+  if (fallbackJson) {
+    const assessmentData = parseAssessmentJson(fallbackJson[0])
+    if (assessmentData) {
+      const cleanText = text.replace(fallbackJson[0], '').trim()
+      return { cleanText, assessmentData }
+    }
+  }
+
   return null
+}
+
+function parseAssessmentJson(rawJson) {
+  try {
+    const jsonText = rawJson
+      .replace(/```json/gi, '')
+      .replace(/```/g, '')
+      .trim()
+    const data = JSON.parse(jsonText)
+    if (!URGENCY_CONFIG[data.urgency_level]) return null
+    return {
+      urgency_level: data.urgency_level,
+      symptoms_summary: stripMarkdown(data.symptoms_summary || 'Symptoms assessed by MedRoute.'),
+      recommendation: stripMarkdown(data.recommendation || URGENCY_CONFIG[data.urgency_level].action),
+    }
+  } catch {
+    return null
+  }
 }
 
 function formatTime() {
   return new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
-export default function Triage({ onBack, onSave }) {
-  const [messages, setMessages] = useState([{
+function getInitialMessages(session) {
+  return session?.conversation?.length ? session.conversation : [{
     role: 'assistant',
-    content: "Hello! I'm MedRoute, your AI health assistant. I'm here to help you understand how urgently you might need medical attention.\n\nPlease tell me — **what symptoms are you experiencing today?**",
+    content: "Hello! I'm MedRoute, your AI health assistant. I'm here to help you understand how urgently you might need medical attention.\n\nPlease tell me: **what symptoms are you experiencing today?**",
     timestamp: formatTime()
-  }])
+  }]
+}
+
+function getInitialAssessment(session) {
+  if (!session || session.urgency_level === 'in_progress') return null
+  return {
+    urgency_level: session.urgency_level,
+    symptoms_summary: session.symptoms_summary,
+    recommendation: session.recommendation,
+  }
+}
+
+export default function Triage({ session, onBack, onSave }) {
+  const [messages, setMessages] = useState(() => getInitialMessages(session))
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [assessment, setAssessment] = useState(null)
-  const [showQuick, setShowQuick] = useState(true)
+  const [assessment, setAssessment] = useState(() => getInitialAssessment(session))
+  const [showQuick, setShowQuick] = useState(() => !session?.conversation?.some(msg => msg.role === 'user'))
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('anthropic_key') || '')
+  const [showKeyInput, setShowKeyInput] = useState(false)
+  const sessionIdRef = useRef(session?.id || createSessionId())
   const scrollRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -71,9 +121,38 @@ export default function Triage({ onBack, onSave }) {
     }
   }, [messages, isLoading])
 
+  const saveKey = (key) => {
+    localStorage.setItem('anthropic_key', key)
+    setApiKey(key)
+    setShowKeyInput(false)
+  }
+
+  const saveSessionSnapshot = (conversation, assessmentData = null) => {
+    const userMessages = conversation.filter(msg => msg.role === 'user')
+    const assistantMessages = conversation.filter(msg => msg.role === 'assistant')
+    const lastUserMessage = userMessages[userMessages.length - 1]?.content || 'No symptoms recorded.'
+    const lastAssistantMessage = assistantMessages[assistantMessages.length - 1]?.content || 'Assessment in progress.'
+
+    const session = {
+      id: sessionIdRef.current,
+      symptoms_summary: stripMarkdown(assessmentData?.symptoms_summary || lastUserMessage),
+      urgency_level: assessmentData?.urgency_level || 'in_progress',
+      recommendation: stripMarkdown(assessmentData?.recommendation || lastAssistantMessage),
+      conversation,
+    }
+
+    upsertSession(session)
+    onSave?.(session)
+  }
+
   const sendMessage = async (text) => {
     const msg = text || input
     if (!msg.trim() || isLoading) return
+
+    if (!apiKey) {
+      setShowKeyInput(true)
+      return
+    }
 
     const userMessage = { role: 'user', content: msg.trim(), timestamp: formatTime() }
     const updatedMessages = [...messages, userMessage]
@@ -81,14 +160,20 @@ export default function Triage({ onBack, onSave }) {
     setInput('')
     setShowQuick(false)
     setIsLoading(true)
+    saveSessionSnapshot(updatedMessages)
 
     try {
       const apiMessages = updatedMessages.map(({ role, content }) => ({ role, content }))
 
-      const response = await fetch('/api/chat', {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
         body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          max_tokens: 1000,
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
             ...apiMessages,
@@ -111,16 +196,15 @@ export default function Triage({ onBack, onSave }) {
           content: parsed.cleanText || parsed.assessmentData.recommendation,
           timestamp: formatTime()
         }
-        setMessages(prev => [...prev, assistantMessage])
+        const nextMessages = [...updatedMessages, assistantMessage]
+        setMessages(nextMessages)
         setAssessment(parsed.assessmentData)
-        onSave?.({
-          symptoms_summary: parsed.assessmentData.symptoms_summary,
-          urgency_level: parsed.assessmentData.urgency_level,
-          recommendation: parsed.assessmentData.recommendation,
-          conversation: updatedMessages,
-        })
+        saveSessionSnapshot(nextMessages, parsed.assessmentData)
       } else {
-        setMessages(prev => [...prev, { role: 'assistant', content: rawContent, timestamp: formatTime() }])
+        const assistantMessage = { role: 'assistant', content: rawContent, timestamp: formatTime() }
+        const nextMessages = [...updatedMessages, assistantMessage]
+        setMessages(nextMessages)
+        saveSessionSnapshot(nextMessages)
       }
     } catch (err) {
       const errMsg = err.message.includes('invalid x-api-key') || err.message.includes('401')
@@ -134,9 +218,10 @@ export default function Triage({ onBack, onSave }) {
   }
 
   const reset = () => {
+    sessionIdRef.current = createSessionId()
     setMessages([{
       role: 'assistant',
-      content: "Hello! I'm MedRoute, your AI health assistant. I'm here to help you understand how urgently you might need medical attention.\n\nPlease tell me — **what symptoms are you experiencing today?**",
+      content: "Hello! I'm MedRoute, your AI health assistant. I'm here to help you understand how urgently you might need medical attention.\n\nPlease tell me: **what symptoms are you experiencing today?**",
       timestamp: formatTime()
     }])
     setAssessment(null)
@@ -148,6 +233,37 @@ export default function Triage({ onBack, onSave }) {
 
   return (
     <div className={styles.container}>
+
+      {/* API Key Modal */}
+      {showKeyInput && (
+        <div className={styles.overlay}>
+          <div className={styles.modal}>
+            <h2 className={styles.modalTitle}>Enter your API Key</h2>
+            <p className={styles.modalText}>
+              Get a free API key at{' '}
+              <a href="https://console.groq.com" target="_blank" rel="noreferrer" className={styles.link}>
+                console.groq.com
+              </a>
+              {' '}- free, no credit card needed.
+            </p>
+            <input
+              className={styles.modalInput}
+              type="password"
+              placeholder="gsk_..."
+              defaultValue={apiKey}
+              id="keyInput"
+              autoFocus
+            />
+            <div className={styles.modalActions}>
+              <button className={styles.cancelBtn} onClick={() => setShowKeyInput(false)}>Cancel</button>
+              <button className={styles.saveBtn} onClick={() => {
+                const val = document.getElementById('keyInput').value
+                if (val.trim()) saveKey(val.trim())
+              }}>Save & Continue</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <header className={styles.header}>
@@ -168,6 +284,9 @@ export default function Triage({ onBack, onSave }) {
           </div>
         </div>
         <div className={styles.headerRight}>
+          <button className={styles.keyBtn} onClick={() => setShowKeyInput(true)} title="API Key">
+            🔑
+          </button>
           <button className={styles.resetBtn} onClick={reset}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/>
@@ -187,9 +306,7 @@ export default function Triage({ onBack, onSave }) {
               )}
               <div className={styles.bubbleContent}>
                 <div className={styles.bubbleText}>
-                  {msg.content.split('**').map((part, j) =>
-                    j % 2 === 1 ? <strong key={j}>{part}</strong> : part
-                  )}
+                  <FormattedText text={msg.content} />
                 </div>
                 <div className={styles.bubbleTime}>{msg.timestamp}</div>
               </div>
@@ -215,8 +332,8 @@ export default function Triage({ onBack, onSave }) {
                 </div>
               </div>
               <div className={styles.assessmentDivider} style={{ background: urgency.border }} />
-              <p className={styles.assessmentSummary}>{assessment.symptoms_summary}</p>
-              <p className={styles.assessmentRec}>{assessment.recommendation}</p>
+              <p className={styles.assessmentSummary}><FormattedText text={assessment.symptoms_summary} /></p>
+              <p className={styles.assessmentRec}><FormattedText text={assessment.recommendation} /></p>
               <button className={styles.newSessionBtn} onClick={reset} style={{ borderColor: urgency.border, color: urgency.color }}>
                 Start New Assessment
               </button>

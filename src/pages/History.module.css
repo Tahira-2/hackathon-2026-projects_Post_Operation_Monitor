@@ -89,3 +89,20 @@
   color: var(--text);
   line-height: 1.5;
 }
+
+.cardAction {
+  margin-top: 14px;
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cardAction:hover {
+  border-color: var(--accent);
+  color: #ffffff;
+}
