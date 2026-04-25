@@ -4,7 +4,7 @@ AI-powered medical triage assistant. Describe your symptoms in plain language an
 
 Built for the CareDevi AI Innovation Hackathon 2026.
 
-**Team Byte Beasts** — Fidel, Eladio
+**Team Byte Beasts** — Fidel, Eladio, Jeheon
 
 ---
 
