@@ -1,3 +1,7 @@
+import base64
+import io
+
+import qrcode
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from drug_check import check_interactions
@@ -37,7 +41,21 @@ def get_entities():
 
 @app.route("/api/qr/<patient_id>")
 def get_qr(patient_id):
-    return jsonify({"message": "QR endpoint ready"})
+    patient_url = request.args.get("url") or f"http://localhost:5173/patient/{patient_id}"
+
+    qr = qrcode.make(patient_url)
+    buffer = io.BytesIO()
+    qr.save(buffer, format="PNG")
+    encoded = base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+    return jsonify(
+        {
+            "patientId": patient_id,
+            "url": patient_url,
+            "qr": f"data:image/png;base64,{encoded}",
+            "disclaimer": "For demonstration only. Uses synthetic patient data. Not for clinical use.",
+        }
+    )
 
 
 if __name__ == "__main__":
