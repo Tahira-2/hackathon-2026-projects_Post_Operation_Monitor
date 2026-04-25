@@ -112,11 +112,11 @@ Schema: `backend/supabase/schema.sql`
    ```
 4. Install and run backend:
    ```
-   cd backend && npm install && npm run dev
+   cd backend && pnpm install && pnpm dev
    ```
 5. Install and run frontend:
    ```
-   cd frontend && npm install && npm run dev
+   cd frontend && pnpm install && pnpm dev
    ```
 
 ---
