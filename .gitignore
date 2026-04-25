@@ -1,0 +1,8 @@
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+
+
