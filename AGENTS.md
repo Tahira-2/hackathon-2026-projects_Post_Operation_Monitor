@@ -72,3 +72,4 @@ For every feature or change:
 - Micro-commits per logical change, even within one file
 - Short subject lines — no filler
 - Commit history is scored; commit early and often
+- Do not add `Co-Authored-By:` AI attribution to commits
