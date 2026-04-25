@@ -1,6 +1,6 @@
 from django.contrib.auth.base_user import BaseUserManager
 
-
+# Custom user manager for handling user creation and superuser creation
 class CustomUserManager(BaseUserManager):
     use_in_migrations = True
 

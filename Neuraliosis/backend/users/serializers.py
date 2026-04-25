@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 User = get_user_model()
 
+# Serializer for user registration
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
         error_messages={

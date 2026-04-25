@@ -8,7 +8,7 @@ from hackathon_project.utils import ApiResponseAPIView, api_response
 
 from .serializers import LoginSerializer, RegisterSerializer, UserProfileSerializer
 
-
+# Helper function to recursively collect error messages from serializer errors
 def _collect_error_messages(errors):
     if isinstance(errors, dict):
         messages = []
@@ -24,12 +24,12 @@ def _collect_error_messages(errors):
 
     return [str(errors)]
 
-
+# Serializer for updating user location
 class UpdateLocationSerializer(serializers.Serializer):
     latitude = serializers.DecimalField(max_digits=9, decimal_places=6)
     longitude = serializers.DecimalField(max_digits=9, decimal_places=6)
 
-
+# Views for user registration, login, profile retrieval, profile update, location update, and location retrieval
 class RegisterView(ApiResponseAPIView):
     permission_classes = [AllowAny]
     serializer_class = RegisterSerializer
@@ -54,7 +54,7 @@ class RegisterView(ApiResponseAPIView):
             error_message=[],
         )
 
-
+# View for user login, which returns JWT tokens upon successful authentication
 class LoginView(ApiResponseAPIView):
     permission_classes = [AllowAny]
     serializer_class = LoginSerializer
@@ -90,7 +90,7 @@ class LoginView(ApiResponseAPIView):
             error_message=[],
         )
 
-
+# View for retrieving the authenticated user's profile information
 class UserProfileView(ApiResponseAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserProfileSerializer
@@ -113,7 +113,7 @@ class UserProfileView(ApiResponseAPIView):
             error_message=[],
         )
 
-
+# View for updating the authenticated user's profile information, allowing partial updates
 class UpdateProfileView(ApiResponseAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserProfileSerializer
@@ -145,7 +145,7 @@ class UpdateProfileView(ApiResponseAPIView):
             error_message=[],
         )
 
-
+# View for updating the authenticated user's location (latitude and longitude)
 class UpdateLocationView(ApiResponseAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UpdateLocationSerializer
@@ -183,7 +183,7 @@ class UpdateLocationView(ApiResponseAPIView):
             error_message=[],
         )
 
-
+# View for retrieving the authenticated user's current location (latitude and longitude)
 class GetLocationView(ApiResponseAPIView):
     permission_classes = [IsAuthenticated]
 

@@ -9,8 +9,10 @@ from .views import (
     UserProfileView,
 )
 
+# Namespace for user-related URLs
 app_name = "users"
 
+# URL patterns for user-related endpoints
 urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
     path("login/", LoginView.as_view(), name="login"),

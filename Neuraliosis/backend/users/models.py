@@ -3,7 +3,7 @@ from django.db import models
 
 from .managers import CustomUserManager
 
-
+# Custom user model that extends AbstractBaseUser and PermissionsMixin
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     class Roles(models.TextChoices):
         USER = "user", "User"
