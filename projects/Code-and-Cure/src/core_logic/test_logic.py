@@ -8,6 +8,8 @@ from src.core_logic import SlotResult
 from src.core_logic import SoapNote
 from src.core_logic import SpecialtyRecommendation
 from src.core_logic import SymptomInput
+from src.core_logic import build_fhir_bundle
+from src.core_logic import check_prescription_safety
 from src.core_logic import render_soap_note_pdf_bytes
 from src.core_logic.soap_parser import parse_transcript_to_soap
 from src.core_logic.slot_generator import generate_available_slots
@@ -228,6 +230,102 @@ def test_parse_transcript_to_soap_without_markers_goes_to_subjective() -> None:
     assert note.objective == ""
     assert note.assessment == ""
     assert note.plan == ""
+
+
+def test_check_prescription_safety_allows_general_medication() -> None:
+    result = check_prescription_safety(
+        PrescriptionRequest(
+            medication_name="Amoxicillin",
+            dosage_text="500 mg",
+            frequency_text="q8h",
+            duration_text="7 days",
+        )
+    )
+
+    assert result.is_allowed is True
+    assert result.normalized_medication_name == "amoxicillin"
+
+
+def test_check_prescription_safety_blocks_controlled_substance() -> None:
+    result = check_prescription_safety(
+        PrescriptionRequest(
+            medication_name="Oxycodone",
+            dosage_text="10 mg",
+            frequency_text="q6h prn",
+            duration_text="5 days",
+        )
+    )
+
+    assert result.is_allowed is False
+    assert "controlled substance" in result.reason.lower()
+    assert result.normalized_medication_name == "oxycodone"
+
+
+def test_check_prescription_safety_is_case_insensitive() -> None:
+    result = check_prescription_safety(
+        PrescriptionRequest(
+            medication_name="ADDERALL",
+            dosage_text="20 mg",
+            frequency_text="once daily",
+            duration_text="30 days",
+        )
+    )
+
+    assert result.is_allowed is False
+    assert result.normalized_medication_name == "adderall"
+
+
+def test_build_fhir_bundle_includes_consent_and_composition() -> None:
+    note = SoapNote(
+        subjective="Patient reports headache.",
+        objective="No fever.",
+        assessment="Tension headache.",
+        plan="Ibuprofen 400mg as needed.",
+    )
+    result = build_fhir_bundle(
+        soap_note=note,
+        patient_id="patient-001",
+        doctor_id="doctor-001",
+        appointment_id="appt-001",
+    )
+
+    assert result.bundle["resourceType"] == "Bundle"
+    assert result.bundle["type"] == "document"
+    assert "Consent" in result.included_resource_types
+    assert "Composition" in result.included_resource_types
+    assert "MedicationRequest" not in result.included_resource_types
+    assert len(result.bundle["entry"]) == 2
+
+
+def test_build_fhir_bundle_includes_medication_request_when_prescription_given() -> None:
+    note = SoapNote(
+        subjective="Ear infection symptoms.",
+        objective="Redness in left ear.",
+        assessment="Acute otitis media.",
+        plan="Amoxicillin 500mg for 7 days.",
+    )
+    rx = PrescriptionRequest(
+        medication_name="Amoxicillin",
+        dosage_text="500 mg",
+        frequency_text="q8h",
+        duration_text="7 days",
+        rxnorm_code="723",
+    )
+    result = build_fhir_bundle(
+        soap_note=note,
+        patient_id="patient-002",
+        doctor_id="doctor-002",
+        appointment_id="appt-002",
+        prescription_request=rx,
+    )
+
+    assert "MedicationRequest" in result.included_resource_types
+    assert len(result.bundle["entry"]) == 3
+    med_entry = next(
+        e for e in result.bundle["entry"]
+        if e["resource"]["resourceType"] == "MedicationRequest"
+    )
+    assert med_entry["resource"]["medicationCodeableConcept"]["coding"][0]["code"] == "723"
 
 
 def test_render_soap_note_pdf_bytes_returns_valid_pdf_header_and_footer() -> None:
