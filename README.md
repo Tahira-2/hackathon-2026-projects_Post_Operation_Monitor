@@ -127,8 +127,33 @@ Per the proposal, the hardware itself, the production BLE mobile gateway, and cl
 ### Installation & Run
 ```bash
 python -m pip install -r requirements.txt
+
+# (a) one-shot analysis pipeline (renders the dashboard PNG)
 python -m src.run_demo
+
+# (b) gateway PWA (patient + doctor web app on http://127.0.0.1:5050)
+python -m server.app
 ```
+
+The gateway lives in `server/` (Flask + SQLite) and `webapp/` (vanilla-JS PWA). On first boot it creates `data/guardian.db`; that file persists across restarts, so accounts you create stick around. The "Wipe DB & re-seed demo data" button on the landing page is the only thing that resets it.
+
+---
+
+## Deploy to Render (free tier)
+
+The gateway PWA can be published from this GitHub repo straight to [Render.com](https://render.com) with no credit card. The `render.yaml` blueprint at the repo root describes the service.
+
+1. Fork this repository to your own GitHub account.
+2. Sign in to Render, click **New + → Blueprint**, and connect the fork.
+3. Render reads `render.yaml`, provisions a free Python web service, and runs `gunicorn server.app:app`. First build takes ~3 min.
+4. When deploy completes, open the public URL Render shows you, then click **Wipe DB & re-seed demo data** on the landing page to seed the demo doctor + patient.
+
+Subsequent `git push origin main` triggers an auto-redeploy.
+
+### Free-tier caveats
+* The service sleeps after ~15 min of inactivity and takes ~30 s to wake on the next request.
+* Render's free filesystem is **ephemeral on every redeploy** — the SQLite file at `data/guardian.db` is wiped each time you push. For a demo this is fine (re-seed and continue); for persistent data, attach Render's $1/mo persistent disk at `/opt/render/project/src/data` or migrate to hosted Postgres.
+* Single worker (`--workers 1` in `render.yaml`) — the auto-summary scheduler runs in-process and can't be safely sharded across workers without external coordination.
 
 ---
 

@@ -43,6 +43,12 @@ def create_app() -> Flask:
     app = Flask(__name__, static_folder=None)
     app.teardown_appcontext(close_db)
 
+    # Start the auto-summary background thread on app boot. Calling start()
+    # is idempotent within a process. This is what lets the scheduler run
+    # under gunicorn / any WSGI host that just imports `app` and never
+    # calls our main() function.
+    scheduler.start()
+
     # ---------------------------------------------------------------- static
     @app.get("/")
     def root():
@@ -649,7 +655,9 @@ app = create_app()
 
 
 def main() -> None:
-    scheduler.start()
+    # The scheduler is already started by create_app(); this entrypoint only
+    # exists for local dev so we can use Flask's built-in dev server. In
+    # production we run via gunicorn (see render.yaml).
     print(
         f"GuardianPost-Op gateway running on http://127.0.0.1:5050  "
         f"(time scale x{DEMO_TIME_SCALE:g}, auto-summary every "

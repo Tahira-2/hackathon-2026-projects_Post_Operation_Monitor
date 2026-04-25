@@ -1,0 +1,33 @@
+# GuardianPost-Op — Render.com Blueprint.
+#
+# Connect this repo at https://render.com -> New + -> Blueprint, point at
+# the GitHub repo, and Render will provision the service from this file.
+# Subsequent pushes to `main` redeploy automatically.
+#
+# Tier: free (no credit card). Service sleeps after ~15 min idle and wakes
+# on the next request (~30s cold start). The on-disk SQLite at
+# data/guardian.db is wiped on every redeploy because Render's free tier
+# uses an ephemeral filesystem; for persistent prod data, attach Render's
+# $1/mo persistent disk (mount path `/opt/render/project/src/data`) or
+# migrate to hosted Postgres. For demo purposes, the seeded demo accounts
+# can always be recreated by clicking "Wipe DB & re-seed demo data" on the
+# landing page.
+
+services:
+  - type: web
+    name: guardian-postop
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn server.app:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120 --access-logfile -
+    healthCheckPath: /api/admin/config
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: GUARDIAN_TIME_SCALE
+        # 240 means 1 wall-second = 4 simulated minutes, so a full 24h
+        # recovery replays in ~6 wall-minutes and the 12h auto-summary
+        # cadence fires every ~3 wall-minutes. Reasonable for an online
+        # demo. Bump to 4800 (1 wall-second = 80 sim-min) for a fast tour.
+        value: "240"
