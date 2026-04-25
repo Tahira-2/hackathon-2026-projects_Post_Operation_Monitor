@@ -54,13 +54,15 @@ node server.js  # serves frontend + API on port 3001
 ## Project structure
 
 ```
-├── server.js          # Express backend — proxies /api/chat to Groq
+├── server.js              # Express backend — proxies /api/chat to Groq
 ├── src/
-│   ├── pages/
-│   │   ├── Triage.jsx # Main chat UI and triage logic
-│   │   ├── Home.jsx   # Landing page
-│   │   └── History.jsx# Session history
-│   └── App.jsx        # Router and state
-├── vite.config.js     # Dev proxy: /api → localhost:3001
-└── .env               # GROQ_API_KEY (never committed)
+│   ├── App.jsx            # Router, active session state, and history navigation
+│   ├── historyStorage.js  # localStorage helpers for saving/updating sessions
+│   ├── textFormatting.jsx # Shared markdown cleanup/rendering helpers
+│   └── pages/
+│       ├── Home.jsx       # Landing page
+│       ├── Triage.jsx     # Chat UI, triage flow, session save/resume logic
+│       └── History.jsx    # Saved session list with continue/view actions
+├── vite.config.js         # Dev proxy: /api → localhost:3001
+└── .env                   # GROQ_API_KEY (never committed)
 ```
