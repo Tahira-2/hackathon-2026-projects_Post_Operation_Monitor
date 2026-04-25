@@ -156,14 +156,11 @@ model Patient {
 
 model Medicine {
   id String @id @default(uuid())
-
   name       String
   rxnormCode String?
-
   drugClass String?
   category  MedicineCategory?
   form      MedicineForm
-
   description  String?
   manufacturer String?
   imageUrl     String?
