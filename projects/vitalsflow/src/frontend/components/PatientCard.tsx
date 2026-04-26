@@ -1,6 +1,6 @@
 "use client";
 
-import { User } from "lucide-react";
+import { User, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RiskBadge } from "./RiskBadge";
 import type { Patient, TriageResult } from "@/lib/api";
@@ -55,17 +55,19 @@ export function PatientCard({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <div
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-bold text-sm"
             style={{
               background: isSelected
-                ? "rgba(59,130,246,0.15)"
-                : "rgba(30,41,59,0.6)",
-              border: `1px solid ${isSelected ? "rgba(59,130,246,0.3)" : "rgba(51,65,85,0.5)"}`,
+                ? "linear-gradient(135deg, rgba(96,165,250,0.3), rgba(59,130,246,0.2))"
+                : "linear-gradient(135deg, rgba(30,41,59,0.8), rgba(15,23,42,0.6))",
+              border: `2px solid ${isSelected ? "rgba(96,165,250,0.4)" : "rgba(51,65,85,0.4)"}`,
+              boxShadow: isSelected ? "0 0 12px rgba(59,130,246,0.15)" : "none",
             }}
+            title="Patient (human)"
           >
             <User
-              className="h-3.5 w-3.5"
-              style={{ color: isSelected ? "#60a5fa" : "var(--text-tertiary)" }}
+              className="h-4 w-4"
+              style={{ color: isSelected ? "#60a5fa" : "var(--text-tertiary)", strokeWidth: 2.5 }}
             />
           </div>
           <span

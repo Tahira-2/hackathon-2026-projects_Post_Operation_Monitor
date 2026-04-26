@@ -8,6 +8,8 @@ import {
   Brain,
   ChevronDown,
   ChevronUp,
+  Zap,
+  HelpCircle,
 } from "lucide-react";
 import { approveAction } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -107,12 +109,17 @@ export function ActionCenter({
         style={{ borderBottom: "1px solid var(--border-subtle)" }}
       >
         <div className="flex items-center gap-2">
-          <Activity className="h-4 w-4" style={{ color: style.accent }} />
+          <div
+            className="flex h-6 w-6 items-center justify-center rounded-full"
+            style={{ background: "rgba(139, 92, 246, 0.15)" }}
+          >
+            <Zap className="h-3.5 w-3.5" style={{ color: "#a78bfa" }} />
+          </div>
           <span
             className="font-semibold text-sm"
             style={{ color: "var(--text-primary)", fontFamily: "var(--font-outfit)" }}
           >
-            Action Center
+            AI Suggested Actions
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -284,6 +291,7 @@ export function ActionCenter({
                         id={`approve-action-${i}`}
                         onClick={() => void handleApprove(i)}
                         disabled={approving.has(i)}
+                        title="Creates a FHIR ServiceRequest in draft status pending clinician review"
                         className="px-2.5 py-1 text-[10px] font-semibold rounded-md transition-all duration-150 hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60"
                         style={{
                           background: "rgba(34, 197, 94, 0.1)",
@@ -297,7 +305,7 @@ export function ActionCenter({
                           (e.currentTarget as HTMLElement).style.background = "rgba(34,197,94,0.1)";
                         }}
                       >
-                        {approving.has(i) ? "Saving..." : "Approve"}
+                        {approving.has(i) ? "Saving..." : "Draft"}
                       </button>
                       <button
                         id={`dismiss-action-${i}`}
@@ -313,7 +321,7 @@ export function ActionCenter({
                           (e.currentTarget as HTMLElement).style.color = "var(--text-tertiary)";
                         }}
                       >
-                        Dismiss
+                        Skip
                       </button>
                     </div>
                   )}

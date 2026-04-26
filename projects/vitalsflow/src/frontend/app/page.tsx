@@ -19,6 +19,8 @@ import { VitalsTrend } from "@/components/VitalsTrend";
 import { PatientCard } from "@/components/PatientCard";
 import { VitalsForm } from "@/components/VitalsForm";
 import { TriageScoreCard } from "@/components/TriageScoreCard";
+import { WelcomePanel } from "@/components/WelcomePanel";
+import { EvidenceInspector } from "@/components/EvidenceInspector";
 
 import {
   searchPatients,
@@ -56,6 +58,7 @@ export default function Dashboard() {
   const [isTriaging, setIsTriaging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
+  const [showWelcome, setShowWelcome] = useState(true);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const summaryRequestRef = useRef(0);
 
@@ -145,7 +148,7 @@ export default function Dashboard() {
     >
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header
-        className="relative z-20 flex items-center justify-between px-6 py-3"
+        className="relative z-20 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 px-4 sm:px-6 py-2 sm:py-3"
         style={{
           background: "rgba(2, 8, 23, 0.85)",
           borderBottom: "1px solid var(--border-subtle)",
@@ -153,19 +156,19 @@ export default function Dashboard() {
         }}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div
-            className="flex h-9 w-9 items-center justify-center rounded-xl"
+            className="flex h-8 sm:h-9 w-8 sm:w-9 items-center justify-center rounded-xl shrink-0"
             style={{
               background: "linear-gradient(135deg, #1d4ed8, #0ea5e9)",
               boxShadow: "0 0 20px rgba(59,130,246,0.35)",
             }}
           >
-            <Stethoscope className="h-5 w-5 text-white" />
+            <Stethoscope className="h-4 sm:h-5 w-4 sm:w-5 text-white" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h1
-              className="text-lg font-bold leading-tight tracking-tight"
+              className="text-base sm:text-lg font-bold leading-tight tracking-tight"
               style={{
                 fontFamily: "var(--font-outfit)",
                 background: "linear-gradient(135deg, #f1f5f9, #94a3b8)",
@@ -175,17 +178,17 @@ export default function Dashboard() {
             >
               VitalsFlow
             </h1>
-            <p className="text-[10px] tracking-widest uppercase"
+            <p className="text-[9px] sm:text-[10px] tracking-widest uppercase"
                style={{ color: "var(--text-tertiary)" }}>
-              AI Triage · NEWS2 Protocol
+              AI Clinical Assistant • NEWS2
             </p>
           </div>
         </div>
 
         {/* Status + badge */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center sm:justify-end">
           <div
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
+            className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[9px] sm:text-xs font-semibold whitespace-nowrap"
             style={{
               background:
                 backendOnline === null
@@ -212,33 +215,37 @@ export default function Dashboard() {
               <>
                 <span
                   className="pulse-dot"
-                  style={{ background: "var(--text-tertiary)" }}
+                  style={{ background: "var(--text-tertiary)", width: "5px", height: "5px" }}
                 />
-                Connecting…
+                <span className="hidden sm:inline">Connecting…</span>
+                <span className="sm:hidden">…</span>
               </>
             ) : backendOnline ? (
               <>
-                <Wifi className="h-3.5 w-3.5" />
-                FHIR Connected
+                <Wifi className="h-3 w-3" />
+                <span className="hidden sm:inline">FHIR Connected</span>
+                <span className="sm:hidden">Connected</span>
               </>
             ) : (
               <>
-                <WifiOff className="h-3.5 w-3.5" />
-                Backend offline
+                <WifiOff className="h-3 w-3" />
+                <span className="hidden sm:inline">Backend offline</span>
+                <span className="sm:hidden">Offline</span>
               </>
             )}
           </div>
 
           <div
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-medium"
+            className="flex items-center gap-1 rounded-full px-2.5 sm:px-3 py-1 text-[9px] sm:text-[10px] font-medium whitespace-nowrap"
             style={{
               background: "rgba(139, 92, 246, 0.1)",
               border: "1px solid rgba(139, 92, 246, 0.25)",
               color: "#c4b5fd",
             }}
           >
-            <Sparkles className="h-3 w-3" />
-            Gemini 1.5 Flash
+            <Sparkles className="h-3 w-3 shrink-0" />
+            <span className="hidden sm:inline">Gemini 1.5 Flash</span>
+            <span className="sm:hidden">Gemini</span>
           </div>
         </div>
       </header>
@@ -265,20 +272,20 @@ export default function Dashboard() {
       )}
 
       {/* ── Main layout ─────────────────────────────────────────────────────── */}
-      <div className="relative z-10 flex flex-1 overflow-hidden">
+      <div className="relative z-10 flex flex-1 overflow-hidden flex-col md:flex-row">
 
         {/* ── Left sidebar ─────────────────────────────────────────────────── */}
         <aside
-          className="flex w-72 shrink-0 flex-col"
+          className="hidden md:flex w-full md:w-72 md:shrink-0 flex-col max-h-full"
           style={{ borderRight: "1px solid var(--border-subtle)" }}
         >
           {/* Search box */}
           <div
-            className="p-4"
+            className="p-3 sm:p-4"
             style={{ borderBottom: "1px solid var(--border-subtle)" }}
           >
             <p
-              className="mb-3 text-[10px] font-semibold uppercase tracking-widest"
+              className="mb-2 sm:mb-3 text-[10px] font-semibold uppercase tracking-widest"
               style={{ color: "var(--text-tertiary)" }}
             >
               Patient Search
@@ -292,7 +299,7 @@ export default function Dashboard() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 placeholder="Search by name…"
-                className="input-field flex-1"
+                className="input-field flex-1 text-sm"
                 style={{ paddingRight: "0.75rem" }}
               />
               <button
@@ -310,10 +317,10 @@ export default function Dashboard() {
               </button>
             </div>
             <p
-              className="mt-2 text-[10px]"
+              className="mt-1 sm:mt-2 text-[9px] sm:text-[10px]"
               style={{ color: "var(--text-muted)" }}
             >
-              Try &ldquo;Smith&rdquo; or &ldquo;Johnson&rdquo; — HAPI FHIR R4 data
+              Try &ldquo;Smith&rdquo; or &ldquo;Johnson&rdquo;
             </p>
           </div>
 
@@ -324,7 +331,7 @@ export default function Dashboard() {
                 {[0, 1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="p-4"
+                    className="p-3 sm:p-4"
                     style={{
                       borderBottom: "1px solid var(--border-subtle)",
                       animationDelay: `${i * 0.08}s`,
@@ -336,7 +343,7 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : patients.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center px-6">
+              <div className="flex flex-col items-center justify-center py-20 text-center px-4">
                 <div
                   className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl"
                   style={{
@@ -350,14 +357,14 @@ export default function Dashboard() {
                   />
                 </div>
                 <p
-                  className="text-sm font-medium"
+                  className="text-xs sm:text-sm font-medium"
                   style={{ color: "var(--text-tertiary)" }}
                 >
                   {hasSearched ? "No patients found" : "Search for a patient"}
                 </p>
                 {!hasSearched && (
                   <p
-                    className="mt-1 text-xs"
+                    className="mt-1 text-[9px] sm:text-xs"
                     style={{ color: "var(--text-muted)" }}
                   >
                     Enter a name above to begin
@@ -367,7 +374,7 @@ export default function Dashboard() {
             ) : (
               <>
                 <p
-                  className="px-4 pt-3 pb-2 text-[10px] font-medium"
+                  className="px-3 sm:px-4 pt-3 pb-2 text-[9px] sm:text-[10px] font-medium"
                   style={{ color: "var(--text-muted)" }}
                 >
                   {patients.length} patient{patients.length !== 1 ? "s" : ""} found
@@ -392,11 +399,11 @@ export default function Dashboard() {
 
           {/* Footer */}
           <div
-            className="px-4 py-3"
+            className="px-3 sm:px-4 py-3"
             style={{ borderTop: "1px solid var(--border-subtle)" }}
           >
             <p
-              className="text-[10px]"
+              className="text-[9px] sm:text-[10px]"
               style={{ color: "var(--text-muted)" }}
             >
               Synthetic data only · No real patient data stored
@@ -405,64 +412,75 @@ export default function Dashboard() {
         </aside>
 
         {/* ── Right panel ──────────────────────────────────────────────────── */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 w-full">
           {!selectedPatient ? (
-            /* ── Empty state ─── */
-            <div className="flex h-full flex-col items-center justify-center text-center animate-fade-in">
-              <div
-                className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl"
-                style={{
-                  background: "rgba(15, 23, 42, 0.8)",
-                  border: "1px solid var(--border-default)",
-                  boxShadow: "var(--shadow-glow-blue)",
-                }}
-              >
-                <Stethoscope
-                  className="h-11 w-11"
-                  style={{ color: "rgba(59,130,246,0.5)" }}
+            /* ── Empty state with welcome ─── */
+            <div className="max-w-3xl mx-auto animate-fade-in">
+              {showWelcome && (
+                <WelcomePanel
+                  onDismiss={() => setShowWelcome(false)}
+                  onSearchFocus={() => searchInputRef.current?.focus()}
                 />
-              </div>
-              <h2
-                className="text-2xl font-bold"
-                style={{ fontFamily: "var(--font-outfit)", color: "var(--text-secondary)" }}
-              >
-                Select a patient to begin
-              </h2>
-              <p
-                className="mt-2 text-sm"
-                style={{ color: "var(--text-tertiary)" }}
-              >
-                Search by name on the left, then click a patient to load their profile
-              </p>
-              <div
-                className="mt-8 flex items-center gap-2 text-xs rounded-full px-5 py-2.5"
-                style={{
-                  background: "rgba(59,130,246,0.06)",
-                  border: "1px solid rgba(59,130,246,0.15)",
-                  color: "rgba(148,163,184,0.7)",
-                }}
-              >
-                <ChevronRight className="h-3.5 w-3.5" style={{ color: "#3b82f6" }} />
-                Try searching for &ldquo;Smith&rdquo; to see a quick demo
+              )}
+              
+              {/* ── Empty state illustration ─── */}
+              <div className="flex h-full flex-col items-center justify-center text-center mt-12 px-4">
+                <div
+                  className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl"
+                  style={{
+                    background: "rgba(15, 23, 42, 0.8)",
+                    border: "1px solid var(--border-default)",
+                    boxShadow: "var(--shadow-glow-blue)",
+                  }}
+                >
+                  <Stethoscope
+                    className="h-11 w-11"
+                    style={{ color: "rgba(59,130,246,0.5)" }}
+                  />
+                </div>
+                <h2
+                  className="text-xl sm:text-2xl font-bold"
+                  style={{ fontFamily: "var(--font-outfit)", color: "var(--text-secondary)" }}
+                >
+                  Select a patient to begin
+                </h2>
+                <p
+                  className="mt-2 text-xs sm:text-sm"
+                  style={{ color: "var(--text-tertiary)" }}
+                >
+                  Search by name on the left, then click a patient to load their profile
+                </p>
+                <div
+                  className="mt-8 flex items-center gap-2 text-xs rounded-full px-4 sm:px-5 py-2.5"
+                  style={{
+                    background: "rgba(59,130,246,0.06)",
+                    border: "1px solid rgba(59,130,246,0.15)",
+                    color: "rgba(148,163,184,0.7)",
+                  }}
+                >
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0" style={{ color: "#3b82f6" }} />
+                  <span className="hidden sm:inline">Try searching for &ldquo;Smith&rdquo; to see a quick demo</span>
+                  <span className="sm:hidden">Try searching for &ldquo;Smith&rdquo;</span>
+                </div>
               </div>
             </div>
           ) : (
             /* ── Patient workspace ─── */
             <div
-              className="flex flex-col gap-5 max-w-5xl mx-auto animate-fade-in-up"
+              className="flex flex-col gap-4 md:gap-5 max-w-5xl mx-auto animate-fade-in-up px-2 sm:px-0"
               style={{ opacity: 0 }}
             >
               {/* Patient header bar */}
               <div
-                className="flex items-center justify-between rounded-xl px-5 py-4"
+                className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 rounded-lg sm:rounded-xl px-4 sm:px-5 py-4"
                 style={{
                   background: "rgba(13, 21, 38, 0.8)",
                   border: "1px solid var(--border-default)",
                 }}
               >
-                <div>
+                <div className="flex-1 min-w-0">
                   <h2
-                    className="text-xl font-bold"
+                    className="text-lg sm:text-xl font-bold truncate"
                     style={{ fontFamily: "var(--font-outfit)", color: "var(--text-primary)" }}
                   >
                     {selectedPatient.name}
@@ -471,45 +489,42 @@ export default function Dashboard() {
                     className="mt-0.5 text-xs"
                     style={{ color: "var(--text-secondary)" }}
                   >
-                    {selectedPatient.gender} &middot; DOB: {selectedPatient.dob} &middot;{" "}
-                    <span
-                      className="font-mono text-[10px]"
-                      style={{ color: "var(--text-tertiary)" }}
-                    >
-                      ID: {selectedPatient.id}
-                    </span>
+                    <span className="hidden xs:inline">{selectedPatient.gender} &middot; </span>
+                    <span className="hidden sm:inline">DOB: {selectedPatient.dob} &middot;</span>
                   </p>
                   <div
-                    className="mt-3 rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2 text-xs text-slate-400"
+                    className="mt-3 rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2 text-xs text-slate-400 max-h-20 overflow-y-auto"
                   >
                     {isLoadingSummary ? (
                       <span className="animate-pulse">Loading clinical summary...</span>
                     ) : selectedSummary ? (
-                      <span className="whitespace-pre-line">{selectedSummary.clinical_summary}</span>
+                      <span className="line-clamp-3 whitespace-pre-line">{selectedSummary.clinical_summary}</span>
                     ) : (
                       <span>Selecting patient summary...</span>
                     )}
                   </div>
                 </div>
-                {currentTriageResult ? (
-                  <RiskBadge
-                    tier={currentTriageResult.triage_tier}
-                    score={currentTriageResult.risk_score}
-                    news2Score={currentTriageResult.news2_score}
-                    size="lg"
-                  />
-                ) : (
-                  <span
-                    className="text-xs rounded-full px-3 py-1.5"
-                    style={{
-                      background: "rgba(51,65,85,0.4)",
-                      border: "1px solid rgba(51,65,85,0.6)",
-                      color: "var(--text-tertiary)",
-                    }}
-                  >
-                    Awaiting triage
-                  </span>
-                )}
+                <div className="shrink-0 self-start sm:self-center">
+                  {currentTriageResult ? (
+                    <RiskBadge
+                      tier={currentTriageResult.triage_tier}
+                      score={currentTriageResult.risk_score}
+                      news2Score={currentTriageResult.news2_score}
+                      size="lg"
+                    />
+                  ) : (
+                    <span
+                      className="text-xs rounded-full px-3 py-1.5 inline-block whitespace-nowrap"
+                      style={{
+                        background: "rgba(51,65,85,0.4)",
+                        border: "1px solid rgba(51,65,85,0.6)",
+                        color: "var(--text-tertiary)",
+                      }}
+                    >
+                      Awaiting triage
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Vitals form */}
@@ -524,13 +539,13 @@ export default function Dashboard() {
               {/* Triage loading skeleton */}
               {isTriaging && (
                 <div
-                  className="grid grid-cols-3 gap-4 animate-fade-in"
+                  className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in"
                 >
                   <div
-                    className="col-span-1 h-48 rounded-xl skeleton"
+                    className="col-span-1 h-48 rounded-lg sm:rounded-xl skeleton"
                   />
                   <div
-                    className="col-span-2 h-48 rounded-xl skeleton"
+                    className="col-span-1 md:col-span-2 h-48 rounded-lg sm:rounded-xl skeleton"
                   />
                 </div>
               )}
@@ -538,14 +553,14 @@ export default function Dashboard() {
               {/* Triage results */}
               {currentTriageResult && !isTriaging && (
                 <div
-                  className="flex flex-col gap-4 animate-fade-in-up"
+                  className="flex flex-col gap-4 md:gap-5 animate-fade-in-up"
                 >
                   {/* Score card + Action center row */}
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="col-span-1">
                       <TriageScoreCard result={currentTriageResult} />
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-1 md:col-span-2">
                       <ActionCenter
                         patientId={selectedPatient.id}
                         actions={currentTriageResult.suggested_actions}
@@ -557,6 +572,12 @@ export default function Dashboard() {
                       />
                     </div>
                   </div>
+
+                  {/* Evidence Inspector — full width */}
+                  <EvidenceInspector
+                    result={currentTriageResult}
+                    vitals={vitals}
+                  />
 
                   {/* Vitals trend — full width */}
                   <VitalsTrend

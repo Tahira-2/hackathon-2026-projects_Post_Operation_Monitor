@@ -177,18 +177,18 @@ export function VitalsForm({
         </div>
       </div>
 
-      <div className="p-5 flex flex-col gap-5">
-        {/* 6-column numeric grid */}
-        <div className="grid grid-cols-6 gap-3">
+      <div className="p-4 sm:p-5 flex flex-col gap-4 sm:gap-5">
+        {/* 6-column numeric grid - responsive */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
           {numericFields.map(({ key, label, unit, hint, step, min, max, warnLow, warnHigh }) => {
             const val = vitals[key] as number;
             const status = getFieldStatus(val, warnLow, warnHigh);
             const colors = statusColors[status];
 
             return (
-              <div key={key} className="flex flex-col gap-1.5">
+              <div key={key} className="flex flex-col gap-1">
                 <label
-                  className="text-[10px] font-medium"
+                  className="text-[9px] sm:text-[10px] font-medium"
                   style={{ color: colors.label }}
                   htmlFor={`vital-${key}`}
                 >
@@ -205,7 +205,7 @@ export function VitalsForm({
                     onChange={(e) =>
                       update(key, parseFloat(e.target.value) as VitalsPayload[typeof key])
                     }
-                    className="w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200"
+                    className="w-full rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all duration-200"
                     style={{
                       background: "rgba(15, 23, 42, 0.85)",
                       border: `1px solid ${colors.border}`,
@@ -223,7 +223,7 @@ export function VitalsForm({
                   />
                 </div>
                 <p
-                  className="text-[9px]"
+                  className="text-[8px] sm:text-[9px]"
                   style={{ color: colors.text }}
                 >
                   {unit} · {hint}
@@ -234,10 +234,10 @@ export function VitalsForm({
         </div>
 
         {/* Consciousness + O2 row */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div className="flex flex-col gap-1.5">
             <label
-              className="text-[10px] font-medium"
+              className="text-[9px] sm:text-[10px] font-medium"
               style={{ color: "var(--text-secondary)" }}
               htmlFor="vital-consciousness"
             >
@@ -247,7 +247,7 @@ export function VitalsForm({
               id="vital-consciousness"
               value={vitals.consciousness}
               onChange={(e) => update("consciousness", e.target.value)}
-              className="rounded-lg px-3 py-2 text-sm transition-all duration-200"
+              className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm transition-all duration-200"
               style={{
                 background: "rgba(15, 23, 42, 0.85)",
                 border: "1px solid var(--border-default)",
@@ -275,13 +275,13 @@ export function VitalsForm({
 
           <div className="flex flex-col gap-1.5">
             <span
-              className="text-[10px] font-medium"
+              className="text-[9px] sm:text-[10px] font-medium"
               style={{ color: "var(--text-secondary)" }}
             >
               Supplemental O₂
             </span>
             <label
-              className="flex items-center gap-3 cursor-pointer rounded-lg px-3 py-2"
+              className="flex items-center gap-3 cursor-pointer rounded-lg px-2 sm:px-3 py-1.5 sm:py-2"
               style={{
                 background: vitals.on_supplemental_o2
                   ? "rgba(59,130,246,0.08)"
@@ -316,7 +316,7 @@ export function VitalsForm({
                 />
               </div>
               <span
-                className="text-sm select-none"
+                className="text-xs sm:text-sm select-none"
                 style={{ color: vitals.on_supplemental_o2 ? "#93c5fd" : "var(--text-secondary)" }}
               >
                 {vitals.on_supplemental_o2 ? "Patient on O₂" : "Room air (off)"}
@@ -333,8 +333,7 @@ export function VitalsForm({
             onSubmit();
           }}
           disabled={isLoading}
-          className="btn-primary w-full py-3"
-          style={{ fontSize: "0.9375rem" }}
+          className="btn-primary w-full py-2 sm:py-3 text-xs sm:text-base"
         >
           {isLoading ? (
             <>
