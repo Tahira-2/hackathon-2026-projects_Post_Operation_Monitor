@@ -35,10 +35,6 @@ function Dashboard() {
           </p>
         </div>
         <div className="flex gap-3">
-           <button className="btn-secondary">
-             <Calendar size={18} />
-             <span>Schedule</span>
-           </button>
            <Link to="/doctor/assign" className="btn-primary">
              <PlusCircle size={18} />
              <span>New Therapy</span>
