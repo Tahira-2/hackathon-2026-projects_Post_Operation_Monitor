@@ -97,7 +97,7 @@ Generate a structured clinical summary in JSON with these exact fields:
 
 Return ONLY valid JSON, no markdown or explanation.`;
 
-    const model = this.gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = this.gemini.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
     const result = await model.generateContent(prompt);
     const raw = result.response.text().replace(/```json|```/g, '').trim();
 

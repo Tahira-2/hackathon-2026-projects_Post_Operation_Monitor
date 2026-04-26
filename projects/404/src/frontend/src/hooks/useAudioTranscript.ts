@@ -67,8 +67,18 @@ export function useAudioTranscript(
         }
       };
 
-      // Record in 5-second chunks
-      recorder.start(5000);
+      recorder.start();
+      
+      const interval = setInterval(() => {
+        if (recorder.state === 'recording') {
+          recorder.stop();
+          recorder.start();
+        }
+      }, 4500); // 4.5 seconds to be safe
+      
+      // Attach interval and stream so we can clean it up
+      (recorder as any)._chunkInterval = interval;
+      
       return recorder;
     };
 
@@ -92,10 +102,12 @@ export function useAudioTranscript(
 
     return () => {
       if (localRecorderRef.current?.state !== "inactive") {
+        clearInterval((localRecorderRef.current as any)._chunkInterval);
         localRecorderRef.current?.stop();
         localRecorderRef.current = null;
       }
       if (remoteRecorderRef.current?.state !== "inactive") {
+        clearInterval((remoteRecorderRef.current as any)._chunkInterval);
         remoteRecorderRef.current?.stop();
         remoteRecorderRef.current = null;
       }

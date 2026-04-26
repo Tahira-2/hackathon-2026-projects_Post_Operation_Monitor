@@ -212,5 +212,4 @@ export class UsersService {
 
     throw new BadRequestException('Specialization is required for doctors');
   }
-
 }

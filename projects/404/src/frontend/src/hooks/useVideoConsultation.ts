@@ -341,10 +341,15 @@ export function useVideoConsultation(appointmentId?: string) {
     });
 
     socket.on("transcript:caption", ({ speaker, text }: { speaker: string; text: string }) => {
-      setState((prev) => ({
-        ...prev,
-        liveCaption: { speaker, text, timestamp: Date.now() },
-      }));
+      setState((prev) => {
+        const timeStampStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const newNoteLine = `[${timeStampStr}] ${speaker}: ${text}`;
+        return {
+          ...prev,
+          liveCaption: { speaker, text, timestamp: Date.now() },
+          notes: prev.notes ? `${prev.notes}\n${newNoteLine}` : newNoteLine,
+        };
+      });
     });
 
     /**

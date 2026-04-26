@@ -46,9 +46,9 @@ export function Signup() {
   const errMessage = error ? ((error as any).data?.message || "An error occurred during signup") : null;
 
   return (
-    <div className="flex w-full min-h-[calc(100vh-140px)] bg-muted/10">
+    <div className="flex w-full min-h-screen bg-muted/10">
       {/* 2-Column Split: Content Side */}
-      <div className="hidden lg:flex w-1/2 flex-col justify-center items-center bg-primary/5 p-12 border-r">
+      <div className="hidden lg:flex w-1/2 flex-col justify-center items-center bg-primary/5 p-12">
         <div className="max-w-md space-y-6 text-center">
           <div className="inline-flex bg-primary/10 p-4 rounded-2xl mb-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M19 8v6" /><path d="M22 11h-6" /></svg>
@@ -62,9 +62,9 @@ export function Signup() {
 
       {/* 2-Column Split: Form Side */}
       <div className="flex w-full lg:w-1/2 flex-col items-center justify-center p-6 bg-background">
-        <Card className="w-full max-w-lg border-primary/10">
+        <Card className="w-full max-w-lg border-none shadow-none bg-transparent">
           <form onSubmit={handleSignup}>
-            <CardHeader className="space-y-2 text-center pb-8 border-b mb-6 bg-muted/20">
+            <CardHeader className="space-y-2 text-center pb-8 mb-6 bg-muted/20">
               <CardTitle className="text-2xl font-bold text-primary">Patient Registration</CardTitle>
               <CardDescription className="text-sm">
                 Create a digital identity to manage your care

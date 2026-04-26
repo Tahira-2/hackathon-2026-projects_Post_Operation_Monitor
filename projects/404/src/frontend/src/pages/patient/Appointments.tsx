@@ -171,13 +171,10 @@ export function Appointments() {
                 placeholder="Choose a consultant"
                 value={newAppointment.doctorId}
                 onChange={(e) => setNewAppointment({ ...newAppointment, doctorId: e.target.value })}
-                options={doctors.length > 0 
-                  ? doctors.map((doc: any) => ({
-                      label: doc.fullName || doc.email,
-                      value: doc.doctor?.id || doc.id
-                    }))
-                  : [{ label: "No consultants available", value: "" }]
-                }
+                options={doctors.map((doc: any) => ({
+                  label: doc.fullName || doc.email,
+                  value: doc.doctor?.id || doc.id
+                }))}
               />
             </div>
 
