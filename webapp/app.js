@@ -955,11 +955,9 @@
         const r = await api('/api/doctor/patients/add', {
           method: 'POST', body: { phone },
         });
-        toast(`Added ${r.full_name || r.patient_id}. Open their page to write the note.`, 'ok');
+        toast(`Added ${r.full_name || r.patient_id}. Click their name to open their page.`, 'ok');
         e.target.reset();
         await refreshDoctorView();
-        // Auto-open the new patient so the doctor can write the note + see envelope.
-        await selectPatient(r.patient_id);
       } catch (err) { toast(err.message, 'error'); }
     };
 
@@ -1164,16 +1162,13 @@
     const downloadEnvelopeUrl = `/api/doctor/patients/${pid}/envelope.csv?token=${encodeURIComponent(state.token)}`;
 
     host.innerHTML = `
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
-          <div>
-            <h2 class="card-title" style="margin-bottom:2px;">${escapeHtml(name)}</h2>
-            <div class="muted" style="font-size:12.5px;">${escapeHtml(phone)} &nbsp;·&nbsp; ${items.length} summary item(s) &nbsp;·&nbsp; ${openAlerts.length} open alert(s)</div>
-          </div>
-          <div class="btn-row">
-            <button id="force-detail-btn" class="secondary">Force summary now</button>
-            <button id="close-detail-btn" class="ghost">Close</button>
-          </div>
+      <div class="card" style="position:relative;">
+        <button id="close-detail-btn" class="ghost" title="Close"
+                style="position:absolute;top:10px;right:12px;font-size:18px;
+                       padding:2px 10px;line-height:1;">×</button>
+        <div style="text-align:center;padding:4px 28px 0;">
+          <h2 class="card-title" style="margin:0 0 4px 0;font-size:20px;">${escapeHtml(name)}</h2>
+          <div class="muted" style="font-size:12.5px;">${escapeHtml(phone)} &nbsp;·&nbsp; ${items.length} summary item(s) &nbsp;·&nbsp; ${openAlerts.length} open alert(s)</div>
         </div>
 
         <hr class="sep" />
@@ -1195,7 +1190,10 @@
         ${alertsBody}
 
         <hr class="sep" />
-        <h3 style="margin:0 0 6px 0;font-size:14px;">12-hour summaries delivered to you</h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
+          <h3 style="margin:0;font-size:14px;">12-hour summaries delivered to you</h3>
+          <button id="force-detail-btn" class="secondary">Force summary now</button>
+        </div>
         <div id="detail-summaries-host">${summariesBody}</div>
       </div>
     `;
