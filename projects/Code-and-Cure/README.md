@@ -64,6 +64,10 @@ SUPABASE_KEY=<your_supabase_key>
 JWT_SECRET=<your_jwt_secret>
 ```
 
+Doctor discovery supports live OpenStreetMap practitioner lookup (Overpass + Nominatim)
+with no paid API key required. If the live provider is unavailable, the app
+automatically falls back to seeded/database doctors.
+
 Run backend:
 
 ```powershell
