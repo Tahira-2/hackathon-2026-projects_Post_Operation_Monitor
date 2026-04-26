@@ -11,23 +11,37 @@ function SessionResult() {
   useEffect(() => {
     getSessionHistory()
       .then(data => {
-        if (data.length === 0) {
-          // Fallback to mock data for demonstration
-          setHistory([
-            { id: 'm1', plan_name: 'Quad Strengthening', completed_at: '2026-04-25T10:00:00Z', accuracy: 92, duration: '12m 45s', reps: 36, stability: 'Excellent', body_part_scores: [{part: 'knees', score: 96}, {part: 'arms', score: 92}] },
-            { id: 'm2', plan_name: 'Knee Mobility Drills', completed_at: '2026-04-24T14:30:00Z', accuracy: 88, duration: '10m 20s', reps: 30, stability: 'Good', body_part_scores: [{part: 'knees', score: 85}, {part: 'hips', score: 78}] },
-            { id: 'm3', plan_name: 'Balance & Stability', completed_at: '2026-04-23T09:15:00Z', accuracy: 95, duration: '08m 15s', reps: 24, stability: 'Excellent', body_part_scores: [{part: 'ankles', score: 90}, {part: 'knees', score: 94}] },
-          ])
-        } else {
-          setHistory(data)
-        }
+        // Process data to calculate aggregate metrics for the UI
+        const processedData = data.map(session => {
+          const results = session.results || [];
+          const totalReps = results.reduce((acc, r) => acc + (r.reps || 0), 0);
+          const totalDurationSecs = results.reduce((acc, r) => acc + (r.duration || 0), 0);
+          const avgAccuracy = results.length > 0 
+            ? Math.round(results.reduce((acc, r) => acc + (r.accuracy || 0), 0) / results.length) 
+            : 0;
+            
+          const mins = Math.floor(totalDurationSecs / 60);
+          const secs = Math.floor(totalDurationSecs % 60);
+          const formattedDuration = `${mins}m ${secs.toString().padStart(2, '0')}s`;
+          
+          let stability = 'Needs Work';
+          if (avgAccuracy >= 90) stability = 'Excellent';
+          else if (avgAccuracy >= 75) stability = 'Good';
+
+          return {
+            ...session,
+            reps: totalReps,
+            duration: formattedDuration,
+            accuracy: avgAccuracy,
+            stability: stability
+          };
+        });
+        
+        setHistory(processedData)
       })
       .catch(err => {
-        console.error(err)
-        // Fallback on error too
-        setHistory([
-          { id: 'm1', plan_name: 'Quad Strengthening', completed_at: '2026-04-25T10:00:00Z', accuracy: 92, duration: '12m 45s', reps: 36, stability: 'Excellent', body_part_scores: [{part: 'knees', score: 96}] },
-        ])
+        console.error('Failed to fetch session history:', err)
+        setHistory([])
       })
       .finally(() => setLoading(false))
   }, [])
