@@ -915,8 +915,6 @@
     }
     renderTopbar();
 
-    const config = state.config || (state.config = await api('/api/admin/config', { auth: false }));
-
     const banner = state.me.verified
       ? ''
       : `<div class="banner warn">Your account isn't verified yet — you can't add patients or receive summaries until you complete <a href="#/doctor/verify">ID verification</a>.</div>`;
@@ -947,20 +945,6 @@
       </div>
 
       <div id="patient-detail-host"></div>
-
-      <div class="card">
-        <h2 class="card-title">Demo controls</h2>
-        <p class="card-sub">
-          Skip ahead in simulated time without waiting the full
-          ${config.auto_summary_period_hours.toFixed(0)}h auto-summary cadence.
-        </p>
-        <div class="btn-row">
-          <button id="tick-btn" class="secondary">Run scheduler tick</button>
-        </div>
-        <div class="muted" style="font-size:12.5px;margin-top:8px;">
-          time scale x${config.demo_time_scale.toFixed(0)}
-        </div>
-      </div>
     `;
     $view.appendChild(frag);
 
@@ -977,18 +961,6 @@
         // Auto-open the new patient so the doctor can write the note + see envelope.
         await selectPatient(r.patient_id);
       } catch (err) { toast(err.message, 'error'); }
-    };
-
-    document.getElementById('tick-btn').onclick = async () => {
-      try {
-        const r = await api('/api/admin/tick', { method: 'POST', auth: false });
-        if (r.summarized_patient_ids.length) {
-          toast(`Auto-summary generated for ${r.summarized_patient_ids.length} patient(s).`, 'ok');
-        } else {
-          toast('Tick ran — no patients due for auto-summary yet.', 'info');
-        }
-        await refreshDoctorView();
-      } catch (e) { toast(e.message, 'error'); }
     };
 
     await refreshDoctorView();
