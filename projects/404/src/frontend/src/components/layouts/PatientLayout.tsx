@@ -10,8 +10,8 @@ export function PatientLayout() {
       <div className="flex flex-1 flex-col overflow-hidden">
         <DashboardTopBar />
         
-        <main className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_15%_10%,hsl(var(--muted)/0.5)_0%,transparent_38%),radial-gradient(circle_at_85%_0%,hsl(var(--muted)/0.5)_0%,transparent_28%)] p-4 md:p-6 lg:p-8">
-          <div className="mx-auto max-w-7xl">
+        <main className="flex-1 overflow-y-auto bg-muted/20 p-4 md:p-6 lg:p-8">
+          <div className="mx-auto w-full">
             <Outlet />
           </div>
         </main>

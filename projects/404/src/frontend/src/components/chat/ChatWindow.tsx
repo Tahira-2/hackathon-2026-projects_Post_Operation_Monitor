@@ -10,9 +10,12 @@ interface ChatWindowProps {
   conversation: any;
   messages: any[];
   onSendMessage: (text: string) => void;
+  onTyping?: (isTyping: boolean) => void;
+  typingIds?: Set<string>;
+  isConnected?: boolean;
 }
 
-export function ChatWindow({ conversation, messages, onSendMessage }: ChatWindowProps) {
+export function ChatWindow({ conversation, messages, onSendMessage, onTyping, typingIds, isConnected }: ChatWindowProps) {
   const [inputText, setInputText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -21,7 +24,20 @@ export function ChatWindow({ conversation, messages, onSendMessage }: ChatWindow
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, typingIds]);
+
+  useEffect(() => {
+    if (!onTyping) return;
+    if (inputText.trim().length > 0) {
+      onTyping(true);
+      const timer = setTimeout(() => {
+        onTyping(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    } else {
+      onTyping(false);
+    }
+  }, [inputText, onTyping]);
 
   const handleSend = () => {
     if (inputText.trim()) {
@@ -49,15 +65,23 @@ export function ChatWindow({ conversation, messages, onSendMessage }: ChatWindow
   return (
     <div className="flex-1 flex flex-col h-full bg-background">
       {/* Chat Header */}
-      <div className="h-16 border-b flex items-center justify-between px-3 md:px-6 shrink-0">
-        <div className="flex items-center gap-2 md:gap-3 pl-8 md:pl-0">
-          <Avatar className="h-9 w-9 md:h-10 md:w-10 border">
-            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${conversation.avatar}`} />
+      <div className="sticky top-0 z-10 flex h-16 w-full items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:px-6 shrink-0">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-10 w-10 border border-emerald-100">
+            <AvatarImage src={`https://api.dicebear.com/7.x/${conversation.name.includes("AI") ? 'bottts' : 'avataaars'}/svg?seed=${conversation.avatar}`} />
             <AvatarFallback>{conversation.avatar}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
-            <span className="font-semibold text-xs md:text-sm leading-tight truncate max-w-[100px] md:max-w-none">{conversation.name}</span>
-            <span className="text-[9px] md:text-[10px] text-green-500 font-medium">{conversation.status === 'online' ? 'Online' : 'Offline'}</span>
+            <span className="font-bold text-sm text-slate-900 leading-tight truncate">{conversation.name}</span>
+            <div className="flex items-center gap-1.5">
+              <span className={cn(
+                "h-1.5 w-1.5 rounded-full",
+                conversation.status === 'online' ? "bg-emerald-500" : "bg-muted-foreground"
+              )} />
+              <span className="text-[10px] text-muted-foreground font-medium">
+                {conversation.status === 'online' ? 'Online' : 'Offline'}
+              </span>
+            </div>
           </div>
         </div>
         
@@ -84,8 +108,9 @@ export function ChatWindow({ conversation, messages, onSendMessage }: ChatWindow
         ref={scrollRef}
         className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4"
       >
-        {messages.map((msg) => {
-          const isMe = msg.sender === "doctor";
+        {messages.map((msg: any) => {
+          const isMe = msg.senderType === "USER";
+          
           return (
             <div 
               key={msg.id} 
@@ -95,24 +120,42 @@ export function ChatWindow({ conversation, messages, onSendMessage }: ChatWindow
               )}
             >
               <div className={cn(
-                "flex flex-col max-w-[85%] md:max-w-[70%]",
+                "flex flex-col max-w-[85%] md:max-w-[70%] min-w-0",
                 isMe ? "items-end" : "items-start"
               )}>
                 <div className={cn(
-                  "px-3 py-2 md:px-4 md:py-2.5 rounded-xl md:rounded-2xl text-xs md:text-sm shadow-sm",
+                  "px-3 py-2 md:px-4 md:py-2.5 rounded-xl md:rounded-2xl text-xs md:text-sm shadow-sm whitespace-pre-wrap break-all min-w-0 overflow-hidden",
                   isMe 
                     ? "bg-primary text-primary-foreground rounded-tr-none" 
                     : "bg-muted text-foreground rounded-tl-none"
                 )}>
-                  {msg.text}
+                  {msg.text || msg.content}
                 </div>
-                <span className="text-[9px] md:text-[10px] text-muted-foreground mt-1 px-1 font-medium italic">
-                  {msg.time}
+                <span className="text-[9px] md:text-[10px] text-muted-foreground mt-1 px-1 font-medium italic flex items-center gap-1 justify-end">
+                  {msg.time || (msg.createdAt && new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))}
+                  {isMe && msg.status === 'sending' && (
+                     <span className="ml-1 opacity-60">Sending...</span>
+                  )}
+                  {isMe && msg.status === 'sent' && (
+                     <span className="ml-1 text-emerald-500 text-[11px] font-bold">✓✓</span>
+                  )}
                 </span>
               </div>
             </div>
           );
         })}
+
+        {typingIds && typingIds.size > 0 && (
+           <div className="flex w-full mb-4 justify-start">
+             <div className="flex flex-col items-start">
+               <div className="bg-muted text-foreground px-4 py-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1.5 h-10">
+                 <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: '0ms' }} />
+                 <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: '150ms' }} />
+                 <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: '300ms' }} />
+               </div>
+             </div>
+           </div>
+        )}
       </div>
       
       {/* Input Area */}
@@ -123,8 +166,9 @@ export function ChatWindow({ conversation, messages, onSendMessage }: ChatWindow
           </Button>
           <Input 
             className="border-none bg-transparent h-10 focus-visible:ring-0 text-sm shadow-none px-0"
-            placeholder="Type a message..."
+            placeholder={isConnected === false ? "Connecting to chat..." : "Type a message..."}
             value={inputText}
+            disabled={isConnected === false}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
           />
@@ -134,6 +178,7 @@ export function ChatWindow({ conversation, messages, onSendMessage }: ChatWindow
              </Button>
              <Button 
                 onClick={handleSend}
+                disabled={isConnected === false}
                 size="sm" 
                 className="h-9 w-9 md:w-auto md:px-4 rounded-xl shadow-md cursor-pointer"
              >
