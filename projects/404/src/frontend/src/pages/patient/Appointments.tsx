@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { 
   Calendar, 
@@ -17,7 +18,23 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/hooks/useAuth"
-import { useGetAppointmentsQuery } from "@/apis/appointmentsApi"
+import { 
+  useGetAppointmentsQuery, 
+  useUpdateAppointmentMutation,
+  useCreateAppointmentMutation
+} from "@/apis/appointmentsApi"
+import { useGetUsersQuery } from "@/apis/usersApi"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog"
+import { Select } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 
 export function Appointments() {
   const { user } = useAuth()
@@ -25,10 +42,59 @@ export function Appointments() {
   const patientId = user?.patient?.id
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [newAppointment, setNewAppointment] = useState({
+    doctorId: "",
+    reason: "",
+    startTime: "",
+    endTime: "",
+    isVirtual: true
+  })
+
+  const [updateAppointment, { isLoading: isUpdating }] = useUpdateAppointmentMutation()
+  const [createAppointment, { isLoading: isCreating }] = useCreateAppointmentMutation()
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
+
   const { data: appointments, isLoading } = useGetAppointmentsQuery(
     { patientId },
     { skip: !patientId }
   )
+
+  const { data: doctorsData } = useGetUsersQuery({ role: "doctor" })
+  const doctors = doctorsData || []
+
+  const handleCreateAppointment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newAppointment.doctorId || !newAppointment.startTime) {
+      alert("Please select a doctor and time.")
+      return
+    }
+
+    try {
+      await createAppointment({
+        ...newAppointment,
+        patientId: user?.patient?.id,
+        endTime: new Date(new Date(newAppointment.startTime).getTime() + 30 * 60000).toISOString()
+      }).unwrap()
+      setIsDialogOpen(false)
+      setNewAppointment({ doctorId: "", reason: "", startTime: "", endTime: "", isVirtual: true })
+    } catch (error) {
+      alert("Failed to schedule appointment.")
+    }
+  }
+
+  const handleCancel = async (id: string) => {
+    if (!window.confirm("Are you sure you want to cancel this appointment?")) return
+    
+    setCancellingId(id)
+    try {
+      await updateAppointment({ id, body: { status: "CANCELLED" } }).unwrap()
+    } catch (error) {
+      alert("Failed to cancel appointment. Please try again.")
+    } finally {
+      setCancellingId(null)
+    }
+  }
 
   const copyLink = (appointmentId: string) => {
     const url = `${window.location.origin}/patient/consultation/${appointmentId}`
@@ -77,11 +143,92 @@ export function Appointments() {
           <Button variant="outline" className="rounded-xl border-slate-200">
             <Filter className="mr-2 h-4 w-4" /> Filter
           </Button>
-          <Button className="rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20">
+          <Button 
+            className="rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20"
+            onClick={() => setIsDialogOpen(true)}
+          >
             Schedule New
           </Button>
         </div>
       </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogClose onClick={() => setIsDialogOpen(false)} />
+          <DialogHeader>
+            <DialogTitle>Schedule Appointment</DialogTitle>
+            <DialogDescription>
+              Book a new consultation with one of our specialists.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleCreateAppointment} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="doctor">Select Specialist</Label>
+              <Select 
+                id="doctor"
+                className="rounded-xl"
+                placeholder="Choose a consultant"
+                value={newAppointment.doctorId}
+                onChange={(e) => setNewAppointment({ ...newAppointment, doctorId: e.target.value })}
+                options={doctors.length > 0 
+                  ? doctors.map((doc: any) => ({
+                      label: doc.fullName || doc.email,
+                      value: doc.doctor?.id || doc.id
+                    }))
+                  : [{ label: "No consultants available", value: "" }]
+                }
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startTime">Date & Time</Label>
+                <Input
+                  id="startTime"
+                  type="datetime-local"
+                  className="rounded-xl"
+                  value={newAppointment.startTime}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, startTime: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="reason">Reason for Visit</Label>
+              <textarea
+                id="reason"
+                className="flex min-h-[80px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Briefly describe your symptoms..."
+                value={newAppointment.reason}
+                onChange={(e) => setNewAppointment({ ...newAppointment, reason: e.target.value })}
+              />
+            </div>
+
+            <div className="flex items-center justify-between bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+              <div className="flex items-center gap-2">
+                <Video className="h-4 w-4 text-emerald-600" />
+                <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Virtual Consultation</p>
+              </div>
+              <input 
+                type="checkbox" 
+                checked={newAppointment.isVirtual}
+                onChange={(e) => setNewAppointment({ ...newAppointment, isVirtual: e.target.checked })}
+                className="h-4 w-4 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"
+              />
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 h-11 text-base font-semibold mt-2"
+              disabled={isCreating}
+            >
+              {isCreating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Confirm Appointment
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {!appointments || appointments.length === 0 ? (
         <Card className="border-2 border-dashed border-slate-200 bg-slate-50/50">
@@ -93,7 +240,10 @@ export function Appointments() {
             <p className="text-sm text-muted-foreground max-w-xs mt-1 mb-6">
               You don't have any scheduled appointments. Book your first consultation with a specialist.
             </p>
-            <Button className="rounded-xl bg-emerald-600 hover:bg-emerald-700">
+            <Button 
+              className="rounded-xl bg-emerald-600 hover:bg-emerald-700"
+              onClick={() => setIsDialogOpen(true)}
+            >
               Find a Consultant
             </Button>
           </CardContent>
@@ -104,7 +254,6 @@ export function Appointments() {
             <Card key={appt.id} className="border-none shadow-md shadow-slate-200/50 hover:shadow-lg transition-all overflow-hidden group">
               <CardContent className="p-0">
                 <div className="flex flex-col md:flex-row">
-                  {/* Date Column */}
                   <div className="p-6 md:w-64 bg-slate-50 flex flex-col justify-center items-center text-center border-b md:border-b-0 md:border-r border-slate-100">
                     <div className="h-14 w-14 rounded-2xl bg-white shadow-sm flex flex-col items-center justify-center mb-2">
                       <span className="text-[10px] font-bold text-emerald-600 uppercase">
@@ -119,7 +268,6 @@ export function Appointments() {
                     </div>
                   </div>
                   
-                  {/* Info Column */}
                   <div className="flex-1 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -140,7 +288,6 @@ export function Appointments() {
                       </div>
                     </div>
                     
-                    {/* Action Column */}
                     <div className="flex flex-wrap gap-3 shrink-0 items-center">
                       {appt.status === "CONFIRMED" && appt.callSession?.id && (
                         <div className="flex flex-col items-end gap-1.5 mr-2">
@@ -171,12 +318,26 @@ export function Appointments() {
                         <Button variant="outline" size="sm" className="rounded-xl border-slate-200 hover:bg-slate-50">
                           Reschedule
                         </Button>
-                        <Button variant="outline" size="sm" className="rounded-xl border-rose-100 text-rose-600 hover:bg-rose-50 hover:border-rose-200">
-                          Cancel
-                        </Button>
+                        {appt.status !== "CANCELLED" && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="rounded-xl border-rose-100 text-rose-600 hover:bg-rose-50 hover:border-rose-200"
+                            onClick={() => handleCancel(appt.id)}
+                            disabled={cancellingId === appt.id}
+                          >
+                            {cancellingId === appt.id ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : null}
+                            Cancel
+                          </Button>
+                        )}
                       </div>
                       
-                      <Button size="icon" variant="ghost" className="rounded-xl text-slate-300 group-hover:text-emerald-600 transition-colors ml-2">
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="rounded-xl text-slate-300 group-hover:text-emerald-600 transition-colors ml-2"
+                        onClick={() => navigate("/patient/consultants")}
+                      >
                         <ChevronRight className="h-5 w-5" />
                       </Button>
                     </div>
