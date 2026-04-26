@@ -179,7 +179,7 @@ export default function PatientBookingPage() {
     });
   }
 
-  const specialist = referral?.specialists;
+  const specialist = referral?.targetDoctor;
 
   return (
     <div className="min-h-screen bg-[#f2f4f8] pb-28">

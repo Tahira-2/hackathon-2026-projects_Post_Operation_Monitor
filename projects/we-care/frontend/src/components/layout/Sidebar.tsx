@@ -6,29 +6,47 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { normalizeReferralViewType } from "../../lib/referral-view";
 import { useProfileStore } from "../../stores/profileStore";
 import { Logo } from "../ui/Logo";
 import { SidebarNavItem } from "./SidebarNavItem";
 
 interface NavItem {
-  to: string;
+  to: string | { pathname: string; search?: string };
   label: string;
   icon: LucideIcon;
   end?: boolean;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/referrals", label: "Referrals", icon: Users },
-  { to: "/specialists", label: "Specialists", icon: UserRound },
-  { to: "/profile", label: "Profile", icon: User },
-];
-
 export function Sidebar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { fullName, specialty, avatarUrl } = useProfileStore();
   const displayName = fullName || "Doctor";
+  const activeType = normalizeReferralViewType(
+    new URLSearchParams(location.search).get("type"),
+  );
+  const referralSearch = `?type=${activeType}`;
+  const navItems = useMemo<NavItem[]>(
+    () => [
+      {
+        to: { pathname: "/", search: referralSearch },
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        end: true,
+      },
+      {
+        to: { pathname: "/referrals", search: referralSearch },
+        label: "Referrals",
+        icon: Users,
+      },
+      { to: "/specialists", label: "Specialists", icon: UserRound },
+      { to: "/profile", label: "Profile", icon: User },
+    ],
+    [referralSearch],
+  );
 
   return (
     <aside className="flex w-60 shrink-0 flex-col bg-sidebar text-white">
@@ -53,8 +71,8 @@ export function Sidebar() {
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 px-3">
-        {NAV_ITEMS.map((item) => (
-          <SidebarNavItem key={item.to} {...item} />
+        {navItems.map((item) => (
+          <SidebarNavItem key={typeof item.to === "string" ? item.to : item.to.pathname} {...item} />
         ))}
       </nav>
 

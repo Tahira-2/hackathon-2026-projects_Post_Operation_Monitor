@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import dashboardRouter from './routes/dashboard';
 import extractRouter from './routes/extract';
 import specialistsRouter from './routes/specialists';
 import referralsRouter from './routes/referrals';
@@ -19,6 +20,7 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', project: 'RefAI' });
 });
 
+app.use('/api/dashboard', dashboardRouter);
 app.use('/api/extract', extractRouter);
 app.use('/api/specialists', specialistsRouter);
 app.use('/api/referrals', referralsRouter);

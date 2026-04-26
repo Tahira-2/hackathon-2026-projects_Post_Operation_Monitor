@@ -87,7 +87,7 @@ export default function NewReferralPage() {
     setStep(3)
   }
 
-  async function handleSubmit(specialtyId: string) {
+  async function handleSubmit(targetDoctorId: string) {
     if (!extracted) return
     setSubmitting(true)
     await api.post('/api/referrals', {
@@ -99,6 +99,7 @@ export default function NewReferralPage() {
         phone: extracted.phone || undefined,
       },
       referral: {
+        doctor_id: targetDoctorId,
         clinical_notes: clinicalNote,
         diagnosis: extracted.diagnosis,
         required_specialty: specialists.find(s => s.id === specialtyId)?.subspecialty ?? extracted.requiredSpecialty,

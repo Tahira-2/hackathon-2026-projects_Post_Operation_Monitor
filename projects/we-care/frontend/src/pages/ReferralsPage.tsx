@@ -1,113 +1,78 @@
-import { useQuery } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
-import { useMemo } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ReferralTable } from '../components/referrals/ReferralTable'
-import { Button } from '../components/ui/Button'
-import { api } from '../lib/axios'
-import type { Referral, ReferralStatus } from '../types/referral'
-
-const URGENCY_MAP: Record<string, Referral['urgency']> = {
-  low: 'ROUTINE',
-  medium: 'ELEVATED',
-  high: 'HIGH',
-}
-
-const STATUS_MAP: Record<string, ReferralStatus> = {
-  pending: 'PENDING',
-  sent: 'SENT',
-  accepted: 'ACCEPTED',
-  completed: 'COMPLETED',
-}
-
-const TYPE_STATUSES: Record<string, ReferralStatus[]> = {
-  pending: ['PENDING'],
-  sent: ['SENT'],
-  accepted: ['ACCEPTED'],
-  completed: ['COMPLETED'],
-}
-
-const TYPE_LABELS: Record<string, { title: string; subtitle: string }> = {
-  pending:   { title: 'Pending Referrals',   subtitle: 'Referrals awaiting action.' },
-  sent:      { title: 'Sent Referrals',       subtitle: 'Referrals sent to a specialist.' },
-  accepted:  { title: 'Accepted Referrals',   subtitle: 'Referrals accepted by a specialist.' },
-  completed: { title: 'Completed Referrals',  subtitle: 'Referrals that have been completed.' },
-}
-
-type ReferralRow = {
-  id: string
-  diagnosis: string | null
-  required_specialty: string | null
-  urgency: string
-  status: string
-  created_at: string
-  patients: { full_name: string } | null
-}
-
-function mapReferral(r: ReferralRow): Referral {
-  return {
-    id: r.id,
-    patient: r.patients?.full_name ?? 'Unknown',
-    diagnosis: r.diagnosis ?? 'N/A',
-    specialty: r.required_specialty ?? 'N/A',
-    specialist: 'Unassigned',
-    urgency: URGENCY_MAP[r.urgency] ?? 'ROUTINE',
-    status: STATUS_MAP[r.status] ?? 'PENDING',
-    date: new Date(r.created_at).toLocaleDateString('en-US', {
-      month: 'short', day: 'numeric', year: 'numeric',
-    }),
-  }
-}
-
-async function fetchReferrals(): Promise<Referral[]> {
-  const { data } = await api.get('/api/referrals', { params: { pageSize: 100 } })
-  const items: ReferralRow[] = data.items ?? data
-  return items.map(mapReferral)
-}
+import { useQuery } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
+import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ReferralTable } from "../components/referrals/ReferralTable";
+import { Button } from "../components/ui/Button";
+import { queryKeys } from "../lib/query-keys";
+import {
+  DEFAULT_REFERRAL_VIEW,
+  REFERRAL_VIEW_LABELS,
+  normalizeReferralViewType,
+} from "../lib/referral-view";
+import { getReferrals } from "../lib/referrals-api";
 
 export default function ReferralsPage() {
-  const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const type = searchParams.get('type') ?? ''
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [page, setPage] = useState(1);
+  const viewType = normalizeReferralViewType(
+    searchParams.get("type") ?? DEFAULT_REFERRAL_VIEW,
+  );
+  const pageSize = 10;
 
-  const { data: allReferrals = [], isLoading } = useQuery({
-    queryKey: ['referrals'],
-    queryFn: fetchReferrals,
-  })
+  const referralsQuery = useQuery({
+    queryKey: queryKeys.referrals(viewType, page, pageSize),
+    queryFn: () => getReferrals(viewType, page, pageSize),
+  });
 
-  const referrals = useMemo(() => {
-    const statuses = TYPE_STATUSES[type]
-    if (!statuses) return allReferrals
-    return allReferrals.filter((r) => statuses.includes(r.status))
-  }, [allReferrals, type])
-
-  const { title, subtitle } = TYPE_LABELS[type] ?? {
-    title: 'Referrals',
-    subtitle: 'Manage and track all patient referrals.',
-  }
+  const { title, subtitle } = REFERRAL_VIEW_LABELS[viewType];
+  const doctorColumnLabel =
+    viewType === "outbound" ? "Target Doctor" : "Referred By";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" key={viewType}>
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-primary">{title}</h2>
-          <p className="text-sm text-muted mt-0.5">{subtitle}</p>
+          <p className="mt-0.5 text-sm text-muted">{subtitle}</p>
         </div>
-        <Button onClick={() => navigate('/referrals/new')}>
+        <Button onClick={() => navigate("/referrals/new")}>
           <Plus size={15} />
           New Referral
         </Button>
       </div>
 
-      {isLoading ? (
-        <div className="flex h-48 items-center justify-center text-muted">Loading referrals…</div>
+      {referralsQuery.isLoading ? (
+        <div className="rounded-xl border border-border bg-surface px-6 py-8 text-sm text-muted shadow-sm">
+          Loading referrals...
+        </div>
+      ) : referralsQuery.isError || !referralsQuery.data ? (
+        <div className="rounded-xl border border-border bg-surface px-6 py-8 text-sm text-muted shadow-sm">
+          Unable to load referrals right now.
+        </div>
       ) : (
         <ReferralTable
-          referrals={referrals}
-          total={referrals.length}
+          referrals={referralsQuery.data.items}
+          total={referralsQuery.data.total}
           onView={(id) => navigate(`/referrals/${id}`)}
+          doctorColumnLabel={doctorColumnLabel}
+          emptyMessage={`No ${viewType} referrals match your search.`}
+          pagination={{
+            page: referralsQuery.data.page,
+            totalPages: referralsQuery.data.totalPages,
+            onPrevious: () =>
+              setPage((currentPage) => Math.max(1, currentPage - 1)),
+            onNext: () =>
+              setPage((currentPage) =>
+                Math.min(
+                  referralsQuery.data?.totalPages ?? currentPage,
+                  currentPage + 1,
+                ),
+              ),
+          }}
         />
       )}
     </div>
-  )
+  );
 }

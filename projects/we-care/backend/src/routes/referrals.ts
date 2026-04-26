@@ -6,6 +6,7 @@ import {
   getReferralsByDoctor,
   updateReferralStatus,
 } from "../services/referrals.service";
+import { normalizeReferralViewType } from "../services/referral-view";
 import { AuthRequest } from "../types";
 
 const router = Router();
@@ -31,8 +32,17 @@ function parsePositiveInteger(value: string | string[] | undefined, fallback: nu
 router.post("/", authMiddleware, async (req: AuthRequest, res: Response) => {
   const { patient, referral } = req.body;
 
-  if (!patient?.full_name || !referral?.clinical_notes) {
-    res.status(400).json({ error: "patient.full_name and referral.clinical_notes are required" });
+  if (
+    !patient?.full_name ||
+    !referral?.doctor_id ||
+    !referral?.clinical_notes
+  ) {
+    res
+      .status(400)
+      .json({
+        error:
+          "patient.full_name, referral.doctor_id and referral.clinical_notes are required",
+      });
     return;
   }
 
@@ -56,10 +66,14 @@ router.get("/", authMiddleware, async (req: AuthRequest, res: Response) => {
     ),
     MAX_PAGE_SIZE,
   );
+  const type = normalizeReferralViewType(
+    getParamValue(req.query.type as string | string[] | undefined),
+  );
 
   const referrals = await getReferralsByDoctor(req.doctor!.id, {
     page,
     pageSize,
+    type,
   });
   res.status(200).json(referrals);
 });

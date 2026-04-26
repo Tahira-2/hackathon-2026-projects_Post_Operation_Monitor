@@ -1,48 +1,33 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Search, ChevronDown, X } from 'lucide-react'
 import { ReferralTableRow } from './ReferralTableRow'
-import type { Referral, ReferralStatus, Urgency } from '../../types/referral'
-
-interface Tab {
-  label: string
-  filter: ReferralStatus | null
-}
-
-const TABS: Tab[] = [
-  { label: 'All Referrals', filter: null },
-  { label: 'Pending', filter: 'PENDING' },
-  { label: 'Sent', filter: 'SENT' },
-  { label: 'Accepted', filter: 'ACCEPTED' },
-  { label: 'Completed', filter: 'COMPLETED' },
-]
-
-const COLUMNS = [
-  'Patient Name',
-  'Diagnosis / Reason',
-  'Specialty',
-  'Specialist',
-  'Urgency',
-  'Status',
-  'Date',
-  'Actions',
-]
+import type { Referral, Urgency } from '../../types/referral'
 
 interface ReferralTableProps {
   referrals: Referral[]
   total: number
   onView: (id: string) => void
-  initialFilter?: ReferralStatus | null
+  emptyMessage?: string
+  doctorColumnLabel?: string
+  pagination?: {
+    page: number
+    totalPages: number
+    onPrevious: () => void
+    onNext: () => void
+  }
 }
 
-export function ReferralTable({ referrals, total, onView, initialFilter = null }: ReferralTableProps) {
-  const [activeFilter, setActiveFilter] = useState<ReferralStatus | null>(initialFilter)
+export function ReferralTable({
+  referrals,
+  total,
+  onView,
+  emptyMessage = 'No referrals match your search.',
+  doctorColumnLabel = 'Doctor',
+  pagination,
+}: ReferralTableProps) {
   const [search, setSearch] = useState('')
   const [urgencyFilter, setUrgencyFilter] = useState<Urgency | ''>('')
   const [specialtyFilter, setSpecialtyFilter] = useState('')
-
-  useEffect(() => {
-    setActiveFilter(initialFilter ?? null)
-  }, [initialFilter])
 
   const specialties = useMemo(
     () => [...new Set(referrals.map((r) => r.specialty))].sort(),
@@ -51,13 +36,12 @@ export function ReferralTable({ referrals, total, onView, initialFilter = null }
 
   const visible = useMemo(() => {
     return referrals.filter((r) => {
-      if (activeFilter && r.status !== activeFilter) return false
       if (urgencyFilter && r.urgency !== urgencyFilter) return false
       if (specialtyFilter && r.specialty !== specialtyFilter) return false
       if (search && !r.patient.toLowerCase().includes(search.toLowerCase())) return false
       return true
     })
-  }, [referrals, activeFilter, urgencyFilter, specialtyFilter, search])
+  }, [referrals, urgencyFilter, specialtyFilter, search])
 
   const hasActiveFilters = search !== '' || urgencyFilter !== '' || specialtyFilter !== ''
 
@@ -67,25 +51,22 @@ export function ReferralTable({ referrals, total, onView, initialFilter = null }
     setSpecialtyFilter('')
   }
 
+  const columns = useMemo(
+    () => [
+      'Patient Name',
+      'Diagnosis / Reason',
+      'Specialty',
+      doctorColumnLabel,
+      'Urgency',
+      'Status',
+      'Date',
+      'Actions',
+    ],
+    [doctorColumnLabel],
+  )
+
   return (
     <div className="rounded-xl border border-border bg-surface shadow-sm">
-      <div className="flex gap-1 border-b border-border px-4 pt-3">
-        {TABS.map(({ label, filter }) => (
-          <button
-            key={label}
-            onClick={() => setActiveFilter(filter)}
-            className={[
-              'px-3 py-2 text-sm font-medium transition-colors',
-              activeFilter === filter
-                ? 'border-b-2 border-accent text-accent'
-                : 'text-muted hover:text-primary',
-            ].join(' ')}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
         <div className="relative flex-1 min-w-48">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
@@ -140,7 +121,7 @@ export function ReferralTable({ referrals, total, onView, initialFilter = null }
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border text-left text-xs font-semibold tracking-wide text-muted uppercase">
-            {COLUMNS.map((col) => (
+            {columns.map((col) => (
               <th key={col} className="px-5 py-3">{col}</th>
             ))}
           </tr>
@@ -148,8 +129,8 @@ export function ReferralTable({ referrals, total, onView, initialFilter = null }
         <tbody className="divide-y divide-border">
           {visible.length === 0 ? (
             <tr>
-              <td colSpan={COLUMNS.length} className="px-5 py-10 text-center text-sm text-muted">
-                No referrals match your search.
+              <td colSpan={columns.length} className="px-5 py-10 text-center text-sm text-muted">
+                {emptyMessage}
               </td>
             </tr>
           ) : (
@@ -162,16 +143,26 @@ export function ReferralTable({ referrals, total, onView, initialFilter = null }
 
       <div className="flex items-center justify-between border-t border-border px-5 py-3">
         <p className="text-xs text-muted">
-          Showing 1–{visible.length} of {total.toLocaleString()} referrals
+          Showing {visible.length} of {total.toLocaleString()} referrals
         </p>
-        <div className="flex gap-2">
-          <button disabled className="rounded-lg border border-border px-4 py-1.5 text-xs font-medium text-muted disabled:opacity-40">
-            Previous
-          </button>
-          <button className="rounded-lg border border-border px-4 py-1.5 text-xs font-medium text-primary hover:bg-base transition-colors">
-            Next
-          </button>
-        </div>
+        {pagination ? (
+          <div className="flex gap-2">
+            <button
+              disabled={pagination.page <= 1}
+              onClick={pagination.onPrevious}
+              className="rounded-lg border border-border px-4 py-1.5 text-xs font-medium text-muted disabled:opacity-40"
+            >
+              Previous
+            </button>
+            <button
+              disabled={pagination.page >= pagination.totalPages}
+              onClick={pagination.onNext}
+              className="rounded-lg border border-border px-4 py-1.5 text-xs font-medium text-primary hover:bg-base transition-colors disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   )

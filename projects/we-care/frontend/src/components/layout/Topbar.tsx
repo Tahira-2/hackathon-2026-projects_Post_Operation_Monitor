@@ -1,6 +1,7 @@
 import { LogOut } from "lucide-react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useSignOutMutation } from "../../lib/auth-hooks";
+import { normalizeReferralViewType } from "../../lib/referral-view";
 
 interface NavTab {
   label: string;
@@ -19,10 +20,12 @@ export function Topbar() {
   const [searchParams] = useSearchParams();
   const signOutMutation = useSignOutMutation()
 
-  const activeType = searchParams.get("type");
+  const activeType = normalizeReferralViewType(searchParams.get("type"));
+  const showReferralTabs = pathname === "/" || pathname === "/referrals";
 
   function handleTabClick(type: string) {
-    navigate(`/referrals?type=${type}`);
+    const nextPath = pathname === "/referrals" ? "/referrals" : "/";
+    navigate(`${nextPath}?type=${type}`);
   }
 
   async function handleLogout() {
@@ -34,26 +37,28 @@ export function Topbar() {
   }
 
   const isActive = (type: string) =>
-    pathname === "/referrals" && activeType === type;
+    showReferralTabs && activeType === type;
 
   return (
     <header className="flex items-center gap-4 border-b border-border bg-surface px-6 py-3">
-      <nav className="flex items-center gap-1 text-sm font-medium">
-        {NAV_TABS.map(({ label, type }) => (
-          <button
-            key={type}
-            onClick={() => handleTabClick(type)}
-            className={[
-              "rounded px-3 py-1.5 transition-colors",
-              isActive(type)
-                ? "text-accent font-semibold"
-                : "text-muted hover:text-primary",
-            ].join(" ")}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+      {showReferralTabs ? (
+        <nav className="flex items-center gap-1 text-sm font-medium">
+          {NAV_TABS.map(({ label, type }) => (
+            <button
+              key={type}
+              onClick={() => handleTabClick(type)}
+              className={[
+                "rounded px-3 py-1.5 transition-colors",
+                isActive(type)
+                  ? "text-accent font-semibold"
+                  : "text-muted hover:text-primary",
+              ].join(" ")}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+      ) : null}
 
       <div className="ml-auto flex items-center gap-2">
         <button

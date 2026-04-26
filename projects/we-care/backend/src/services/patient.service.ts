@@ -1,6 +1,33 @@
 import { supabase } from "../lib/supabase";
 import { extractLookupName } from "./lookup-service";
 
+interface DoctorDirectoryRow {
+  id: string;
+  full_name: string;
+  contact_number: string | null;
+  specialties: { name: string } | Array<{ name: string }> | null;
+  hospitals: { name: string } | Array<{ name: string }> | null;
+}
+
+async function getDoctorById(doctorId: string) {
+  const { data, error } = await supabase
+    .from("doctors")
+    .select("id, full_name, contact_number, specialties(name), hospitals(name)")
+    .eq("id", doctorId)
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  const doctor = data as DoctorDirectoryRow;
+  return {
+    id: doctor.id,
+    full_name: doctor.full_name,
+    phone: doctor.contact_number,
+    specialty: extractLookupName(doctor.specialties) ?? "",
+    hospital: extractLookupName(doctor.hospitals) ?? "",
+  };
+}
+
 export async function getReferralByToken(token: string) {
   const { data: tokenRecord, error: tokenError } = await supabase
     .from("patient_tokens")
@@ -17,35 +44,19 @@ export async function getReferralByToken(token: string) {
     .from("referrals")
     .select(
       `
-      id, diagnosis, urgency, status, clinical_notes, created_at,
-      patients (full_name, date_of_birth, gender),
-      specialist:doctors!referrals_specialist_id_fkey (
-        full_name,
-        contact_number,
-        specialties(name),
-        hospitals(name)
-      )
+      id, diagnosis, urgency, status, clinical_notes, created_at, doctor_id,
+      patients (full_name, date_of_birth, gender)
     `,
     )
     .eq("id", tokenRecord.referral_id)
     .single();
 
   if (referralError) throw new Error(referralError.message);
-
-  const specialist = Array.isArray(referral.specialist)
-    ? referral.specialist[0]
-    : referral.specialist;
+  const targetDoctor = await getDoctorById(referral.doctor_id);
 
   return {
     ...referral,
-    specialist: specialist
-      ? {
-          ...specialist,
-          phone: specialist.contact_number,
-          specialty: extractLookupName(specialist.specialties) ?? "",
-          hospital: extractLookupName(specialist.hospitals) ?? "",
-        }
-      : specialist,
+    targetDoctor,
   };
 }
 

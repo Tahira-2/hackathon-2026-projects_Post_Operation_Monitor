@@ -94,7 +94,7 @@ export default function PatientPortalPage() {
   }
 
   const firstName = referral.patients.full_name.split(" ")[0];
-  const specialist = referral.specialists;
+  const specialist = referral.targetDoctor;
   const timeline = getTimeline(referral.status, referral.created_at);
   const refId = referral.id.slice(0, 5).toUpperCase();
 

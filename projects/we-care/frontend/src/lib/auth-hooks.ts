@@ -14,8 +14,10 @@ import {
   uploadDoctorAvatar,
   type UpdateDoctorProfilePayload,
 } from './auth-api'
+import { getDashboardSummary, type DashboardSummary } from './dashboard-api'
 import { clearDoctorSession, syncDoctorToStores } from './doctor-session'
 import { queryKeys } from './query-keys'
+import type { ReferralViewType } from './referral-view'
 import { useAuthStore } from '../stores/authStore'
 
 function readRecoveryToken() {
@@ -54,6 +56,13 @@ export function useDoctorByIdQuery(doctorId: string) {
     queryKey: queryKeys.doctorById(doctorId),
     queryFn: () => getDoctorById(doctorId),
     enabled: Boolean(doctorId),
+  })
+}
+
+export function useDashboardQuery(viewType: ReferralViewType) {
+  return useQuery<DashboardSummary>({
+    queryKey: queryKeys.dashboard(viewType),
+    queryFn: () => getDashboardSummary(viewType),
   })
 }
 

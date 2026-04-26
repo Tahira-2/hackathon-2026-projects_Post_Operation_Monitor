@@ -62,7 +62,7 @@ export default function PatientBookingReviewPage() {
       navigate(confirmationPath, {
         state: {
           appointment,
-          specialist: referral?.specialists,
+          specialist: referral?.targetDoctor,
           dateLabel: state?.dateLabel,
           timeLabel: state?.timeLabel,
         },
@@ -70,7 +70,7 @@ export default function PatientBookingReviewPage() {
     },
   });
 
-  const specialist = referral?.specialists;
+  const specialist = referral?.targetDoctor;
 
   const details: AppointmentDetail[] = [
     {

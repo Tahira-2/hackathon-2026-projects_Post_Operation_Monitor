@@ -2,10 +2,50 @@ import { supabase } from "../lib/supabase";
 import { randomUUID } from 'crypto';
 import { sendPatientPortalEmail } from './email.service';
 import { extractLookupName } from "./lookup-service";
+import type { ReferralViewType } from "./referral-view";
 
 interface ReferralsQueryOptions {
   page: number;
   pageSize: number;
+  type: ReferralViewType;
+}
+
+interface DoctorDirectoryRow {
+  id: string;
+  full_name: string;
+  contact_number: string | null;
+  specialties: { name: string } | Array<{ name: string }> | null;
+  hospitals: { name: string } | Array<{ name: string }> | null;
+}
+
+async function getDoctorsByIds(doctorIds: string[]) {
+  if (!doctorIds.length) return new Map<string, {
+    id: string;
+    full_name: string;
+    contact_number: string | null;
+    specialty: string;
+    hospital: string;
+  }>();
+
+  const { data, error } = await supabase
+    .from("doctors")
+    .select("id, full_name, contact_number, specialties(name), hospitals(name)")
+    .in("id", doctorIds);
+
+  if (error) throw new Error(error.message);
+
+  return new Map(
+    ((data ?? []) as DoctorDirectoryRow[]).map((doctor) => [
+      doctor.id,
+      {
+        id: doctor.id,
+        full_name: doctor.full_name,
+        contact_number: doctor.contact_number,
+        specialty: extractLookupName(doctor.specialties) ?? "",
+        hospital: extractLookupName(doctor.hospitals) ?? "",
+      },
+    ]),
+  );
 }
 
 export async function createPatientAndReferral(
@@ -19,7 +59,7 @@ export async function createPatientAndReferral(
     medical_history?: string;
   },
   referralData: {
-    specialist_id?: string;
+    doctor_id: string;
     clinical_notes: string;
     extracted_data?: object;
     diagnosis?: string;
@@ -37,7 +77,16 @@ export async function createPatientAndReferral(
 
   const { data: referral, error: referralError } = await supabase
     .from("referrals")
-    .insert({ doctor_id: doctorId, patient_id: patient.id, ...referralData })
+    .insert({
+      doctor_id: referralData.doctor_id,
+      referred_by: doctorId,
+      patient_id: patient.id,
+      clinical_notes: referralData.clinical_notes,
+      extracted_data: referralData.extracted_data,
+      diagnosis: referralData.diagnosis,
+      required_specialty: referralData.required_specialty,
+      urgency: referralData.urgency,
+    })
     .select()
     .single();
 
@@ -48,46 +97,52 @@ export async function createPatientAndReferral(
 
 export async function getReferralsByDoctor(
   doctorId: string,
-  { page, pageSize }: ReferralsQueryOptions,
+  { page, pageSize, type }: ReferralsQueryOptions,
 ) {
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  const { data, error, count } = await supabase
+  let query = supabase
     .from("referrals")
     .select(
       `
-      id, clinical_notes, diagnosis, urgency, status, created_at, required_specialty,
-      patients (id, full_name),
-      specialist:doctors!referrals_specialist_id_fkey (
-        id,
-        full_name,
-        contact_number,
-        specialties(name),
-        hospitals(name)
-      )
+      id, clinical_notes, diagnosis, required_specialty, urgency, status, created_at, doctor_id, referred_by,
+      patients (id, full_name)
     `,
       { count: "exact" },
     )
-    .eq("doctor_id", doctorId)
     .range(from, to)
     .order("created_at", { ascending: false });
 
+  if (type === "outbound") {
+    query = query.eq("referred_by", doctorId);
+  } else {
+    query = query.eq("doctor_id", doctorId);
+
+    if (type === "pending") {
+      query = query.eq("status", "pending");
+    }
+  }
+
+  const { data, error, count } = await query;
+
   if (error) throw new Error(error.message);
+  const doctorMap = await getDoctorsByIds(
+    [
+      ...new Set(
+        (data ?? [])
+          .flatMap((referral) => [referral.doctor_id, referral.referred_by])
+          .filter(Boolean),
+      ),
+    ] as string[],
+  );
   const mappedReferrals = data.map((referral) => {
-    const specialist = Array.isArray(referral.specialist)
-      ? referral.specialist[0]
-      : referral.specialist;
+    const relatedDoctorId = type === "outbound" ? referral.doctor_id : referral.referred_by;
+    const targetDoctor = doctorMap.get(relatedDoctorId);
 
     return {
       ...referral,
-      specialist: specialist
-        ? {
-            ...specialist,
-            specialty: extractLookupName(specialist.specialties) ?? "",
-            hospital: extractLookupName(specialist.hospitals) ?? "",
-          }
-        : specialist,
+      targetDoctor,
     };
   });
 
@@ -110,11 +165,6 @@ export async function getReferralById(referralId: string, doctorId: string) {
       `
       *,
       patients (*),
-      specialist:doctors!referrals_specialist_id_fkey (
-        *,
-        specialties(name),
-        hospitals(name)
-      ),
       referral_status_history (status, changed_at)
     `,
     )
@@ -123,19 +173,12 @@ export async function getReferralById(referralId: string, doctorId: string) {
     .single();
 
   if (error) throw new Error(error.message);
-  const specialist = Array.isArray(data.specialist)
-    ? data.specialist[0]
-    : data.specialist;
+  const doctorMap = await getDoctorsByIds([data.doctor_id]);
+  const targetDoctor = doctorMap.get(data.doctor_id) ?? null;
 
   return {
     ...data,
-    specialist: specialist
-      ? {
-          ...specialist,
-          specialty: extractLookupName(specialist.specialties) ?? "",
-          hospital: extractLookupName(specialist.hospitals) ?? "",
-        }
-      : specialist,
+    targetDoctor,
   };
 }
 

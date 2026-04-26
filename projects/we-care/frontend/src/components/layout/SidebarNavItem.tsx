@@ -1,8 +1,8 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, type To } from 'react-router-dom'
 import type { LucideIcon } from 'lucide-react'
 
 interface SidebarNavItemProps {
-  to: string
+  to: To
   label: string
   icon: LucideIcon
   end?: boolean

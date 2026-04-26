@@ -48,8 +48,8 @@ CREATE TABLE patients (
 CREATE TABLE referrals (
   id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   doctor_id          UUID NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
+  referred_by        UUID NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
   patient_id         UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
-  specialist_id      UUID NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
   clinical_notes     TEXT NOT NULL,
   extracted_data     JSONB,
   diagnosis          TEXT,

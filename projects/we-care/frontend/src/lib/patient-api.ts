@@ -8,7 +8,7 @@ export interface PatientReferral {
   clinical_notes: string;
   created_at: string;
   patients: { full_name: string; date_of_birth: string | null; gender: string | null };
-  specialists: { full_name: string; specialty: string; hospital: string; phone: string | null };
+  targetDoctor: { full_name: string; specialty: string; hospital: string; phone: string | null };
 }
 
 export interface BookedAppointment {
