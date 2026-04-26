@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { LayoutDashboard, Users, CalendarHeart, Settings, PanelLeftClose, PanelLeftOpen, FileStack, Stethoscope, X, Clock } from "lucide-react"
+import { LayoutDashboard, Users, CalendarHeart, Settings, PanelLeftClose, PanelLeftOpen, FileStack, Stethoscope, Clock, MessageSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface SidebarProps {
@@ -29,16 +29,19 @@ export function Sidebar({ role }: SidebarProps) {
       { name: "Specializations", href: "/admin/specializations", icon: Stethoscope },
       { name: "Medicines", href: "/admin/medicines", icon: FileStack },
       { name: "Users", href: "/admin/users", icon: Users },
+      { name: "Messages", href: "/admin/chat", icon: MessageSquare },
       { name: "Profile", href: "/admin/profile", icon: Settings },
     ],
     physician: [
       { name: "Overview", href: "/physician", icon: LayoutDashboard },
       { name: "Appointments", href: "/physician/appointments", icon: CalendarHeart },
+      { name: "Messages", href: "/physician/chat", icon: MessageSquare },
       { name: "Availability", href: "/physician/availability", icon: Clock },
       { name: "Profile", href: "/physician/profile", icon: Settings },
     ],
     patient: [
       { name: "Overview", href: "/patient", icon: LayoutDashboard },
+      { name: "Messages", href: "/patient/chat", icon: MessageSquare },
       { name: "Profile", href: "/patient/profile", icon: Settings },
     ]
   }
@@ -56,18 +59,20 @@ export function Sidebar({ role }: SidebarProps) {
       )}
       
       <aside className={cn(
-        "border-r bg-card transition-all duration-300 ease-in-out relative z-[70] flex flex-col",
-        // Desktop
-        "max-md:hidden md:flex",
+        "border-r bg-card transition-all duration-300 ease-in-out relative z-[70] flex flex-col h-screen sticky top-0",
+        // Desktop logic
         isCollapsed ? "md:w-20" : "md:w-64",
-        // Mobile Sliding
-        mobileOpen && "max-md:absolute max-md:flex max-md:left-0 max-md:top-0 max-md:bottom-0 max-md:h-screen w-64 border-r max-md:translate-x-0"
+        // Mobile logic: always visible but defaulted to icon-only unless toggled
+        !mobileOpen ? "max-md:w-16" : "max-md:w-64",
+        "flex"
       )}>
-        {/* Mobile Header Inside Sidebar */}
+        {/* Mobile Sidebar Controls */}
         <div className="flex md:hidden items-center justify-between p-4 border-b">
-          <span className="font-bold tracking-tight text-lg">Menu</span>
-          <button onClick={() => setMobileOpen(false)} className="text-muted-foreground hover:text-foreground">
-            <X className="h-5 w-5"/>
+          <button 
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="bg-background p-1.5 rounded-full border text-muted-foreground hover:text-foreground hover:bg-accent shadow-sm transition-all"
+          >
+            {mobileOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
           </button>
         </div>
 
@@ -90,17 +95,16 @@ export function Sidebar({ role }: SidebarProps) {
                 <Link
                   key={item.href}
                   to={item.href}
-                  title={isCollapsed && !mobileOpen ? item.name : undefined}
+                  title={(isCollapsed || (!mobileOpen)) ? item.name : undefined}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg py-2.5 transition-all outline-none cursor-pointer",
-                    isCollapsed && !mobileOpen ? "justify-center px-0" : "px-3",
+                    "flex items-center gap-3 rounded-lg py-2.5 transition-all outline-none cursor-pointer px-3",
                     isActive 
                       ? "bg-primary/10 text-primary" 
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   )}
                 >
-                  <Icon className={cn("shrink-0", isCollapsed && !mobileOpen ? "h-5 w-5" : "h-[18px] w-[18px]")} />
-                  {(!isCollapsed || mobileOpen) && <span className="text-sm font-medium">{item.name}</span>}
+                  <Icon className={cn("shrink-0", (isCollapsed || (!mobileOpen)) ? "h-5 w-5" : "h-[18px] w-[18px]")} />
+                  {(!isCollapsed && (window.innerWidth >= 768 || mobileOpen)) && <span className="text-sm font-medium">{item.name}</span>}
                 </Link>
               )
             })}

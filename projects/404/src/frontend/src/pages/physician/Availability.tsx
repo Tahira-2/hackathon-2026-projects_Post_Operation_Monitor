@@ -206,14 +206,14 @@ export function Availability() {
 
               return (
                 <div key={day} className="space-y-2">
-                  <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border bg-muted/30 gap-4">
                     <div className="flex items-center gap-4">
                       <Switch 
                         checked={isActive}
                         onCheckedChange={(checked) => handleToggleDay(day, checked)}
                       />
                       <div className="flex items-center gap-2">
-                       <span className="text-sm font-medium w-24 capitalize">{day.toLowerCase()}</span>
+                       <span className="text-sm font-medium w-20 sm:w-24 capitalize">{day.toLowerCase()}</span>
                        {isActive && (
                          <Button 
                            variant="ghost" 
@@ -229,17 +229,17 @@ export function Availability() {
                   </div>
                     
                     {isActive && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         <Input
                           type="time"
-                          className="w-[120px] h-9"
+                          className="w-full sm:w-[110px] h-9 text-xs"
                           value={hour.startTime}
                           onChange={(e) => handleTimeChange(day, "startTime", e.target.value)}
                         />
-                        <span className="text-muted-foreground text-xs font-bold px-1">to</span>
+                        <span className="text-muted-foreground text-[10px] uppercase font-bold px-1">to</span>
                         <Input
                           type="time"
-                          className="w-[120px] h-9"
+                          className="w-full sm:w-[110px] h-9 text-xs"
                           value={hour.endTime}
                           onChange={(e) => handleTimeChange(day, "endTime", e.target.value)}
                         />
@@ -247,7 +247,7 @@ export function Availability() {
                     )}
                     
                     {!isActive && (
-                      <span className="text-xs text-muted-foreground italic">Off Duty</span>
+                      <span className="text-xs text-muted-foreground italic mr-2">Off Duty</span>
                     )}
                   </div>
                   

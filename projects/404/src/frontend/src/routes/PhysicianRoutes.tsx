@@ -7,6 +7,8 @@ import { Availability } from "@/pages/physician/Availability";
 import { Login } from "@/pages/auth/Login";
 import { Profile } from "@/pages/shared/Profile";
 
+import { Chat } from "@/pages/physician/Chat";
+
 export function PhysicianRoutes() {
   return (
     <Routes>
@@ -17,6 +19,7 @@ export function PhysicianRoutes() {
         <Route element={<PhysicianLayout />}>
           <Route path="/" element={<PhysicianDashboard />} />
           <Route path="/appointments" element={<Appointments />} />
+          <Route path="/chat" element={<Chat />} />
           <Route path="/availability" element={<Availability />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="/physician" replace />} />
