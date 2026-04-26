@@ -1,5 +1,6 @@
 Project Name - CureIT
 
+HEAD
 Team Members - Prajan Manoj Kumar Rekha (PrajanManojKumarRekha), Eric Cariaga (eCarCodes), Jessica C O'Bonna (jessic-o), Shayan Ali (CodewithShayan456)
 
 Problem Statement -
@@ -20,8 +21,17 @@ CureIT is a prototype telehealth workflow platform focused on one clean end-to-e
 - Prescription artifacts can be generated as PDF with clinic/provider headstamp metadata (for example clinic name and licensed provider display details).
 - SOAP note and prescription data are converted into FHIR R4-style JSON bundle resources, including `Consent`, `Composition`, and `MedicationRequest`, for interoperable EMR export.
 
+Healthcare providers, especially small clinics and independent practitioners, face increasing administrative overload do to inefficient documentation, fragmented scheduling tools, and inconsistent clinical note-taking workflows.
+
+Patient records are often scattered across multiple systems or stored in unstructured formats, making it difficult for providers to quickly access and interpret relevant medical history.
+Scheduling appointments is frequently handled through disconnected platforms, leading to inefficiencies and double-booking risks. Additionally, clinicians spend a significant portion of their time manually writing or refining clinical notes, reducing time available for patient care.
+
+These challenges reduce workflow efficiency, increased cognitive load for providers, and inconsistent clinical documentation quality across patient visits.
+refs/rewritten/origin-Eric-2
+
 This project is a workflow/documentation prototype and is not a diagnostic tool. It is designed for hackathon speed with clear team boundaries across frontend, API, core logic, and database layers, and it targets independent clinics and licensed practitioners rather than hospital system workflows.
 
+HEAD
 Tech Stack -
 - Frontend: Next.js, React, TypeScript, Tailwind CSS
 - API Gateway: FastAPI, Pydantic

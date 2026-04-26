@@ -1,15 +1,22 @@
 AI.md
 context.md
+HEAD
 .env
 questions.md
 biggerscope.md
 __pycache__/
 *.pyc
 teammate.md
+plan.md 
+
 
 AI.md
 context.md
 .cursorrules
 .env
+.env.local
+.env.*.local
+refs/rewritten/origin-Eric-2
+
 .env.local
 .env.*.local
