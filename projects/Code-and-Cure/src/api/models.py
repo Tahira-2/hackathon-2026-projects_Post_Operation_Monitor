@@ -47,6 +47,14 @@ class AppointmentSlot(BaseModel):
 class BookingRequest(BaseModel):
     slot_id: str
 
+# --- Intake Models ---
+class IntakeForm(BaseModel):
+    appointment_id: str
+    chief_complaint: str
+    medical_history: Optional[str] = None
+    current_medications: Optional[str] = None
+    allergies: Optional[str] = None
+
 # --- Consultation & SOAP Models ---
 class ConsultationTranscript(BaseModel):
     appointment_id: str
@@ -57,6 +65,10 @@ class SOAPNote(BaseModel):
     objective: str
     assessment: str
     plan: str
+
+class SOAPApprovalRequest(BaseModel):
+    appointment_id: str
+    edited_note: SOAPNote
 
 class FHIRRecord(BaseModel):
     resourceType: str = "Bundle"
