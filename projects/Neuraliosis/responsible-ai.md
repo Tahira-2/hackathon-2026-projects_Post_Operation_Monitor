@@ -45,6 +45,61 @@ Current project data sources include:
 
 These sources should be treated as supporting context only. They are useful for retrieval, summaries, and user guidance, but they are not a substitute for clinical diagnosis or emergency care.
 
+## AI Layer - Neuraliosis Health Assistant
+
+### Architecture
+
+The AI system uses LangGraph as a graph-based agent framework with OpenAI GPT-4o as the core LLM. It follows a multi-node pipeline with conditional routing driven by symptom confidence scoring.
+
+### Agent Flow
+
+1. `intent_parser` extracts all symptoms and classifies the topic as cardiac, fitness, sleep, stress, nutrition, or general.
+2. `confidence_scorer` scores input from 0.0 to 1.0 using onset, severity, activity context, duration, body location, and history.
+3. Conditional routing sends the conversation to greeting responses, the RAG retriever, the question generator, or fitness permission depending on confidence and severity.
+4. `question_generator` asks one fitness-aware multiple-choice question per turn and rotates through sleep, hydration, eating, exercise, stress, and heart rate.
+5. `fitness_permission` requests access to user health data for fitness, cardiac, and sleep topics.
+6. `fitness_fetcher` pulls real user fitness data such as heart rate, steps, sleep, and workout history.
+7. `rag_retriever` searches the ChromaDB vector store using embedded full context.
+8. `llm_synthesizer` combines symptoms, Q&A, RAG context, and fitness data to generate the wellness response.
+9. `response_formatter` appends the doctor referral message when the case is serious.
+
+### Critical Symptom Fast-Track
+
+When a user mentions chest pain, numbness, difficulty breathing, fainting, stroke, or seizure, the agent skips the question loop and immediately generates a response with a specialist recommendation.
+
+### Specialist Detection
+
+The LLM identifies the required medical specialization, such as cardiologist, neurologist, pulmonologist, orthopedist, gastroenterologist, endocrinologist, or general physician. This value is returned in the API response and used by the mobile app to filter and recommend nearby doctors.
+
+### Knowledge Base and Models
+
+- 35+ processed documents
+- Sources: MedlinePlus, CDC, NIH Magazine
+- 18 curated medical and wellness JSON records covering dehydration, overexertion, cardiac symptoms, sleep, breathing, joint pain, anxiety, nutrition, and more
+- Vector store: ChromaDB with OpenAI `text-embedding-3-small`
+- Chunk size: 500 characters with 50 character overlap
+- Models used: GPT-4o-mini for symptom parsing and question generation, GPT-4o for final synthesis, and `text-embedding-3-small` for embeddings
+
+### API
+
+The FastAPI server exposes the main chat endpoint, session history, session clearing, and a list of active sessions. Responses include the wellness message, confidence score, seriousness flag, doctor need flag, recommended specialization, and the number of questions asked.
+
+### Safety Design
+
+- Never diagnose or prescribe
+- End every response with a medical disclaimer
+- Critical symptoms bypass the question loop
+- Serious cases always recommend professional care
+- Frame the system as wellness support, not medical advice
+
+### Tech Stack
+
+- LangGraph for agent graph orchestration
+- OpenAI for LLM and embeddings
+- ChromaDB for the vector store
+- FastAPI for the API layer
+- Python 3.11+ for runtime
+
 ## Fairness and Reliability
 
 The AI should be tested across different symptom descriptions, ages, and user styles so that the output is not overly biased toward one kind of user input.

@@ -59,6 +59,41 @@ Neuraliosis provides an AI-driven symptom assistant that asks targeted follow-up
 Neuraliosis is an AI-powered mobile health application taking the US market as the reference. It combines fitness tracking, symptom detection, OTC medicine guidance, doctor recommendations, and appointment booking into one seamless platform.
 
 The US digital health market is large and growing quickly. Recent market analyses estimate US digital health at $81.17 billion in 2023 and about $94.95 billion in 2024, with continued strong growth expected through 2030 [1]. At the same time, telehealth utilization accelerated sharply during COVID-19, with CDC reporting a 50% increase in telehealth visits in early 2020 versus 2019 and a 154% spike in late March 2020 [2].
+## 15. AI Layer - Neuraliosis Health Assistant
+
+### Architecture
+
+The AI system is built with LangGraph, a graph-based agent framework, and uses OpenAI GPT-4o as the core LLM. It follows a multi-node pipeline with conditional routing based on symptom confidence scoring.
+
+### Agent Flow
+
+1. `intent_parser` extracts all symptoms and classifies the topic as cardiac, fitness, sleep, stress, nutrition, or general.
+2. `confidence_scorer` scores the input from 0.0 to 1.0 using onset, severity, activity context, duration, body location, and history.
+3. Conditional routing sends the conversation to greeting responses, the RAG retriever, the question generator, or fitness permission depending on the confidence and severity.
+4. `question_generator` asks one fitness-aware multiple-choice question per turn and rotates through sleep, hydration, eating, exercise, stress, and heart rate.
+5. `fitness_permission` requests access to user health data for fitness, cardiac, and sleep topics.
+6. `fitness_fetcher` pulls real user fitness data such as heart rate, steps, sleep, and workout history.
+7. `rag_retriever` searches the ChromaDB vector store using embedded full context.
+8. `llm_synthesizer` combines symptoms, Q&A, RAG context, and fitness data to generate the wellness response.
+9. `response_formatter` appends the doctor referral message when the case is serious.
+
+### Safety and Outputs
+
+- Critical symptoms such as chest pain, numbness, difficulty breathing, fainting, stroke, or seizure skip the question loop and go straight to specialist guidance.
+- The AI never diagnoses or prescribes and always ends responses with a medical disclaimer.
+- Serious cases always recommend professional care and return the required specialist when detected.
+
+### Knowledge Base and Models
+
+- Knowledge base: 35+ processed documents from MedlinePlus, CDC, and NIH Magazine, plus 18 curated medical and wellness JSON records.
+- Vector store: ChromaDB with OpenAI `text-embedding-3-small` embeddings.
+- Chunking: 500 characters with 50 character overlap.
+- Models used: GPT-4o-mini for symptom parsing and question generation, GPT-4o for final synthesis, and `text-embedding-3-small` for retrieval.
+
+### API
+
+The AI service exposes a FastAPI layer with endpoints for chat, history, session management, and clearing sessions. The response includes confidence, seriousness flags, doctor need, specialist type, and question count.
+
 
 ## 2. Problem Statement
 
@@ -377,3 +412,38 @@ Growth assumptions:
 3. Centers for Medicare & Medicaid Services (CMS). _NHE Fact Sheet_. Page modified January 14, 2026. https://www.cms.gov/data-research/statistics-trends-and-reports/national-health-expenditure-data/nhe-fact-sheet
 4. Keisler-Starkey K, Bunch LN. _Health Insurance Coverage in the United States: 2023_. U.S. Census Bureau, Report P60-284, September 2024. https://www.census.gov/library/publications/2024/demo/p60-284.html
 5. Caplan Z. _2020 Census: 1 in 6 People in the United States Were 65 and Over_. U.S. Census Bureau, May 25, 2023. https://www.census.gov/library/stories/2023/05/2020-census-united-states-older-population-grew.html
+
+## 15. AI Layer - Neuraliosis Health Assistant
+
+### Architecture
+
+The AI system is built with LangGraph, a graph-based agent framework, and uses OpenAI GPT-4o as the core LLM. It follows a multi-node pipeline with conditional routing based on symptom confidence scoring.
+
+### Agent Flow
+
+1. `intent_parser` extracts all symptoms and classifies the topic as cardiac, fitness, sleep, stress, nutrition, or general.
+2. `confidence_scorer` scores the input from 0.0 to 1.0 using onset, severity, activity context, duration, body location, and history.
+3. Conditional routing sends the conversation to greeting responses, the RAG retriever, the question generator, or fitness permission depending on the confidence and severity.
+4. `question_generator` asks one fitness-aware multiple-choice question per turn and rotates through sleep, hydration, eating, exercise, stress, and heart rate.
+5. `fitness_permission` requests access to user health data for fitness, cardiac, and sleep topics.
+6. `fitness_fetcher` pulls real user fitness data such as heart rate, steps, sleep, and workout history.
+7. `rag_retriever` searches the ChromaDB vector store using embedded full context.
+8. `llm_synthesizer` combines symptoms, Q&A, RAG context, and fitness data to generate the wellness response.
+9. `response_formatter` appends the doctor referral message when the case is serious.
+
+### Safety and Outputs
+
+- Critical symptoms such as chest pain, numbness, difficulty breathing, fainting, stroke, or seizure skip the question loop and go straight to specialist guidance.
+- The AI never diagnoses or prescribes and always ends responses with a medical disclaimer.
+- Serious cases always recommend professional care and return the required specialist when detected.
+
+### Knowledge Base and Models
+
+- Knowledge base: 35+ processed documents from MedlinePlus, CDC, and NIH Magazine, plus 18 curated medical and wellness JSON records.
+- Vector store: ChromaDB with OpenAI `text-embedding-3-small` embeddings.
+- Chunking: 500 characters with 50 character overlap.
+- Models used: GPT-4o-mini for symptom parsing and question generation, GPT-4o for final synthesis, and `text-embedding-3-small` for retrieval.
+
+### API
+
+The AI service exposes a FastAPI layer with endpoints for chat, history, session management, and clearing sessions. The response includes confidence, seriousness flags, doctor need, specialist type, and question count.
