@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(python -m pytest src/core_logic/test_logic.py -v)"
-    ]
-  }
-}

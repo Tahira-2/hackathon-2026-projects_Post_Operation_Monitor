@@ -73,6 +73,12 @@ Policy:
 - controlled substances are blocked
 - general/non-controlled meds allowed
 
+Precedence rule (core_logic vs. database `medication_policies`):
+- `check_prescription_safety` is the primary gate; apply its result before any DB lookup.
+- `medication_policies` table is an informational/audit reference only.
+- A `blocked` result from core_logic must never be overridden by an `is_allowed=True` value in the DB.
+- This ensures controlled substances remain blocked even under database misconfiguration.
+
 ## 5) FHIR Bundle Builder
 
 Function:
@@ -89,14 +95,9 @@ Resources currently included:
 
 ## 6) API Wiring Rules
 
-<<<<<<< Updated upstream
-- API should call prescription safety check before creating prescription artifacts.
-- If blocked: return blocked status and reason, do not issue final prescription PDF artifact.
-- API owns transport behavior (HTTP status, response model), core_logic owns deterministic business logic only.
-=======
 - SOAP clinician approval is the required gate for FHIR/HL7 export.
 - API should call prescription safety check before creating prescription artifacts.
-- If blocked: return blocked status and reason, do not issue final medicine prescription order PDF.
+- If blocked: return blocked status and reason, do not issue final prescription PDF artifact.
 - Prescription status must not block SOAP-approved EMR/EHR export path.
 - API owns transport behavior (HTTP status, response model), core_logic owns deterministic business logic only.
 
@@ -214,4 +215,3 @@ Resources currently included:
   "prescription_status": "blocked"
 }
 ```
->>>>>>> Stashed changes

@@ -1,9 +1,10 @@
--- Doctor users (3)
+-- Doctor users (4 — includes General Practice to match core_logic fallback specialty)
 insert into users (email, password_hash, full_name, role)
 values
   ('derm.doc@test.com', 'hash', 'Dr. Alice Skinner', 'doctor'),
   ('cardio.doc@test.com', 'hash', 'Dr. Brian Heart', 'doctor'),
-  ('neuro.doc@test.com', 'hash', 'Dr. Clara Neuro', 'doctor');
+  ('neuro.doc@test.com', 'hash', 'Dr. Clara Neuro', 'doctor'),
+  ('gp.doc@test.com', 'hash', 'Dr. Dana Ellis', 'doctor');
 
 -- Patient users (2)
 insert into users (email, password_hash, full_name, role)
@@ -17,6 +18,9 @@ insert into doctors (
   full_name,
   specialty,
   license_no,
+  provider_npi,
+  provider_dea,
+  credential_verification_status,
   is_licensed,
   rating,
   review_count,
@@ -32,6 +36,9 @@ values
     'Dr. Alice Skinner',
     'Dermatology',
     'LIC-DERM-1001',
+    '1111111111',
+    'BD1111111',
+    'verified',
     true,
     4.8,
     126,
@@ -46,6 +53,9 @@ values
     'Dr. Brian Heart',
     'Cardiology',
     'LIC-CARD-1002',
+    '2222222222',
+    'BD2222222',
+    'verified',
     true,
     4.7,
     98,
@@ -60,6 +70,9 @@ values
     'Dr. Clara Neuro',
     'Neurology',
     'LIC-NEUR-1003',
+    '3333333333',
+    'BD3333333',
+    'verified',
     true,
     4.9,
     143,
@@ -70,13 +83,50 @@ values
     '{"friday":["10:00","11:00"],"saturday":["12:00"]}'::jsonb
   );
 
+-- General Practice doctor (aligns with DEFAULT_FALLBACK_SPECIALTY in core_logic symptom_mapper)
+insert into doctors (
+  user_id,
+  full_name,
+  specialty,
+  license_no,
+  provider_npi,
+  provider_dea,
+  credential_verification_status,
+  is_licensed,
+  rating,
+  review_count,
+  review_source,
+  lat,
+  lng,
+  address,
+  availability
+)
+values (
+  (select id from users where email = 'gp.doc@test.com'),
+  'Dr. Dana Ellis',
+  'General Practice',
+  'LIC-GP-1004',
+  '4444444444',
+  'BD4444444',
+  'verified',
+  true,
+  4.6,
+  87,
+  'google',
+  29.4280,
+  -98.4910,
+  '55 Primary Care Blvd, San Antonio, TX',
+  '{"monday":["09:00","10:00","11:00"],"thursday":["13:00","14:00"]}'::jsonb
+);
+
 -- 1 completed appointment
-insert into appointments (patient_id, doctor_id, scheduled_at, status, notes)
+insert into appointments (patient_id, doctor_id, scheduled_at, status, workflow_status, notes)
 values (
   (select id from users where email = 'patient.one@test.com'),
   (select id from doctors where specialty = 'Cardiology'),
   now() - interval '1 day',
   'completed',
+  'signer',
   'Follow-up visit for chest discomfort.'
 );
 
@@ -106,6 +156,10 @@ insert into soap_notes (
   clinic_logo_url,
   soap_pdf_generated_at,
   document_reference_id,
+  coding_review_required,
+  clinician_signed_at,
+  export_status,
+  target_vendor,
   approved,
   approved_at
 )
@@ -123,14 +177,19 @@ values (
   'https://example.com/logo-careit.png',
   now(),
   'DOC-SOAP-0001',
+  false,
+  now(),
+  'ready',
+  'athenahealth',
   true,
   now()
 );
 
--- 1 FHIR record
-insert into fhir_records (soap_note_id, fhir_json)
+-- 1 FHIR record (legacy Composition document; resource_type set explicitly to avoid default mismatch)
+insert into fhir_records (soap_note_id, resource_type, fhir_json)
 values (
   (select id from soap_notes order by created_at desc limit 1),
+  'Composition',
   '{
     "resourceType":"Composition",
     "status":"final",
@@ -191,4 +250,43 @@ values
     'https://example.com/logo-careit.png',
     null,
     'DOC-RX-0002'
+  );
+
+-- Department workflow logs for legal/signer/coordination
+insert into department_logs (
+  appointment_id,
+  soap_note_id,
+  actor_user_id,
+  department,
+  action,
+  version_label,
+  details
+)
+values
+  (
+    (select id from appointments order by created_at desc limit 1),
+    (select id from soap_notes order by created_at desc limit 1),
+    (select id from users where email = 'patient.one@test.com'),
+    'legal',
+    'consent_verified',
+    'v1',
+    'Patient consent and jurisdiction checks passed.'
+  ),
+  (
+    (select id from appointments order by created_at desc limit 1),
+    (select id from soap_notes order by created_at desc limit 1),
+    (select id from users where email = 'cardio.doc@test.com'),
+    'signer',
+    'soap_authorized',
+    'v1',
+    'Doctor reviewed and signed SOAP note.'
+  ),
+  (
+    (select id from appointments order by created_at desc limit 1),
+    (select id from soap_notes order by created_at desc limit 1),
+    (select id from users where email = 'patient.one@test.com'),
+    'coordination',
+    'follow_up_routed',
+    'v1',
+    'Follow-up routed to care coordination.'
   );

@@ -1,51 +1,66 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from src.api.models import BookingRequest
-from typing import List
-from datetime import datetime
+from src.api.dependencies import require_role, get_current_user
+from src.database.db_client import (
+    insert_appointment,
+    get_appointments_for_patient,
+    get_appointments_for_doctor,
+    get_doctor_by_user_id,
+)
 
 router = APIRouter()
 
-# In-memory store for booked appointments (replaces Supabase for hackathon)
-# Person 4 will replace this with: from src.database.db_client import save_booking
-BOOKED_APPOINTMENTS = []
 
-@router.post("/book")
-async def book_appointment(request: BookingRequest):
+@router.post("/", dependencies=[Depends(require_role("patient"))])
+async def create_appointment(request: BookingRequest, current_user: dict = Depends(get_current_user)):
     """
-    Golden Path Step 4: Patient books a time slot.
-    Saves the booking and marks the slot as taken.
+    Patient books a time slot. patient_id sourced from JWT (never trusted from client).
     """
-    # Check if this slot is already booked
-    for booking in BOOKED_APPOINTMENTS:
-        if booking["slot_id"] == request.slot_id:
-            raise HTTPException(status_code=409, detail="This slot is already booked")
+    patient_id = current_user["user_id"]
 
-    # Save the booking
-    booking_record = {
-        "slot_id": request.slot_id,
-        "patient_id": request.patient_id,
-        "booked_at": datetime.now().isoformat(),
-        "status": "confirmed"
-    }
-    BOOKED_APPOINTMENTS.append(booking_record)
+    row = insert_appointment(
+        patient_id=patient_id,
+        doctor_id=request.doctor_id,
+        scheduled_at=request.scheduled_at,
+    )
+
+    if not row or not row.get("id"):
+        raise HTTPException(status_code=500, detail="Failed to create appointment.")
 
     return {
+        "appointment_id": row["id"],
+        "status": row.get("status", "pending"),
         "message": "Appointment booked successfully",
-        "booking": booking_record
+        "booking": row,
     }
 
-@router.get("/doctor/{doctor_id}")
-async def get_doctor_appointments(doctor_id: str):
-    """
-    Golden Path Step 6: Doctor dashboard fetches their booked appointments.
-    """
-    # Filter bookings that belong to this doctor (slot IDs contain the doctor ID)
-    doctor_bookings = [
-        b for b in BOOKED_APPOINTMENTS 
-        if doctor_id in b["slot_id"]
-    ]
 
-    if not doctor_bookings:
-        return []
+@router.get("/")
+async def get_appointments(current_user: dict = Depends(get_current_user)):
+    """
+    Returns appointments scoped to the authenticated user's role.
+    Patient sees own bookings; doctor sees their schedule.
+    """
+    user_id = current_user["user_id"]
+    role = current_user["role"]
 
-    return doctor_bookings
+    if role == "patient":
+        return get_appointments_for_patient(patient_id=user_id)
+
+    if role == "doctor":
+        # JWT carries users.id; appointments reference doctors.id (different table)
+        doctor = get_doctor_by_user_id(user_id)
+        if not doctor:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    f"No doctor profile found for user {user_id}. "
+                    "Ensure the doctor account has a linked profile before fetching appointments."
+                ),
+            )
+        return get_appointments_for_doctor(doctor_id=doctor["id"])
+
+    raise HTTPException(
+        status_code=403,
+        detail=f"Role '{role}' is not permitted to access appointments.",
+    )
