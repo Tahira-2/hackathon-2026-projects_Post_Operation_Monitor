@@ -33,6 +33,13 @@ type MessagePayload = Prisma.MessageGetPayload<{
   select: typeof messageSelect;
 }>;
 
+export interface DoctorSuggestion {
+  doctorId: string;
+  doctorName: string;
+  specialization: string;
+  workingHours: { day: string; startTime: string; endTime: string }[];
+}
+
 @Injectable()
 export class ChatService {
   private readonly geminiModel = 'gemini-3-flash-preview';
@@ -108,7 +115,10 @@ export class ChatService {
       return { message, aiMessage: null };
     }
 
-    const aiContent = await this.generateAiReply(conversation, message);
+    const { aiContent, doctorSuggestions } = await this.generateAiReply(
+      conversation,
+      message,
+    );
 
     const aiMessage = await this.prisma.message.create({
       data: {
@@ -116,7 +126,10 @@ export class ChatService {
         senderId: 'SYSTEM',
         senderType: MessageSender.SYSTEM,
         content: aiContent,
-        metadata: this.toJsonValue({ model: this.geminiModel }),
+        metadata: this.toJsonValue({
+          model: this.geminiModel,
+          ...(doctorSuggestions.length > 0 ? { doctorSuggestions } : {}),
+        }),
       },
       select: messageSelect,
     });
@@ -124,17 +137,59 @@ export class ChatService {
     return { message, aiMessage };
   }
 
+  /**
+   * Fetches available doctors, optionally filtered by specialization keyword.
+   */
+  async fetchAvailableDoctors(
+    specializationKeyword?: string,
+  ): Promise<DoctorSuggestion[]> {
+    const doctors = await this.prisma.doctor.findMany({
+      where: specializationKeyword
+        ? {
+            specialization: {
+              name: { contains: specializationKeyword, mode: 'insensitive' },
+            },
+          }
+        : undefined,
+      select: {
+        id: true,
+        user: { select: { fullName: true } },
+        specialization: { select: { name: true } },
+        workingHours: {
+          select: { day: true, startTime: true, endTime: true },
+          orderBy: { day: 'asc' },
+        },
+      },
+      take: 5,
+    });
+
+    return doctors.map((d) => ({
+      doctorId: d.id,
+      doctorName: d.user.fullName,
+      specialization: d.specialization.name,
+      workingHours: d.workingHours.map((wh) => ({
+        day: wh.day,
+        startTime: wh.startTime,
+        endTime: wh.endTime,
+      })),
+    }));
+  }
+
   private async generateAiReply(
     conversation: ConversationPayload,
     message: MessagePayload,
-  ): Promise<string> {
+  ): Promise<{ aiContent: string; doctorSuggestions: DoctorSuggestion[] }> {
     const userId = conversation.userIds[0] ?? message.senderId;
 
     if (!this.geminiClient) {
-      return 'I can only answer healthcare questions in your care context. I am currently unavailable because the AI key is not configured.';
+      return {
+        aiContent:
+          'I can only answer healthcare questions in your care context. I am currently unavailable because the AI key is not configured.',
+        doctorSuggestions: [],
+      };
     }
 
-    const [profile, history] = await Promise.all([
+    const [profile, history, allDoctors] = await Promise.all([
       this.prisma.user.findUnique({
         where: { id: userId },
         select: { id: true, fullName: true, role: true },
@@ -143,27 +198,74 @@ export class ChatService {
         where: { conversationId: conversation.id },
         orderBy: { createdAt: 'asc' },
         take: 20,
-        select: {
-          senderType: true,
-          content: true,
-          createdAt: true,
-        },
+        select: { senderType: true, content: true, createdAt: true },
       }),
+      this.fetchAvailableDoctors(),
     ]);
 
+    const doctorsContext = allDoctors
+      .map(
+        (d) =>
+          `- ${d.doctorName} (${d.specialization}): available ${d.workingHours.map((wh) => `${wh.day} ${wh.startTime}-${wh.endTime}`).join(', ')}`,
+      )
+      .join('\n');
+
+    const isDoctor = profile?.role === 'DOCTOR';
+
+    const roleContext = isDoctor
+      ? [
+          'The user is a DOCTOR on the CareFlow platform.',
+          'You are their clinical AI assistant. You may discuss:',
+          '- Clinical decision support (diagnosis differentials, treatment options, drug interactions)',
+          '- Evidence-based medicine and latest clinical guidelines',
+          '- Patient management strategies and care planning',
+          '- ICD/CPT coding guidance, documentation tips',
+          '- Scheduling and workflow questions',
+          'Respond with appropriate medical depth and clinical precision.',
+          'Always remind the doctor that final clinical decisions rest with them.',
+        ]
+      : [
+          'The user is a PATIENT on the CareFlow platform.',
+          'You are their friendly healthcare assistant. You may discuss:',
+          '- General health questions and symptom information',
+          '- Medication reminders and basic drug info',
+          '- Preparation for upcoming appointments',
+          '- When to seek emergency care',
+          'Use simple, empathetic language. Never diagnose.',
+          'Always recommend consulting their doctor for specific medical advice.',
+        ];
+
     const prompt = [
-      'You are a healthcare assistant for a telemedicine platform.',
-      'Only answer healthcare-related questions tied to the user context and conversation data provided below.',
-      'If the user asks for non-healthcare topics, legal/financial advice, or anything unrelated, politely decline in one short sentence.',
-      'Do not claim access to any data not listed below.',
+      'You are CareFlow AI, a professional healthcare assistant for a telemedicine platform.',
+      ...roleContext,
       '',
       `User profile: ${JSON.stringify(profile ?? { id: userId })}`,
       `Conversation history: ${JSON.stringify(history)}`,
-      `Latest user message: ${message.content}`,
+      `Latest message: ${message.content}`,
       '',
-      'Answer in concise, safe healthcare guidance and include a suggestion to consult a clinician when necessary.',
+      ...(isDoctor
+        ? [
+            '=== CURRENT DOCTOR ROSTER (for scheduling/referral context) ===',
+            doctorsContext || 'No other doctors currently listed.',
+            '=== END ===',
+            '',
+            'Keep responses concise and clinically relevant (2-4 sentences). Do NOT emit SUGGEST_DOCTORS.',
+          ]
+        : [
+            '=== AVAILABLE DOCTORS FOR REFERRAL ===',
+            doctorsContext || 'No doctors currently available.',
+            '=== END ===',
+            '',
+            'IMPORTANT:',
+            '1. If the patient mentions symptoms or asks for a specialist, give a brief health tip AND end your reply with EXACTLY one line:',
+            '   SUGGEST_DOCTORS:<comma-separated specialization keywords>',
+            '   Example: SUGGEST_DOCTORS:Cardiology,General Medicine',
+            '2. Only suggest doctors when clearly relevant to the patient\'s health query.',
+            '3. Be warm, concise (2-3 sentences), and always suggest consulting a clinician for diagnoses.',
+          ]),
     ].join('\n');
 
+    let rawText = '';
     try {
       const response = await this.geminiClient.models.generateContent({
         model: this.geminiModel,
@@ -176,24 +278,57 @@ export class ChatService {
           : '';
 
       if (directText.length > 0) {
-        return directText;
-      }
-
-      const candidateText =
-        response.candidates
-          ?.flatMap((candidate) => candidate.content?.parts ?? [])
-          .map((part) => part.text ?? '')
-          .join(' ')
-          .trim() ?? '';
-
-      if (candidateText.length > 0) {
-        return candidateText;
+        rawText = directText;
+      } else {
+        rawText =
+          response.candidates
+            ?.flatMap((candidate) => candidate.content?.parts ?? [])
+            .map((part) => part.text ?? '')
+            .join(' ')
+            .trim() ?? '';
       }
     } catch {
-      return 'I can only help with healthcare-related questions in your care context. Please ask a medical question related to your care.';
+      return {
+        aiContent:
+          'I can only help with healthcare-related questions in your care context.',
+        doctorSuggestions: [],
+      };
     }
 
-    return 'I can only help with healthcare-related questions in your care context. Please ask a medical question related to your care.';
+    // Parse SUGGEST_DOCTORS directive
+    let doctorSuggestions: DoctorSuggestion[] = [];
+    const suggestMatch = rawText.match(/SUGGEST_DOCTORS:([^\n]+)/i);
+    let aiContent = rawText;
+
+    if (suggestMatch) {
+      // Strip directive from visible text
+      aiContent = rawText.replace(/SUGGEST_DOCTORS:[^\n]*/i, '').trim();
+
+      const keywords = suggestMatch[1]
+        .split(',')
+        .map((k) => k.trim())
+        .filter(Boolean);
+
+      // Fetch matching doctors for each keyword
+      const results = await Promise.all(
+        keywords.map((kw) => this.fetchAvailableDoctors(kw)),
+      );
+      const allMatched = results.flat();
+      // Deduplicate by doctorId
+      const seen = new Set<string>();
+      doctorSuggestions = allMatched.filter((d) => {
+        if (seen.has(d.doctorId)) return false;
+        seen.add(d.doctorId);
+        return true;
+      });
+
+      // Fallback: if no specialization match found, return all doctors
+      if (doctorSuggestions.length === 0) {
+        doctorSuggestions = allDoctors;
+      }
+    }
+
+    return { aiContent: aiContent || rawText, doctorSuggestions };
   }
 
   private toJsonValue(

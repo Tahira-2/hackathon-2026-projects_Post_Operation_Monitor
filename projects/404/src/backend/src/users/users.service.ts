@@ -17,6 +17,8 @@ const userSelect = {
   email: true,
   role: true,
   createdAt: true,
+  patient: { select: { id: true } },
+  doctor: { select: { id: true } },
 };
 
 @Injectable()
