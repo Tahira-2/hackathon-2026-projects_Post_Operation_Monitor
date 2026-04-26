@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:medimeal/models/weekly_tracking_workflow.dart';
-import 'package:medimeal/services/weekly_tracking_workflow_service.dart';
 
 import '../models/care_state.dart';
 import '../models/hydration_workflow.dart';
 import '../models/medications.dart';
 import '../models/timing_workflow.dart';
+import '../models/weekly_tracking_workflow.dart';
 import '../models/workflow_suggestion.dart';
 import '../services/hydration_workflow_service.dart';
 import '../services/timing_workflow_service.dart';
+import '../services/weekly_tracking_workflow_service.dart';
 import '../widgets/section_title.dart';
 
 class HomeTab extends StatefulWidget {
@@ -20,9 +20,9 @@ class HomeTab extends StatefulWidget {
   final CareState? latestCareState;
   final TimingWorkflow? activeTimingWorkflow;
   final HydrationWorkflow? activeHydrationWorkflow;
+  final WeeklyTrackingWorkflow? activeWeeklyTrackingWorkflow;
   final VoidCallback onStartHydrationRoutine;
   final VoidCallback onLogHydrationGlass;
-  final WeeklyTrackingWorkflow? activeWeeklyTrackingWorkflow;
   final VoidCallback onStartWeeklyTracking;
 
   const HomeTab({
@@ -34,9 +34,9 @@ class HomeTab extends StatefulWidget {
     required this.latestCareState,
     required this.activeTimingWorkflow,
     required this.activeHydrationWorkflow,
+    required this.activeWeeklyTrackingWorkflow,
     required this.onStartHydrationRoutine,
     required this.onLogHydrationGlass,
-    required this.activeWeeklyTrackingWorkflow,
     required this.onStartWeeklyTracking,
   });
 
@@ -284,28 +284,65 @@ class _HomeTabState extends State<HomeTab> {
     if (widget.activeWeeklyTrackingWorkflow != null) {
       final weekly = widget.activeWeeklyTrackingWorkflow!;
 
+      final bool isExceeded = weekly.isExceeded;
+      final bool isNearLimit = weekly.isNearLimit;
+
+      final Color cardColor = isExceeded
+          ? const Color(0xFF3F1D1D)
+          : isNearLimit
+              ? const Color(0xFF3B2A12)
+              : const Color(0xFF2E1065);
+
+      final Color accentColor = isExceeded
+          ? const Color(0xFFF87171)
+          : isNearLimit
+              ? const Color(0xFFFBBF24)
+              : const Color(0xFFC084FC);
+
+      final IconData icon = isExceeded
+          ? Icons.error_outline
+          : isNearLimit
+              ? Icons.warning_amber_rounded
+              : Icons.insights_outlined;
+
+      final String title = isExceeded
+          ? 'Weekly limit reached'
+          : isNearLimit
+              ? 'Weekly limit almost reached'
+              : 'Weekly tracking active';
+
+      final String helperText = isExceeded
+          ? 'This week’s next meals should avoid tracked ingredients.'
+          : isNearLimit
+              ? 'Choose lighter meals so you stay within this week’s remaining allowance.'
+              : 'Your next recipe should fit within the remaining flexibility for this week.';
+
+      final String remainingText = isExceeded
+          ? 'You have reached this week’s limit.'
+          : WeeklyTrackingWorkflowService.buildRemainingLabel(weekly);
+
       return Card(
-        color: const Color(0xFF2E1065),
+        color: cardColor,
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
                   Icon(
-                    Icons.insights_outlined,
-                    color: Color(0xFFC084FC),
+                    icon,
+                    color: accentColor,
                     size: 26,
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Weekly tracking active',
+                      title,
                       style: TextStyle(
                         fontSize: 21,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFFC084FC),
+                        color: accentColor,
                       ),
                     ),
                   ),
@@ -322,17 +359,25 @@ class _HomeTabState extends State<HomeTab> {
               ),
               const SizedBox(height: 8),
               Text(
-                WeeklyTrackingWorkflowService.buildRemainingLabel(weekly),
-                style: const TextStyle(
+                remainingText,
+                style: TextStyle(
                   fontSize: 15,
-                  color: Color(0xFFE9D5FF),
+                  color: isExceeded
+                      ? const Color(0xFFFECACA)
+                      : isNearLimit
+                          ? const Color(0xFFE5E7EB)
+                          : const Color(0xFFE9D5FF),
                 ),
               ),
               const SizedBox(height: 14),
-              const Text(
-                'Your next recipe should fit within the remaining flexibility for this week.',
+              Text(
+                helperText,
                 style: TextStyle(
-                  color: Color(0xFFE9D5FF),
+                  color: isExceeded
+                      ? const Color(0xFFFECACA)
+                      : isNearLimit
+                          ? const Color(0xFFE5E7EB)
+                          : const Color(0xFFE9D5FF),
                   height: 1.4,
                 ),
               ),
@@ -401,6 +446,9 @@ class _HomeTabState extends State<HomeTab> {
     final bool isSupportRoutineMedication =
         widget.latestMedication!.workflowType == 'support_routine';
 
+    final bool isWeeklyTrackingMedication =
+        widget.latestMedication!.workflowType == 'weekly_tracking';
+
     if (isSupportRoutineMedication && widget.activeHydrationWorkflow == null) {
       return Card(
         child: Padding(
@@ -427,6 +475,40 @@ class _HomeTabState extends State<HomeTab> {
               ElevatedButton(
                 onPressed: widget.onStartHydrationRoutine,
                 child: const Text('Start Hydration Routine'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (isWeeklyTrackingMedication &&
+        widget.activeWeeklyTrackingWorkflow == null) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'What you can do now',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Weekly food-awareness tracking can help guide your next meal.',
+                style: TextStyle(
+                  color: Color(0xFFCBD5E1),
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 14),
+              ElevatedButton(
+                onPressed: widget.onStartWeeklyTracking,
+                child: const Text('Start Weekly Tracking'),
               ),
             ],
           ),
@@ -529,43 +611,6 @@ class _HomeTabState extends State<HomeTab> {
       );
     }
 
-    final bool isWeeklyTrackingMedication =
-        widget.latestMedication?.workflowType == 'weekly_tracking';
-
-    if (isWeeklyTrackingMedication &&
-        widget.activeWeeklyTrackingWorkflow == null) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'What you can do now',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Weekly food-awareness tracking can help guide your next meal.',
-                style: TextStyle(
-                  color: Color(0xFFCBD5E1),
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 14),
-              ElevatedButton(
-                onPressed: widget.onStartWeeklyTracking,
-                child: const Text('Start Weekly Tracking'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -645,6 +690,34 @@ class _HomeTabState extends State<HomeTab> {
                 widget.activeTimingWorkflow!.isActive
                     ? 'Meal reminder is active.'
                     : 'Meal reminder completed.',
+                style: const TextStyle(
+                  color: Color(0xFFCBD5E1),
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (widget.activeWeeklyTrackingWorkflow != null) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Today’s support',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '${widget.activeWeeklyTrackingWorkflow!.sourceMedicationName} weekly tracking is active.',
                 style: const TextStyle(
                   color: Color(0xFFCBD5E1),
                   height: 1.4,

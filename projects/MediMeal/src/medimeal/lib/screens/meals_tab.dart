@@ -1,18 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:medimeal/models/hydration_workflow.dart';
-import 'package:medimeal/models/weekly_tracking_workflow.dart';
-
-import 'package:medimeal/models/ingredient_evaluation_result.dart';
-import 'package:medimeal/services/hydration_workflow_service.dart';
-import 'package:medimeal/services/ingredient_evaluator_service.dart';
 
 import '../models/care_state.dart';
+import '../models/hydration_workflow.dart';
+import '../models/ingredient_evaluation_result.dart';
 import '../models/meal_plan.dart';
 import '../models/medications.dart';
 import '../models/timing_workflow.dart';
+import '../models/weekly_tracking_workflow.dart';
 import '../services/gemini_meal_service.dart';
+import '../services/ingredient_evaluator_service.dart';
+import '../services/hydration_workflow_service.dart';
 import '../services/timing_workflow_service.dart';
+import '../services/weekly_tracking_workflow_service.dart';
 import '../widgets/section_title.dart';
 import '../widgets/summary_card.dart';
 
@@ -22,6 +22,7 @@ class MealsTab extends StatefulWidget {
   final TimingWorkflow? activeTimingWorkflow;
   final HydrationWorkflow? activeHydrationWorkflow;
   final WeeklyTrackingWorkflow? activeWeeklyTrackingWorkflow;
+  final void Function(MealPlan)? onLogMealForWeeklyTracking;
 
   const MealsTab({
     super.key,
@@ -30,6 +31,7 @@ class MealsTab extends StatefulWidget {
     required this.activeTimingWorkflow,
     required this.activeHydrationWorkflow,
     required this.activeWeeklyTrackingWorkflow,
+    required this.onLogMealForWeeklyTracking,
   });
 
   @override
@@ -138,163 +140,135 @@ class _MealsTabState extends State<MealsTab> {
     }
   }
 
-  Widget _buildTimingStatusCard() {
-    final bool hasTimingWorkflow = widget.activeTimingWorkflow != null;
-    final bool isTimingActive =
-        hasTimingWorkflow && widget.activeTimingWorkflow!.isActive;
-
-    if (widget.activeHydrationWorkflow != null) {
-      return Card(
-        color: const Color(0xFF102A43),
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Icon(
-                    Icons.water_drop_outlined,
-                    color: Color(0xFF60A5FA),
-                    size: 24,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Hydration routine active',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF60A5FA),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                HydrationWorkflowService.buildProgressLabel(
-                  widget.activeHydrationWorkflow!,
-                ),
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                'Choose a simple meal that supports the rest of today’s routine.',
-                style: TextStyle(
-                  color: Color(0xFFE5E7EB),
-                  height: 1.4,
-                ),
-              ),
-            ],
-          ),
+  Widget _buildAlertBanner({
+    required IconData icon,
+    required String title,
+    required String message,
+    required Color backgroundColor,
+    required Color accentColor,
+    required Color textColor,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: accentColor.withOpacity(0.35),
         ),
-      );
-    }
-
-    if (!hasTimingWorkflow) {
-      return const SummaryCard(
-        text: 'Log a medication first to get care-aware meal guidance.',
-      );
-    }
-
-    if (isTimingActive) {
-      return Card(
-        color: const Color(0xFF3B2A12),
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    color: Color(0xFFFBBF24),
-                    size: 24,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Wait before eating',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFFFBBF24),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                TimingWorkflowService.formatRemaining(
-                  widget.activeTimingWorkflow!.remainingTime,
-                ),
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Meal window opens at ${TimingWorkflowService.formatAllowedTime(widget.activeTimingWorkflow!.eatAfter)}',
-                style: const TextStyle(
-                  color: Color(0xFFE5E7EB),
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'You can still generate a recipe now and prepare it in advance.',
-                style: TextStyle(
-                  color: Color(0xFFE5E7EB),
-                  height: 1.4,
-                ),
-              ),
-            ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            color: accentColor,
+            size: 22,
           ),
-        ),
-      );
-    }
-
-    return Card(
-      color: const Color(0xFF123227),
-      child: const Padding(
-        padding: EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.check_circle_outline,
-                  color: Color(0xFF34D399),
-                  size: 24,
-                ),
-                SizedBox(width: 8),
                 Text(
-                  'Meal window open',
+                  title,
                   style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF34D399),
+                    color: accentColor,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  message,
+                  style: TextStyle(
+                    color: textColor,
+                    height: 1.4,
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 12),
-            Text(
-              'You can now generate a recipe for immediate eating.',
-              style: TextStyle(
-                color: Color(0xFFE5E7EB),
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildStatusCard() {
+    if (widget.activeTimingWorkflow != null &&
+        widget.activeTimingWorkflow!.isActive) {
+      return _buildAlertBanner(
+        icon: Icons.schedule,
+        title: 'Wait before eating',
+        message:
+            '${TimingWorkflowService.formatRemaining(widget.activeTimingWorkflow!.remainingTime)} Meal window opens at ${TimingWorkflowService.formatAllowedTime(widget.activeTimingWorkflow!.eatAfter)}.',
+        backgroundColor: const Color(0xFF3B2A12),
+        accentColor: const Color(0xFFFBBF24),
+        textColor: const Color(0xFFE5E7EB),
+      );
+    }
+
+    if (widget.activeTimingWorkflow != null &&
+        !widget.activeTimingWorkflow!.isActive) {
+      return _buildAlertBanner(
+        icon: Icons.check_circle_outline,
+        title: 'Meal window open',
+        message: 'You can now generate a recipe for immediate eating.',
+        backgroundColor: const Color(0xFF123227),
+        accentColor: const Color(0xFF34D399),
+        textColor: const Color(0xFFE5E7EB),
+      );
+    }
+
+    if (widget.activeHydrationWorkflow != null) {
+      return _buildAlertBanner(
+        icon: Icons.water_drop_outlined,
+        title: 'Hydration routine active',
+        message:
+            '${HydrationWorkflowService.buildProgressLabel(widget.activeHydrationWorkflow!)}. Choose a simple meal that supports the rest of today’s routine.',
+        backgroundColor: const Color(0xFF102A43),
+        accentColor: const Color(0xFF60A5FA),
+        textColor: const Color(0xFFE5E7EB),
+      );
+    }
+
+    if (widget.activeWeeklyTrackingWorkflow != null) {
+      final weekly = widget.activeWeeklyTrackingWorkflow!;
+      return _buildAlertBanner(
+        icon: weekly.isExceeded
+            ? Icons.error_outline
+            : weekly.isNearLimit
+                ? Icons.warning_amber_rounded
+                : Icons.insights_outlined,
+        title: weekly.isExceeded
+            ? 'Weekly limit reached'
+            : weekly.isNearLimit
+                ? 'Weekly limit almost reached'
+                : 'Weekly tracking active',
+        message: weekly.isExceeded
+            ? '${WeeklyTrackingWorkflowService.buildProgressLabel(weekly)}. Choose meals that avoid tracked ingredients now.'
+            : '${WeeklyTrackingWorkflowService.buildProgressLabel(weekly)} • ${WeeklyTrackingWorkflowService.buildRemainingLabel(weekly)}',
+        backgroundColor: weekly.isExceeded
+            ? const Color(0xFF3F1D1D)
+            : weekly.isNearLimit
+                ? const Color(0xFF3B2A12)
+                : const Color(0xFF2E1065),
+        accentColor: weekly.isExceeded
+            ? const Color(0xFFF87171)
+            : weekly.isNearLimit
+                ? const Color(0xFFFBBF24)
+                : const Color(0xFFC084FC),
+        textColor: weekly.isExceeded
+            ? const Color(0xFFFECACA)
+            : weekly.isNearLimit
+                ? const Color(0xFFE5E7EB)
+                : const Color(0xFFE9D5FF),
+      );
+    }
+
+    return const SummaryCard(
+      text: 'Log a medication first to get care-aware meal guidance.',
     );
   }
 
@@ -366,127 +340,6 @@ class _MealsTabState extends State<MealsTab> {
             ElevatedButton(
               onPressed: isLoading ? null : generateMealPlan,
               child: Text(isLoading ? 'Generating...' : 'Generate Meal Plan'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGeneratedMealCard() {
-    if (generatedMealPlan == null) {
-      return const SummaryCard(
-        text: 'No meal generated yet. Add ingredients and generate a plan.',
-      );
-    }
-
-    return Card(
-      key: ValueKey(
-        '${generatedMealPlan!.title}-${generatedMealPlan!.warning}-${generatedMealPlan!.timingMessage}',
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              generatedMealPlan!.title,
-              style: const TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              generatedMealPlan!.summary,
-              style: const TextStyle(
-                color: Color(0xFFCBD5E1),
-                height: 1.4,
-              ),
-            ),
-            if (generatedMealPlan!.warning.isNotEmpty) ...[
-              const SizedBox(height: 14),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF3B2A12),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFFFBBF24).withOpacity(0.35),
-                  ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.warning_amber_rounded,
-                      color: Color(0xFFFBBF24),
-                      size: 22,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Ingredient warning',
-                            style: TextStyle(
-                              color: Color(0xFFFBBF24),
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            generatedMealPlan!.warning,
-                            style: const TextStyle(
-                              color: Color(0xFFE5E7EB),
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            if (generatedMealPlan!.timingMessage.isNotEmpty) ...[
-              const SizedBox(height: 14),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Text(
-                  generatedMealPlan!.timingMessage,
-                  style: const TextStyle(
-                    color: Color(0xFFCBD5E1),
-                    height: 1.4,
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _showRecipeBottomSheet,
-                    child: const Text('View Recipe'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _showIngredientNotesBottomSheet,
-                    child: const Text('Ingredient Notes'),
-                  ),
-                ),
-              ],
             ),
           ],
         ),
@@ -679,6 +532,144 @@ class _MealsTabState extends State<MealsTab> {
     );
   }
 
+  Widget _buildGeneratedMealCard() {
+    if (generatedMealPlan == null) {
+      return const SummaryCard(
+        text: 'No meal generated yet. Add ingredients and generate a plan.',
+      );
+    }
+
+    final bool hasTimingAlert = generatedMealPlan!.timingMessage.isNotEmpty;
+    final bool hasIngredientWarning = generatedMealPlan!.warning.isNotEmpty;
+    final bool hasBlockedIngredients =
+        generatedMealPlan!.blockedIngredients.isNotEmpty;
+    final bool hasWeeklyTracking = widget.activeWeeklyTrackingWorkflow != null;
+
+    return Card(
+      key: ValueKey(
+        '${generatedMealPlan!.title}-${generatedMealPlan!.warning}-${generatedMealPlan!.timingMessage}',
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              generatedMealPlan!.title,
+              style: const TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              generatedMealPlan!.summary,
+              style: const TextStyle(
+                color: Color(0xFFCBD5E1),
+                height: 1.4,
+              ),
+            ),
+            if (hasTimingAlert) ...[
+              const SizedBox(height: 14),
+              _buildAlertBanner(
+                icon: Icons.schedule,
+                title: 'Timing reminder',
+                message: generatedMealPlan!.timingMessage,
+                backgroundColor: const Color(0xFF3B2A12),
+                accentColor: const Color(0xFFFBBF24),
+                textColor: const Color(0xFFE5E7EB),
+              ),
+            ],
+            if (hasIngredientWarning) ...[
+              const SizedBox(height: 14),
+              _buildAlertBanner(
+                icon: Icons.warning_amber_rounded,
+                title: 'Ingredient warning',
+                message: generatedMealPlan!.warning,
+                backgroundColor: const Color(0xFF3B2A12),
+                accentColor: const Color(0xFFFBBF24),
+                textColor: const Color(0xFFE5E7EB),
+              ),
+            ],
+            if (hasBlockedIngredients) ...[
+              const SizedBox(height: 14),
+              _buildAlertBanner(
+                icon: Icons.do_not_disturb_alt_outlined,
+                title: 'Ingredients not used',
+                message: generatedMealPlan!.blockedIngredients.join(', '),
+                backgroundColor: const Color(0xFF3F1D1D),
+                accentColor: const Color(0xFFF87171),
+                textColor: const Color(0xFFFECACA),
+              ),
+            ],
+            if (hasWeeklyTracking) ...[
+              const SizedBox(height: 14),
+              _buildAlertBanner(
+                icon: widget.activeWeeklyTrackingWorkflow!.isExceeded
+                    ? Icons.error_outline
+                    : widget.activeWeeklyTrackingWorkflow!.isNearLimit
+                        ? Icons.warning_amber_rounded
+                        : Icons.insights_outlined,
+                title: widget.activeWeeklyTrackingWorkflow!.isExceeded
+                    ? 'Weekly limit reached'
+                    : widget.activeWeeklyTrackingWorkflow!.isNearLimit
+                        ? 'Weekly limit almost reached'
+                        : 'Weekly tracking',
+                message: widget.activeWeeklyTrackingWorkflow!.isExceeded
+                    ? '${WeeklyTrackingWorkflowService.buildProgressLabel(widget.activeWeeklyTrackingWorkflow!)} • Choose meals that avoid tracked ingredients now.'
+                    : '${WeeklyTrackingWorkflowService.buildProgressLabel(widget.activeWeeklyTrackingWorkflow!)} • ${WeeklyTrackingWorkflowService.buildRemainingLabel(widget.activeWeeklyTrackingWorkflow!)}',
+                backgroundColor: widget.activeWeeklyTrackingWorkflow!.isExceeded
+                    ? const Color(0xFF3F1D1D)
+                    : widget.activeWeeklyTrackingWorkflow!.isNearLimit
+                        ? const Color(0xFF3B2A12)
+                        : const Color(0xFF2E1065),
+                accentColor: widget.activeWeeklyTrackingWorkflow!.isExceeded
+                    ? const Color(0xFFF87171)
+                    : widget.activeWeeklyTrackingWorkflow!.isNearLimit
+                        ? const Color(0xFFFBBF24)
+                        : const Color(0xFFC084FC),
+                textColor: widget.activeWeeklyTrackingWorkflow!.isExceeded
+                    ? const Color(0xFFFECACA)
+                    : widget.activeWeeklyTrackingWorkflow!.isNearLimit
+                        ? const Color(0xFFE5E7EB)
+                        : const Color(0xFFE9D5FF),
+              ),
+            ],
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _showRecipeBottomSheet,
+                    child: const Text('View Recipe'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _showIngredientNotesBottomSheet,
+                    child: const Text('Ingredient Notes'),
+                  ),
+                ),
+              ],
+            ),
+            if (widget.activeWeeklyTrackingWorkflow != null &&
+                generatedMealPlan!.canGenerateRecipe) ...[
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: widget.onLogMealForWeeklyTracking == null
+                    ? null
+                    : () =>
+                        widget.onLogMealForWeeklyTracking!(generatedMealPlan!),
+                child: const Text('Log This Meal'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -723,7 +714,7 @@ class _MealsTabState extends State<MealsTab> {
           const SectionTitle(title: 'Right now'),
           SummaryCard(text: topContextText),
           const SizedBox(height: 24),
-          _buildTimingStatusCard(),
+          _buildStatusCard(),
           const SizedBox(height: 24),
           const SectionTitle(title: 'Meal Inputs'),
           _buildMealInputCard(),
