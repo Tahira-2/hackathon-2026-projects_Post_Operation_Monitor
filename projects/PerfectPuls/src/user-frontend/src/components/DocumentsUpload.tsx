@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, DragEvent, ChangeEvent } from "react";
-import { FileText, Upload, Trash2, File, ImageIcon, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { useRef, useState, DragEvent, ChangeEvent, useEffect } from "react";
+import { FileText, Upload, Trash2, File, ImageIcon, CheckCircle, XCircle, Loader2, Star } from "lucide-react";
 
 export type UploadedFile = {
   id: string;
@@ -9,6 +9,7 @@ export type UploadedFile = {
   size: number;
   uploadDate: string;
   type: string;
+  isLatest?: boolean;
 };
 
 type UploadStatus = "idle" | "uploading" | "success" | "error";
@@ -82,6 +83,34 @@ export default function DocumentsUpload({ files, setFiles }: Props) {
   const [uploadEntries, setUploadEntries] = useState<FileEntry[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Load persisted uploadEntries from sessionStorage on mount
+  useEffect(() => {
+    const persistedFiles = sessionStorage.getItem('policy-pilot-files');
+    if (persistedFiles) {
+      try {
+        const parsed = JSON.parse(persistedFiles);
+        if (parsed.uploadEntries) {
+          setUploadEntries(parsed.uploadEntries);
+        }
+      } catch (error) {
+        console.error('Failed to load persisted upload entries:', error);
+      }
+    }
+  }, []);
+
+  // Save uploadEntries to sessionStorage whenever they change
+  useEffect(() => {
+    if (uploadEntries.length > 0) {
+      const persistedData = sessionStorage.getItem('policy-pilot-files');
+      const existingData = persistedData ? JSON.parse(persistedData) : {};
+      
+      sessionStorage.setItem('policy-pilot-files', JSON.stringify({
+        ...existingData,
+        uploadEntries
+      }));
+    }
+  }, [uploadEntries]);
+
   const allEntries: FileEntry[] = [
     ...SAMPLE_DOCS,
     ...uploadEntries,
@@ -97,11 +126,18 @@ export default function DocumentsUpload({ files, setFiles }: Props) {
       uploadDate: today,
       type: file.type,
       status: "uploading",
+      isLatest: true, // Mark as latest
     };
 
-    // Add to list immediately with uploading state
-    setUploadEntries((prev) => [...prev, entry]);
-    setFiles((prev) => [...prev, { id, name: file.name, size: file.size, uploadDate: today, type: file.type }]);
+    // Remove "latest" from other files and add new entry
+    setUploadEntries((prev) => [
+      ...prev.map(e => ({ ...e, isLatest: false })), // Remove latest from existing
+      entry
+    ]);
+    setFiles((prev) => [
+      ...prev.map(f => ({ ...f, isLatest: false })), // Remove latest from existing
+      { id, name: file.name, size: file.size, uploadDate: today, type: file.type, isLatest: true }
+    ]);
 
     // Build FormData matching the backend contract
     const formData = new FormData();
@@ -152,6 +188,12 @@ export default function DocumentsUpload({ files, setFiles }: Props) {
   function deleteEntry(id: string) {
     setUploadEntries((prev) => prev.filter((e) => e.id !== id));
     setFiles((prev) => prev.filter((f) => f.id !== id));
+  }
+
+  function clearAllFiles() {
+    setUploadEntries([]);
+    setFiles([]);
+    sessionStorage.removeItem('policy-pilot-files');
   }
 
   const successCount = uploadEntries.filter((e) => e.status === "success").length;
@@ -208,7 +250,18 @@ export default function DocumentsUpload({ files, setFiles }: Props) {
             <h3 className="font-semibold text-gray-700 text-sm">
               {allEntries.length} document{allEntries.length !== 1 ? "s" : ""}
             </h3>
-            <span className="text-xs text-gray-400">Status</span>
+            <div className="flex items-center gap-3">
+              {uploadEntries.length > 0 && (
+                <button
+                  onClick={clearAllFiles}
+                  className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                  title="Clear session files"
+                >
+                  Clear All
+                </button>
+              )}
+              <span className="text-xs text-gray-400">Status</span>
+            </div>
           </div>
 
           <div className="divide-y divide-gray-100">
@@ -226,7 +279,15 @@ export default function DocumentsUpload({ files, setFiles }: Props) {
 
                   {/* Name + meta */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">{entry.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-gray-800 truncate">{entry.name}</p>
+                      {entry.isLatest && (
+                        <span className="flex items-center gap-1 bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded text-xs font-medium">
+                          <Star className="w-3 h-3" />
+                          latest
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-400">
                       {formatBytes(entry.size)} · {entry.uploadDate}
                       {isSample && (
@@ -273,6 +334,9 @@ export default function DocumentsUpload({ files, setFiles }: Props) {
             <div className="px-5 py-3 bg-teal-50 border-t border-teal-100">
               <p className="text-sm text-teal-700">
                 ✓ {successCount} document{successCount !== 1 ? "s" : ""} processed — check the Knowledge Graph tab
+              </p>
+              <p className="text-xs text-teal-600 mt-1">
+                Files persist during your browser session
               </p>
             </div>
           )}

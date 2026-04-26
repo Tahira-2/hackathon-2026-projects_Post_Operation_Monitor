@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { LayoutDashboard, FileText, Share2 } from "lucide-react";
 import SavingsDashboard from "./SavingsDashboard";
 import DocumentsUpload, { UploadedFile } from "./DocumentsUpload";
@@ -17,6 +17,34 @@ type TabId = (typeof TABS)[number]["id"];
 export default function Portal() {
   const [activeTab, setActiveTab] = useState<TabId>("savings");
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+
+  // Load persisted files from sessionStorage on mount
+  useEffect(() => {
+    const persistedFiles = sessionStorage.getItem('policy-pilot-files');
+    if (persistedFiles) {
+      try {
+        const parsed = JSON.parse(persistedFiles);
+        if (parsed.files) {
+          setUploadedFiles(parsed.files);
+        }
+      } catch (error) {
+        console.error('Failed to load persisted files:', error);
+      }
+    }
+  }, []);
+
+  // Save files to sessionStorage whenever they change
+  useEffect(() => {
+    if (uploadedFiles.length > 0) {
+      const persistedData = sessionStorage.getItem('policy-pilot-files');
+      const existingData = persistedData ? JSON.parse(persistedData) : {};
+      
+      sessionStorage.setItem('policy-pilot-files', JSON.stringify({
+        ...existingData,
+        files: uploadedFiles
+      }));
+    }
+  }, [uploadedFiles]);
 
   return (
     <div className="min-h-screen bg-gray-50">
