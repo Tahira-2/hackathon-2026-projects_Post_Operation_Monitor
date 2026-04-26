@@ -55,9 +55,9 @@ export default function NewReferralPage() {
     const { data } = await api.post('/api/extract', { notes: note })
     setExtracted({
       patientName: data.patient_name ?? '',
-      dob: '',
+      dob: data.date_of_birth ?? '',
       gender: 'Male',
-      email: '',
+      email: data.email ?? '',
       phone: '',
       requiredSpecialty: data.required_specialty ?? '',
       diagnosis: data.diagnosis ?? '',
@@ -69,9 +69,10 @@ export default function NewReferralPage() {
 
   async function handleConfirm(data: ExtractedData) {
     setExtracted(data)
-    const { data: list } = await api.get('/api/specialists', {
-      params: { specialty: data.requiredSpecialty },
+    const { data: resp } = await api.get('/api/specialists', {
+      params: { specialty: data.requiredSpecialty, pageSize: 100 },
     })
+    const list = resp.items ?? resp
     setSpecialists(
       list.map((s: { id: string; full_name: string; specialty: string; hospital: string; phone: string; available: boolean }) => ({
         id: s.id,
@@ -80,13 +81,13 @@ export default function NewReferralPage() {
         subspecialty: s.specialty,
         hospital: s.hospital,
         phone: s.phone,
-        available: s.available,
+        available: s.available ?? true,
       }))
     )
     setStep(3)
   }
 
-  async function handleSubmit(specialistId: string) {
+  async function handleSubmit(specialtyId: string) {
     if (!extracted) return
     setSubmitting(true)
     await api.post('/api/referrals', {
@@ -98,10 +99,9 @@ export default function NewReferralPage() {
         phone: extracted.phone || undefined,
       },
       referral: {
-        specialist_id: specialistId,
         clinical_notes: clinicalNote,
         diagnosis: extracted.diagnosis,
-        required_specialty: extracted.requiredSpecialty,
+        required_specialty: specialists.find(s => s.id === specialtyId)?.subspecialty ?? extracted.requiredSpecialty,
         urgency: URGENCY_MAP[extracted.urgency] ?? 'low',
       },
     })

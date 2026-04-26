@@ -4,17 +4,40 @@ import {
 } from 'recharts'
 import { Users, CalendarClock, TrendingUp, Clock } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { StatCard } from '../components/ui/StatCard'
 import { AiInsightCard } from '../components/ui/AiInsightCard'
 import { ReferralTable } from '../components/referrals/ReferralTable'
-import type { Referral } from '../types/referral'
+import { api } from '../lib/axios'
+import type { Referral, ReferralStatus } from '../types/referral'
 
-const REFERRALS: Referral[] = [
-  { id: '1', patient: 'Sarah Jenkins', diagnosis: 'Atypical chest pain', specialty: 'Cardiology', specialist: 'Dr. Robert Chen', urgency: 'HIGH', status: 'PENDING', date: 'Oct 24, 2023' },
-  { id: '2', patient: 'Michael Chang', diagnosis: 'Chronic migraine evaluation', specialty: 'Neurology', specialist: 'Dr. Sarah Palmer', urgency: 'ROUTINE', status: 'ACCEPTED', date: 'Oct 23, 2023' },
-  { id: '3', patient: 'Elena Rodriguez', diagnosis: 'Suspicious mole excision', specialty: 'Dermatology', specialist: 'Unassigned', urgency: 'ELEVATED', status: 'SENT', date: 'Oct 22, 2023' },
-  { id: '4', patient: 'David Kim', diagnosis: 'Post-op physical therapy', specialty: 'Orthopedics', specialist: 'Dr. James Wilson', urgency: 'ROUTINE', status: 'COMPLETED', date: 'Oct 15, 2023' },
-]
+const URGENCY_MAP: Record<string, Referral['urgency']> = {
+  low: 'ROUTINE', medium: 'ELEVATED', high: 'HIGH',
+}
+const STATUS_MAP: Record<string, ReferralStatus> = {
+  pending: 'PENDING', sent: 'SENT', accepted: 'ACCEPTED', completed: 'COMPLETED',
+}
+
+type ReferralRow = {
+  id: string; diagnosis: string | null; required_specialty: string | null
+  urgency: string; status: string; created_at: string
+  patients: { full_name: string } | null
+}
+
+async function fetchReferrals(): Promise<Referral[]> {
+  const { data } = await api.get('/api/referrals', { params: { pageSize: 100 } })
+  const items: ReferralRow[] = data.items ?? data
+  return items.map((r) => ({
+    id: r.id,
+    patient: r.patients?.full_name ?? 'Unknown',
+    diagnosis: r.diagnosis ?? 'N/A',
+    specialty: r.required_specialty ?? 'N/A',
+    specialist: 'Unassigned',
+    urgency: URGENCY_MAP[r.urgency] ?? 'ROUTINE',
+    status: STATUS_MAP[r.status] ?? 'PENDING',
+    date: new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+  }))
+}
 
 const MONTHLY_TREND = [
   { month: 'May', referrals: 78 }, { month: 'Jun', referrals: 95 },
@@ -57,6 +80,14 @@ function SectionCard({ title, children }: { title: string; children: React.React
 
 export default function DashboardPage() {
   const navigate = useNavigate()
+  const { data: allReferrals = [] } = useQuery({
+    queryKey: ['referrals'],
+    queryFn: fetchReferrals,
+  })
+
+  const totalReferrals = allReferrals.length
+  const pendingCount = allReferrals.filter((r) => r.status === 'PENDING').length
+  const recentReferrals = allReferrals.slice(0, 5)
 
   return (
     <div className="space-y-6">
@@ -69,13 +100,13 @@ export default function DashboardPage() {
       <div className="grid grid-cols-4 gap-4">
         <StatCard
           label="Total Referrals"
-          value="1,248"
+          value={totalReferrals.toString()}
           icon={<Users size={20} className="text-accent" />}
-          sub={<span className="flex items-center gap-1 text-green-600 text-xs font-medium"><TrendingUp size={12} />12%</span>}
+          sub={<span className="flex items-center gap-1 text-green-600 text-xs font-medium"><TrendingUp size={12} />live</span>}
         />
         <StatCard
           label="Pending"
-          value="42"
+          value={pendingCount.toString()}
           icon={<CalendarClock size={20} className="text-orange-500" />}
           sub={<span className="text-xs text-muted">requires action</span>}
         />
@@ -152,8 +183,8 @@ export default function DashboardPage() {
 
       {/* Referrals table */}
       <ReferralTable
-        referrals={REFERRALS}
-        total={1248}
+        referrals={recentReferrals}
+        total={totalReferrals}
         onView={(id) => navigate(`/referrals/${id}`)}
       />
     </div>

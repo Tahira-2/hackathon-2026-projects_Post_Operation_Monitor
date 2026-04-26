@@ -19,7 +19,7 @@ export async function createPatientAndReferral(
     medical_history?: string;
   },
   referralData: {
-    specialist_id: string;
+    specialist_id?: string;
     clinical_notes: string;
     extracted_data?: object;
     diagnosis?: string;
@@ -57,7 +57,7 @@ export async function getReferralsByDoctor(
     .from("referrals")
     .select(
       `
-      id, clinical_notes, diagnosis, urgency, status, created_at,
+      id, clinical_notes, diagnosis, urgency, status, created_at, required_specialty,
       patients (id, full_name),
       specialist:doctors!referrals_specialist_id_fkey (
         id,
@@ -178,6 +178,8 @@ export async function updateReferralStatus(
       const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173';
       await sendPatientPortalEmail(patient.email, patient.full_name, `${frontendUrl}/p/${token}`);
     }
+
+    return { ...data, patient_token: token };
   }
 
   return data;

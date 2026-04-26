@@ -1,32 +1,68 @@
+import { useQuery } from '@tanstack/react-query'
+import { Plus } from 'lucide-react'
 import { useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus } from 'lucide-react'
-import { Button } from '../components/ui/Button'
 import { ReferralTable } from '../components/referrals/ReferralTable'
+import { Button } from '../components/ui/Button'
+import { api } from '../lib/axios'
 import type { Referral, ReferralStatus } from '../types/referral'
 
-const REFERRALS: Referral[] = [
-  { id: '1', patient: 'Sarah Jenkins', diagnosis: 'Atypical chest pain', specialty: 'Cardiology', specialist: 'Dr. Robert Chen', urgency: 'HIGH', status: 'PENDING', date: 'Oct 24, 2023' },
-  { id: '2', patient: 'Michael Chang', diagnosis: 'Chronic migraine evaluation', specialty: 'Neurology', specialist: 'Dr. Sarah Palmer', urgency: 'ROUTINE', status: 'ACCEPTED', date: 'Oct 23, 2023' },
-  { id: '3', patient: 'Elena Rodriguez', diagnosis: 'Suspicious mole excision', specialty: 'Dermatology', specialist: 'Unassigned', urgency: 'ELEVATED', status: 'SENT', date: 'Oct 22, 2023' },
-  { id: '4', patient: 'David Kim', diagnosis: 'Post-op physical therapy', specialty: 'Orthopedics', specialist: 'Dr. James Wilson', urgency: 'ROUTINE', status: 'COMPLETED', date: 'Oct 15, 2023' },
-  { id: '5', patient: 'Maria Gonzalez', diagnosis: 'Type 2 diabetes management', specialty: 'Endocrinology', specialist: 'Dr. Linda Park', urgency: 'ROUTINE', status: 'PENDING', date: 'Oct 14, 2023' },
-  { id: '6', patient: 'James Carter', diagnosis: 'Persistent lower back pain', specialty: 'Orthopedics', specialist: 'Dr. James Wilson', urgency: 'ELEVATED', status: 'ACCEPTED', date: 'Oct 13, 2023' },
-  { id: '7', patient: 'Priya Patel', diagnosis: 'Anxiety and sleep disorder', specialty: 'Psychiatry', specialist: 'Dr. Alan Moore', urgency: 'ROUTINE', status: 'SENT', date: 'Oct 12, 2023' },
-  { id: '8', patient: 'Tom Nguyen', diagnosis: 'Unexplained weight loss', specialty: 'Oncology', specialist: 'Unassigned', urgency: 'HIGH', status: 'PENDING', date: 'Oct 11, 2023' },
-]
+const URGENCY_MAP: Record<string, Referral['urgency']> = {
+  low: 'ROUTINE',
+  medium: 'ELEVATED',
+  high: 'HIGH',
+}
 
-// Statuses that belong to each directional view
+const STATUS_MAP: Record<string, ReferralStatus> = {
+  pending: 'PENDING',
+  sent: 'SENT',
+  accepted: 'ACCEPTED',
+  completed: 'COMPLETED',
+}
+
 const TYPE_STATUSES: Record<string, ReferralStatus[]> = {
-  inbound: ['PENDING', 'ACCEPTED'],   // referrals coming TO you
-  outbound: ['SENT', 'COMPLETED'],    // referrals you sent OUT
-  pending: ['PENDING'],               // universal to-do
+  pending: ['PENDING'],
+  sent: ['SENT'],
+  accepted: ['ACCEPTED'],
+  completed: ['COMPLETED'],
 }
 
 const TYPE_LABELS: Record<string, { title: string; subtitle: string }> = {
-  inbound: { title: 'Inbound Referrals', subtitle: 'Patients being referred to you by another provider.' },
-  outbound: { title: 'Outbound Referrals', subtitle: 'Patients you referred to another specialist or facility.' },
-  pending: { title: 'Pending Referrals', subtitle: 'Referrals awaiting action — your primary to-do list.' },
+  pending:   { title: 'Pending Referrals',   subtitle: 'Referrals awaiting action.' },
+  sent:      { title: 'Sent Referrals',       subtitle: 'Referrals sent to a specialist.' },
+  accepted:  { title: 'Accepted Referrals',   subtitle: 'Referrals accepted by a specialist.' },
+  completed: { title: 'Completed Referrals',  subtitle: 'Referrals that have been completed.' },
+}
+
+type ReferralRow = {
+  id: string
+  diagnosis: string | null
+  required_specialty: string | null
+  urgency: string
+  status: string
+  created_at: string
+  patients: { full_name: string } | null
+}
+
+function mapReferral(r: ReferralRow): Referral {
+  return {
+    id: r.id,
+    patient: r.patients?.full_name ?? 'Unknown',
+    diagnosis: r.diagnosis ?? 'N/A',
+    specialty: r.required_specialty ?? 'N/A',
+    specialist: 'Unassigned',
+    urgency: URGENCY_MAP[r.urgency] ?? 'ROUTINE',
+    status: STATUS_MAP[r.status] ?? 'PENDING',
+    date: new Date(r.created_at).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+    }),
+  }
+}
+
+async function fetchReferrals(): Promise<Referral[]> {
+  const { data } = await api.get('/api/referrals', { params: { pageSize: 100 } })
+  const items: ReferralRow[] = data.items ?? data
+  return items.map(mapReferral)
 }
 
 export default function ReferralsPage() {
@@ -34,11 +70,16 @@ export default function ReferralsPage() {
   const [searchParams] = useSearchParams()
   const type = searchParams.get('type') ?? ''
 
+  const { data: allReferrals = [], isLoading } = useQuery({
+    queryKey: ['referrals'],
+    queryFn: fetchReferrals,
+  })
+
   const referrals = useMemo(() => {
     const statuses = TYPE_STATUSES[type]
-    if (!statuses) return REFERRALS
-    return REFERRALS.filter((r) => statuses.includes(r.status))
-  }, [type])
+    if (!statuses) return allReferrals
+    return allReferrals.filter((r) => statuses.includes(r.status))
+  }, [allReferrals, type])
 
   const { title, subtitle } = TYPE_LABELS[type] ?? {
     title: 'Referrals',
@@ -58,11 +99,15 @@ export default function ReferralsPage() {
         </Button>
       </div>
 
-      <ReferralTable
-        referrals={referrals}
-        total={referrals.length}
-        onView={(id) => navigate(`/referrals/${id}`)}
-      />
+      {isLoading ? (
+        <div className="flex h-48 items-center justify-center text-muted">Loading referrals…</div>
+      ) : (
+        <ReferralTable
+          referrals={referrals}
+          total={referrals.length}
+          onView={(id) => navigate(`/referrals/${id}`)}
+        />
+      )}
     </div>
   )
 }
