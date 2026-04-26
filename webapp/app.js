@@ -10,6 +10,12 @@
 
   const TOKEN_KEY = 'guardian.token';
   const ROLE_KEY  = 'guardian.role';
+  // Last-used login identifier per role. We prefill the login form with this
+  // when an involuntary 401 (e.g. server-side session lost after a Render
+  // free-tier spin-down) bounces the user back to the sign-in page, so they
+  // can re-authenticate with one extra field instead of two.
+  const LAST_PATIENT_PHONE_KEY = 'guardian.lastPatientPhone';
+  const LAST_DOCTOR_EMAIL_KEY  = 'guardian.lastDoctorEmail';
 
   const state = {
     token: localStorage.getItem(TOKEN_KEY) || null,
@@ -28,7 +34,38 @@
     if (token) localStorage.setItem(TOKEN_KEY, token); else localStorage.removeItem(TOKEN_KEY);
     if (role)  localStorage.setItem(ROLE_KEY, role);   else localStorage.removeItem(ROLE_KEY);
   }
-  function clearSession() { setSession(null, null); state.me = null; }
+  // Remember which identifier signed in last so we can prefill the form on
+  // an involuntary logout. Called after a successful login or signup.
+  function rememberLastIdentifier(role, identifier) {
+    if (!identifier) return;
+    if (role === 'patient') localStorage.setItem(LAST_PATIENT_PHONE_KEY, identifier);
+    if (role === 'doctor')  localStorage.setItem(LAST_DOCTOR_EMAIL_KEY, identifier);
+  }
+  function lastPatientPhone() { return localStorage.getItem(LAST_PATIENT_PHONE_KEY) || ''; }
+  function lastDoctorEmail()  { return localStorage.getItem(LAST_DOCTOR_EMAIL_KEY) || ''; }
+
+  // clearSession({ keepIdentifier: true }) preserves the last-used login id
+  // (used on an involuntary 401 — the user didn't ask to log out, so we
+  // shouldn't forget who they are). Default false = full sign-out.
+  function clearSession({ keepIdentifier = false } = {}) {
+    setSession(null, null);
+    state.me = null;
+    if (!keepIdentifier) {
+      localStorage.removeItem(LAST_PATIENT_PHONE_KEY);
+      localStorage.removeItem(LAST_DOCTOR_EMAIL_KEY);
+    }
+  }
+
+  // Centralized "this token doesn't work anymore" handler. Saves the
+  // user's intended destination so we can return them there once they sign
+  // back in (deferred — for now it just bounces to the right login form
+  // with reason=expired so the UI can explain what happened).
+  function handleSessionExpired() {
+    const role = state.role;
+    clearSession({ keepIdentifier: true });
+    const target = role === 'doctor' ? '/doctor/login' : '/patient/login';
+    navigate(target, { reason: 'expired' });
+  }
 
   async function api(path, { method='GET', body=null, auth=true } = {}) {
     const headers = { 'Content-Type': 'application/json' };
@@ -279,6 +316,7 @@
     try {
       const r = await api(endpoint, { method: 'POST', auth: false, body });
       setSession(r.token, role);
+      rememberLastIdentifier(role, body.phone || body.email);
       toast(`Signed in as ${role}.`, 'ok');
       navigate(route);
     } catch (e) {
@@ -288,13 +326,22 @@
 
   // ------------------------------------------------------------- VIEW: patient login + signup
 
-  function renderPatientLogin() {
+  function renderPatientLogin(params) {
+    const reason = params && params.get && params.get('reason');
+    const expiredBanner = reason === 'expired'
+      ? `<div class="banner warn">
+           Your session expired (the server may have restarted). Sign in again
+           to pick up where you left off.
+         </div>`
+      : '';
+    const lastPhone = lastPatientPhone();
     const frag = html`
       <div class="card" style="max-width:520px;margin:0 auto;">
+        ${expiredBanner}
         <h2 class="card-title">Patient sign in</h2>
         <p class="card-sub">Phone number and the device number printed on your wearable.</p>
         <form id="f">
-          <label>Phone number<input name="phone" type="tel" placeholder="+1-555-0200" required /></label>
+          <label>Phone number<input name="phone" type="tel" placeholder="+1-555-0200" required value="${escapeHtml(lastPhone)}" /></label>
           <label>Device number<span class="helper">printed on the underside of your wearable</span>
             <input name="device_number" type="text" placeholder="GPO-2026-0001" required />
           </label>
@@ -305,12 +352,17 @@
         </form>
       </div>`;
     $view.appendChild(frag);
+    // Move focus to whichever field needs filling.
+    const phoneEl = document.querySelector('input[name="phone"]');
+    const deviceEl = document.querySelector('input[name="device_number"]');
+    if (lastPhone) deviceEl.focus(); else phoneEl.focus();
     document.getElementById('f').onsubmit = async (e) => {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(e.target));
       try {
         const r = await api('/api/auth/patient/login', { method: 'POST', auth: false, body: data });
         setSession(r.token, 'patient');
+        rememberLastIdentifier('patient', data.phone);
         toast('Signed in.', 'ok');
         navigate('/patient');
       } catch (err) { toast(err.message, 'error'); }
@@ -382,6 +434,7 @@
       try {
         const r = await api('/api/auth/patient/signup', { method: 'POST', auth: false, body: data });
         setSession(r.token, 'patient');
+        rememberLastIdentifier('patient', data.phone);
         toast('Device paired.', 'ok');
         navigate('/patient');
       } catch (err) { toast(err.message, 'error'); }
@@ -395,7 +448,7 @@
     try {
       state.me = await api('/api/patient/me');
     } catch (e) {
-      if (e.status === 401) { clearSession(); return navigate('/patient/login'); }
+      if (e.status === 401) { return handleSessionExpired(); }
       throw e;
     }
     renderTopbar();
@@ -480,7 +533,8 @@
     const host = document.getElementById('doctors-note-host');
     if (!host) return;
     let r;
-    try { r = await api('/api/patient/doctor-note'); } catch (_) { return; }
+    try { r = await api('/api/patient/doctor-note'); }
+    catch (e) { if (e.status === 401) handleSessionExpired(); return; }
     if (!r.doctors_note) {
       host.innerHTML = '<div class="empty">Your clinician hasn’t saved a note yet.</div>';
       return;
@@ -495,7 +549,8 @@
     const host = document.getElementById('alerts-banner-host');
     if (!host) return;
     let r;
-    try { r = await api('/api/patient/alerts/active'); } catch (_) { return; }
+    try { r = await api('/api/patient/alerts/active'); }
+    catch (e) { if (e.status === 401) handleSessionExpired(); return; }
     const alerts = r.alerts || [];
     if (!alerts.length) {
       host.innerHTML = '';
@@ -553,7 +608,12 @@
         $host.appendChild(tile);
       }
       $sub.textContent = `${samples.length} samples in window — most recent at sim hour ${last.hour.toFixed(2)}`;
-    } catch (e) { /* swallow polling errors */ }
+    } catch (e) {
+      // If a background poll discovers the server lost our session
+      // (e.g. Render free-tier spin-down wiped the DB), promote it to a
+      // visible session-expired flow rather than silently looping.
+      if (e.status === 401) handleSessionExpired();
+    }
   }
 
   async function refreshDoctors() {
@@ -629,12 +689,21 @@
 
   // ------------------------------------------------------------- VIEW: doctor login + signup
 
-  function renderDoctorLogin() {
+  function renderDoctorLogin(params) {
+    const reason = params && params.get && params.get('reason');
+    const expiredBanner = reason === 'expired'
+      ? `<div class="banner warn">
+           Your session expired (the server may have restarted). Sign in again
+           to pick up where you left off.
+         </div>`
+      : '';
+    const lastEmail = lastDoctorEmail();
     const frag = html`
       <div class="card" style="max-width:520px;margin:0 auto;">
+        ${expiredBanner}
         <h2 class="card-title">Clinician sign in</h2>
         <form id="f">
-          <label>Email<input name="email" type="email" required /></label>
+          <label>Email<input name="email" type="email" required value="${escapeHtml(lastEmail)}" /></label>
           <label>Password<input name="password" type="password" required /></label>
           <div class="btn-row">
             <button type="submit">Sign in</button>
@@ -643,12 +712,16 @@
         </form>
       </div>`;
     $view.appendChild(frag);
+    const emailEl    = document.querySelector('input[name="email"]');
+    const passwordEl = document.querySelector('input[name="password"]');
+    if (lastEmail) passwordEl.focus(); else emailEl.focus();
     document.getElementById('f').onsubmit = async (e) => {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(e.target));
       try {
         const r = await api('/api/auth/doctor/login', { method: 'POST', auth: false, body: data });
         setSession(r.token, 'doctor');
+        rememberLastIdentifier('doctor', data.email);
         toast('Signed in.', 'ok');
         navigate(r.verified ? '/doctor' : '/doctor/verify');
       } catch (err) { toast(err.message, 'error'); }
@@ -695,6 +768,7 @@
       try {
         const r = await api('/api/auth/doctor/signup', { method: 'POST', auth: false, body: data });
         setSession(r.token, 'doctor');
+        rememberLastIdentifier('doctor', data.email);
         toast('Account created. Please verify your ID.', 'ok');
         navigate('/doctor/verify');
       } catch (err) {
@@ -836,7 +910,7 @@
     try {
       state.me = await api('/api/doctor/me');
     } catch (e) {
-      if (e.status === 401) { clearSession(); return navigate('/doctor/login'); }
+      if (e.status === 401) { return handleSessionExpired(); }
       throw e;
     }
     renderTopbar();
@@ -928,10 +1002,16 @@
 
   async function refreshDoctorView() {
     // Single tick refreshes both the patients list and (if open) the
-    // selected patient's detail panel.
-    await refreshPatients();
-    if (state.selectedPatientId != null) {
-      await refreshSelectedPatient(state.selectedPatientId, { silent: true });
+    // selected patient's detail panel. If a poll discovers the server
+    // lost our session, surface it as a session-expired flow rather
+    // than letting the page stall.
+    try {
+      await refreshPatients();
+      if (state.selectedPatientId != null) {
+        await refreshSelectedPatient(state.selectedPatientId, { silent: true });
+      }
+    } catch (e) {
+      if (e.status === 401) handleSessionExpired();
     }
   }
 
