@@ -10,19 +10,16 @@ export default function ProtectedRoute({
   children: ReactNode;
   role: "patient" | "doctor";
 }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    if (!user) {
-      window.location.href = "/";
-      return;
-    }
-
-    if (user.role !== role) {
+    if (loading) return;
+    if (!user || user.role !== role) {
       window.location.href = "/";
     }
-  }, [user, role]);
+  }, [user, role, loading]);
 
+  if (loading) return null;
   if (!user || user.role !== role) return null;
 
   return <>{children}</>;

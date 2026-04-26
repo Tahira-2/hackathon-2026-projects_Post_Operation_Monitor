@@ -3,6 +3,7 @@
 from src.core_logic import FhirBundleResult
 from src.core_logic import PrescriptionRequest
 from src.core_logic import PrescriptionSafetyResult
+from src.core_logic import detect_red_flag_escalation
 from src.core_logic import SlotRequest
 from src.core_logic import SlotResult
 from src.core_logic import SoapNote
@@ -342,3 +343,81 @@ def test_render_soap_note_pdf_bytes_returns_valid_pdf_header_and_footer() -> Non
     assert b"%%EOF" in pdf_bytes
     assert b"CareIT SOAP Note" in pdf_bytes
     assert b"Subjective:" in pdf_bytes
+
+
+def test_core_logic_end_to_end_chain_happy_path() -> None:
+    triage = map_symptom_to_specialty(
+        SymptomInput(symptom="I have cough, runny nose, and mild fatigue."),
+    )
+    slots = generate_available_slots(
+        SlotRequest(
+            candidate_slots=["10:00", "10:30", "11:00"],
+            booked_slots=["10:30"],
+        )
+    )
+    soap = parse_transcript_to_soap(
+        "Subjective: Cough and fatigue for 3 days. "
+        "Objective: Mild fever, no distress. "
+        "Assessment: Viral syndrome likely. "
+        "Plan: Hydration, rest, and acetaminophen."
+    )
+    safety = check_prescription_safety(
+        PrescriptionRequest(
+            medication_name="Acetaminophen",
+            dosage_text="500 mg",
+            frequency_text="q8h prn",
+            duration_text="3 days",
+            rxnorm_code="161",
+        )
+    )
+    prescription = (
+        PrescriptionRequest(
+            medication_name="Acetaminophen",
+            dosage_text="500 mg",
+            frequency_text="q8h prn",
+            duration_text="3 days",
+            rxnorm_code="161",
+        )
+        if safety.is_allowed
+        else None
+    )
+    fhir = build_fhir_bundle(
+        soap_note=soap,
+        patient_id="patient-e2e-001",
+        doctor_id="doctor-e2e-001",
+        appointment_id="appt-e2e-001",
+        prescription_request=prescription,
+    )
+
+    assert triage.specialty == "General Practice"
+    assert slots.available_slots == ["10:00", "11:00"]
+    assert soap.assessment != ""
+    assert safety.is_allowed is True
+    assert "MedicationRequest" in fhir.included_resource_types
+
+
+def test_detect_red_flag_escalation_for_respiratory_distress() -> None:
+    result = detect_red_flag_escalation(
+        "Patient reports chest pain with shortness of breath and cannot breathe well.",
+    )
+
+    assert result.escalation_required is True
+    assert any(flag in result.matched_red_flags for flag in ("chest pain", "shortness of breath"))
+
+
+def test_detect_red_flag_escalation_for_severe_abdominal_warning() -> None:
+    result = detect_red_flag_escalation(
+        "Severe abdominal pain with blood in stool since morning.",
+    )
+
+    assert result.escalation_required is True
+    assert any(flag in result.matched_red_flags for flag in ("severe abdominal pain", "blood in stool"))
+
+
+def test_detect_red_flag_escalation_no_red_flags_baseline() -> None:
+    result = detect_red_flag_escalation(
+        "Mild runny nose and cough for two days, otherwise stable.",
+    )
+
+    assert result.escalation_required is False
+    assert result.matched_red_flags == []

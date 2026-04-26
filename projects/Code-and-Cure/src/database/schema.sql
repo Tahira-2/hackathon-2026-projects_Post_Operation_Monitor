@@ -80,7 +80,7 @@ create table fhir_records (
   id uuid primary key default uuid_generate_v4(),
   soap_note_id uuid not null references soap_notes(id) on delete cascade,
   fhir_version text not null default 'R4',
-  resource_type text not null default 'Composition',
+  resource_type text not null default 'Bundle',
   fhir_json jsonb not null,
   created_at timestamptz not null default now()
 );

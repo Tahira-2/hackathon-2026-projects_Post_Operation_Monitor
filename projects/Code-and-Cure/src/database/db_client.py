@@ -10,10 +10,33 @@ load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-if not SUPABASE_URL or not SUPABASE_KEY:
-    raise RuntimeError("SUPABASE_URL and SUPABASE_KEY must be set in environment variables.")
+class _UnavailableDB:
+    """Sentinel client used when Supabase credentials are absent at startup.
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    Defers the error to request-time so the module (and app) can still be
+    imported cleanly. Every attribute access raises RuntimeError, which
+    FastAPI's DB-unavailable exception handler converts to HTTP 503.
+    """
+    def __init__(self, reason: str) -> None:
+        self._reason = reason
+
+    def __getattr__(self, name: str):  # noqa: ANN
+        raise RuntimeError(
+            f"Database client unavailable: {self._reason}. "
+            "Set SUPABASE_URL and SUPABASE_KEY environment variables."
+        )
+
+
+_db_init_error: str | None = None
+supabase: Any = None  # type: ignore[assignment]
+
+try:
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise RuntimeError("SUPABASE_URL and SUPABASE_KEY must be set in environment variables.")
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+except Exception as _exc:
+    _db_init_error = str(_exc)
+    supabase = _UnavailableDB(_db_init_error)
 
 def _first_or_none(data: Any) -> dict | None:
     if isinstance(data, list):
@@ -248,10 +271,10 @@ def get_soap_note(note_id: str) -> dict | None:
     return _first_or_none(res.data)
 
 
-def insert_fhir_record(soap_note_id: str, fhir_json: dict) -> dict:
+def insert_fhir_record(soap_note_id: str, fhir_json: dict, resource_type: str = "Bundle") -> dict:
     res = (
         supabase.table("fhir_records")
-        .insert({"soap_note_id": soap_note_id, "fhir_json": fhir_json})
+        .insert({"soap_note_id": soap_note_id, "resource_type": resource_type, "fhir_json": fhir_json})
         .execute()
     )
     return _first_or_none(res.data) or {}
@@ -496,3 +519,53 @@ def set_prescription_document_metadata(
         .execute()
     )
     return _first_or_none(res.data) or {}
+
+
+def get_soap_note_by_appointment(appointment_id: str) -> dict | None:
+    res = (
+        supabase.table("soap_notes")
+        .select(
+            "id,appointment_id,doctor_id,subjective,objective,assessment,plan,"
+            "raw_transcript,approved,approved_at,created_at"
+        )
+        .eq("appointment_id", appointment_id)
+        .limit(1)
+        .execute()
+    )
+    return _first_or_none(res.data)
+
+
+def get_appointment(appointment_id: str) -> dict | None:
+    res = (
+        supabase.table("appointments")
+        .select("id,patient_id,doctor_id,scheduled_at,status,workflow_status")
+        .eq("id", appointment_id)
+        .limit(1)
+        .execute()
+    )
+    return _first_or_none(res.data)
+
+
+def get_doctor_by_user_id(user_id: str) -> dict | None:
+    res = (
+        supabase.table("doctors")
+        .select("id,user_id,full_name,specialty,license_no,rating,review_count,address")
+        .eq("user_id", user_id)
+        .limit(1)
+        .execute()
+    )
+    return _first_or_none(res.data)
+
+
+def get_fhir_record_by_soap_note(soap_note_id: str, resource_type: str = "Bundle") -> dict | None:
+    """Return the most recent FHIR record for a soap note (default: Bundle type)."""
+    res = (
+        supabase.table("fhir_records")
+        .select("id,soap_note_id,resource_type,fhir_json,created_at")
+        .eq("soap_note_id", soap_note_id)
+        .eq("resource_type", resource_type)
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    return _first_or_none(res.data)

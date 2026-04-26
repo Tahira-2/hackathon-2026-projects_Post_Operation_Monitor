@@ -1,9 +1,10 @@
--- Doctor users (3)
+-- Doctor users (4 — includes General Practice to match core_logic fallback specialty)
 insert into users (email, password_hash, full_name, role)
 values
   ('derm.doc@test.com', 'hash', 'Dr. Alice Skinner', 'doctor'),
   ('cardio.doc@test.com', 'hash', 'Dr. Brian Heart', 'doctor'),
-  ('neuro.doc@test.com', 'hash', 'Dr. Clara Neuro', 'doctor');
+  ('neuro.doc@test.com', 'hash', 'Dr. Clara Neuro', 'doctor'),
+  ('gp.doc@test.com', 'hash', 'Dr. Dana Ellis', 'doctor');
 
 -- Patient users (2)
 insert into users (email, password_hash, full_name, role)
@@ -82,6 +83,42 @@ values
     '{"friday":["10:00","11:00"],"saturday":["12:00"]}'::jsonb
   );
 
+-- General Practice doctor (aligns with DEFAULT_FALLBACK_SPECIALTY in core_logic symptom_mapper)
+insert into doctors (
+  user_id,
+  full_name,
+  specialty,
+  license_no,
+  provider_npi,
+  provider_dea,
+  credential_verification_status,
+  is_licensed,
+  rating,
+  review_count,
+  review_source,
+  lat,
+  lng,
+  address,
+  availability
+)
+values (
+  (select id from users where email = 'gp.doc@test.com'),
+  'Dr. Dana Ellis',
+  'General Practice',
+  'LIC-GP-1004',
+  '4444444444',
+  'BD4444444',
+  'verified',
+  true,
+  4.6,
+  87,
+  'google',
+  29.4280,
+  -98.4910,
+  '55 Primary Care Blvd, San Antonio, TX',
+  '{"monday":["09:00","10:00","11:00"],"thursday":["13:00","14:00"]}'::jsonb
+);
+
 -- 1 completed appointment
 insert into appointments (patient_id, doctor_id, scheduled_at, status, workflow_status, notes)
 values (
@@ -148,10 +185,11 @@ values (
   now()
 );
 
--- 1 FHIR record
-insert into fhir_records (soap_note_id, fhir_json)
+-- 1 FHIR record (legacy Composition document; resource_type set explicitly to avoid default mismatch)
+insert into fhir_records (soap_note_id, resource_type, fhir_json)
 values (
   (select id from soap_notes order by created_at desc limit 1),
+  'Composition',
   '{
     "resourceType":"Composition",
     "status":"final",

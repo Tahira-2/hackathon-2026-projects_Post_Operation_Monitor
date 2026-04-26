@@ -75,3 +75,12 @@ class FhirBundleResult:
 
     bundle: dict[str, Any]
     included_resource_types: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class EscalationResult:
+    """Urgent-care escalation hint contract."""
+
+    escalation_required: bool
+    escalation_reason: str
+    matched_red_flags: list[str] = field(default_factory=list)
