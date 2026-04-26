@@ -22,15 +22,14 @@ function FeedbackPage() {
   return (
     <div className="animate-fade-in">
       {/* Header */}
-      <div className="mb-8 flex items-center gap-4">
-              <button onClick={() => navigate('/dashboard/patient')} className="rounded-lg p-2 hover:bg-[var(--color-surface)]">
-                <ArrowLeft className="h-6 w-6 text-[var(--color-text)]" />
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold text-[var(--color-text)]">Feedback</h1>
-                <p className="text-sm text-[var(--color-text-muted)]">AI insights and doctor recommendations</p>
-              </div>
-            </div>
+      <div className="mb-12">
+        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-primary)] mb-2">
+           <div className="h-1 w-4 bg-[var(--color-primary)] rounded-full"></div>
+           Review & Insights
+        </div>
+        <h1 className="text-4xl font-extrabold tracking-tight text-[var(--color-text)]">Feedback</h1>
+        <p className="text-lg font-medium text-[var(--color-text-muted)] mt-2">AI insights and doctor recommendations</p>
+      </div>
 
             {/* AI Feedback */}
             <div className="mb-8 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8">

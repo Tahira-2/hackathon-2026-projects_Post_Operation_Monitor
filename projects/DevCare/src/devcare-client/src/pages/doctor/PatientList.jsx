@@ -51,10 +51,10 @@ function PatientList() {
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
         <div>
           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-primary)] mb-2">
-             <Users size={12} />
+             <div className="h-1 w-4 bg-[var(--color-primary)] rounded-full"></div>
              Patient Management
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight">Clinical Directory</h1>
+          <h1 className="text-4xl font-extrabold tracking-tight">Patient List</h1>
           <p className="text-[var(--color-text-muted)] mt-2 text-lg font-medium">Manage and monitor all your connected patients.</p>
         </div>
         <div className="flex flex-wrap gap-3">

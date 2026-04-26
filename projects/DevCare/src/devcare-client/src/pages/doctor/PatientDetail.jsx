@@ -112,7 +112,7 @@ function PatientDetail() {
                <Sparkles size={120} />
              </div>
              <div className="flex items-center gap-2 mb-6 relative z-10">
-               <Sparkles size={20} className="text-blue-600" />
+               <div className="h-1 w-4 bg-blue-600 rounded-full"></div>
                <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">AI Insights</h3>
              </div>
              <p className="text-base leading-relaxed text-slate-900 font-bold relative z-10">
@@ -136,6 +136,10 @@ function PatientDetail() {
           <section className="elevated-card border-none p-10 shadow-lg">
             <div className="flex items-center justify-between mb-10">
               <div>
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-primary)] mb-2">
+                   <div className="h-1 w-4 bg-[var(--color-primary)] rounded-full"></div>
+                   Anatomical Analytics
+                </div>
                 <h3 className="text-2xl font-bold text-slate-900">Latest Session Report</h3>
                 <p className="text-sm text-slate-500 font-medium mt-1">Generated automatically after session completion</p>
               </div>
@@ -196,6 +200,10 @@ function PatientDetail() {
           <section className="elevated-card border-none p-10 shadow-lg">
             <div className="flex items-center justify-between mb-10">
               <div>
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-primary)] mb-2">
+                   <div className="h-1 w-4 bg-[var(--color-primary)] rounded-full"></div>
+                   Physician Records
+                </div>
                 <h3 className="text-2xl font-bold">Clinical Notes</h3>
                 <p className="text-sm text-slate-500 font-medium mt-1">Timeline of assessments and adjustments</p>
               </div>
@@ -231,8 +239,12 @@ function PatientDetail() {
         {/* Right Sidebar */}
         <div className="lg:col-span-4 space-y-8">
           <section className="elevated-card border-none p-8 shadow-lg">
-            <div className="flex items-center justify-between mb-8">
-               <h3 className="text-xl font-bold text-slate-900">Current Plan</h3>
+             <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-primary)] mb-4">
+                <div className="h-1 w-4 bg-[var(--color-primary)] rounded-full"></div>
+                Active Protocol
+             </div>
+             <div className="flex items-center justify-between mb-8">
+                <h3 className="text-xl font-bold text-slate-900">Current Plan</h3>
                <Link to="/doctor/assign" className="text-xs font-bold text-blue-600 hover:underline">Modify</Link>
             </div>
             <div className="space-y-4">

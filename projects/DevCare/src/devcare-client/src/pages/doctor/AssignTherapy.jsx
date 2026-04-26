@@ -90,7 +90,7 @@ function AssignTherapy() {
     <div className="animate-fade-in pb-12">
       <header className="mb-12">
         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-primary)] mb-2">
-           <ClipboardList size={12} />
+           <div className="h-1 w-4 bg-[var(--color-primary)] rounded-full"></div>
            Plan Configuration
         </div>
         <h1 className="text-4xl font-extrabold tracking-tight">Assign Recovery Plan</h1>

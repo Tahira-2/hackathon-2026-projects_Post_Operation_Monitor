@@ -31,8 +31,8 @@ function FeedbackReview() {
     <div className="animate-fade-in pb-12">
       <header className="mb-12">
         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-primary)] mb-2">
-           <MessageSquareMore size={12} />
-           Performance Review
+           <div className="h-1 w-4 bg-[var(--color-primary)] rounded-full"></div>
+           Review & Insights
         </div>
         <h1 className="text-4xl font-extrabold tracking-tight">Feedback</h1>
         <p className="text-lg text-[var(--color-text-muted)] mt-2 font-medium">Evaluate patient performance and provide professional guidance.</p>

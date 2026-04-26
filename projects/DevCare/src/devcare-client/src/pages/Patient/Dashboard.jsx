@@ -16,9 +16,10 @@ function PatientDashboard() {
       {/* Welcome Section */}
       <div className="mb-12 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-10 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 h-full w-1/3 bg-gradient-to-l from-[var(--color-primary-soft)] to-transparent opacity-50"></div>
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-primary)]">
-          Welcome Back
-        </p>
+        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-primary)]">
+           <div className="h-1 w-4 bg-[var(--color-primary)] rounded-full"></div>
+           Welcome Back
+        </div>
         <h1 className="mt-4 text-5xl font-black tracking-tight text-slate-900">
           Good morning, {username || 'Patient'}
         </h1>

@@ -53,7 +53,7 @@ function ShareConnection() {
     <div className="animate-fade-in pb-12">
       <header className="mb-12">
         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-primary)] mb-2">
-          <UserPlus size={12} />
+          <div className="h-1 w-4 bg-[var(--color-primary)] rounded-full"></div>
           Onboarding Center
         </div>
         <h1 className="text-4xl font-extrabold tracking-tight">Expand Your Network</h1>
