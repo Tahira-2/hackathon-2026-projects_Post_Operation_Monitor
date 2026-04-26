@@ -6,12 +6,7 @@ import { KeyboardChatScrollView, KeyboardStickyView } from 'react-native-keyboar
 import { sendChatMessage } from 'api/chat-service';
 import { getErrorMessage } from 'api/contracts';
 import AppCard from '../components/AppCard';
-import type {
-  ChatDoctorRecommendation,
-  ChatMedicineSuggestion,
-  ChatOption,
-  ChatMessagePayload,
-} from 'api/models';
+import type { ChatDoctorRecommendation, ChatMedicineSuggestion, ChatOption } from 'api/models';
 
 type Message = {
   id: string;
@@ -22,43 +17,6 @@ type Message = {
   doctors?: ChatDoctorRecommendation[];
   medicines?: ChatMedicineSuggestion[];
 };
-
-function localFallbackResponse(message: string): Omit<ChatMessagePayload, 'session_id'> {
-  const normalized = message.toLowerCase();
-
-  if (normalized.includes('stomach')) {
-    return {
-      response: 'Got it. How many hours did you sleep last night?',
-      confidence: 0.58,
-      is_serious: false,
-      needs_doctor: false,
-      questions_asked: 1,
-      recommended_specialization: 'general physician',
-      predicted_condition: '',
-      options: [
-        { id: 'a', label: '1 hour', value: 'I slept 1 hour.' },
-        { id: 'b', label: '2 hours', value: 'I slept 2 hours.' },
-        { id: 'c', label: '3 hours', value: 'I slept 3 hours.' },
-        { id: 'd', label: '4-7 hours', value: 'I slept 4 to 7 hours.' },
-      ],
-      doctor_recommendations: [],
-      medicine_suggestions: [],
-    };
-  }
-
-  return {
-    response: 'I can help with that. Please share one more detail about your symptoms.',
-    confidence: 0.5,
-    is_serious: false,
-    needs_doctor: false,
-    questions_asked: 1,
-    recommended_specialization: 'general physician',
-    predicted_condition: '',
-    options: [],
-    doctor_recommendations: [],
-    medicine_suggestions: [],
-  };
-}
 
 export default function AiChatView() {
   const [messages, setMessages] = useState<Message[]>([
@@ -125,15 +83,10 @@ export default function AiChatView() {
 
       setMessages((prev) => [...prev, aiMsg]);
     } catch (error) {
-      const fallback = localFallbackResponse(content);
       const fallbackMsg: Message = {
         id: `ai-fallback-${Date.now()}`,
         role: 'ai',
-        text: `${fallback.response}\n\n(${getErrorMessage(error)})`,
-        options: fallback.options,
-        predictedCondition: fallback.predicted_condition,
-        doctors: fallback.doctor_recommendations,
-        medicines: fallback.medicine_suggestions,
+        text: `AI is currently not available. Please try again later.\n\n(${getErrorMessage(error)})`,
       };
 
       setMessages((prev) => [...prev, fallbackMsg]);

@@ -52,6 +52,14 @@ def intent_parser(state: HealthState) -> dict:
         topic = "general"
         keywords = []
         
+    # Preserve existing context when user taps short option-like answers.
+    previous_keywords = state.get("keywords", [])
+    previous_topic = state.get("topic", "general")
+    if not keywords and previous_keywords:
+        keywords = previous_keywords
+    if (topic == "general" or not topic) and previous_topic and previous_topic != "general":
+        topic = previous_topic
+
     logger.info(f"Detected topic: {topic}, keywords: {keywords}")
     return {
         "topic": topic,

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from agent.graph import graph
 from api.sessions import get_session, save_session, delete_session, list_sessions
 import logging
@@ -20,6 +20,7 @@ class ChatResponse(BaseModel):
     needs_doctor: bool
     questions_asked: int
     recommended_specialization: str = ""
+    options: list[dict] = Field(default_factory=list)
 
 class SessionInfo(BaseModel):
     session_id: str
@@ -34,6 +35,7 @@ def chat(request: ChatRequest):
     try:
         # 1. Get or create session state for session_id
         state = get_session(request.session_id)
+        previous_questions_asked = int(state.get("questions_asked", 0))
         
         # 2. Append user message to state["messages"]
         state["messages"].append({"role": "user", "content": request.message})
@@ -48,6 +50,12 @@ def chat(request: ChatRequest):
             
         # 5. Run graph.invoke(state)
         updated_state = graph.invoke(state)
+
+        # Return options only when the current turn generated a new follow-up question.
+        generated_new_question = int(updated_state.get("questions_asked", 0)) > previous_questions_asked
+        current_options = updated_state.get("current_options", []) if generated_new_question else []
+        if not generated_new_question:
+            updated_state["current_options"] = []
         
         # 6. Save updated state back to sessions
         save_session(request.session_id, updated_state)
@@ -71,7 +79,8 @@ def chat(request: ChatRequest):
             is_serious=updated_state.get("is_serious", False),
             needs_doctor=updated_state.get("is_serious", False),
             questions_asked=updated_state.get("questions_asked", 0),
-            recommended_specialization=updated_state.get("recommended_specialization", "")
+            recommended_specialization=updated_state.get("recommended_specialization", ""),
+            options=current_options,
         )
     except Exception as e:
         logger.error(f"Error in chat endpoint: {e}", exc_info=True)

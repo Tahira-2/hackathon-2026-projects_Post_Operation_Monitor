@@ -13,3 +13,4 @@ class HealthState(TypedDict):
     is_greeting: bool           # True if last message was greeting
     recommended_specialization: str
     final_response: str
+    current_options: list[dict] # [{id: a|b|c|d, label: str, value: str}]

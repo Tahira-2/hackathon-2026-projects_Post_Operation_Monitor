@@ -17,11 +17,14 @@ CRITICAL_SYMPTOMS = [
     "numbness", "left arm"
 ]
 
+MIN_DYNAMIC_QUESTIONS = 8
+MAX_DYNAMIC_QUESTIONS = 16
+
 def route_after_confidence(state: HealthState) -> str:
     if state.get("is_greeting", False):
         return "greeting_responder"
 
-    if not state.get("keywords"):
+    if not state.get("keywords") and state.get("questions_asked", 0) == 0:
         return "greeting_responder"
 
     # Check ALL user messages for critical symptoms
@@ -36,7 +39,14 @@ def route_after_confidence(state: HealthState) -> str:
     if any(kw in all_user_text for kw in CRITICAL_SYMPTOMS):
         return "rag_retriever"
 
-    if state.get("confidence", 0.0) < 0.65 and state.get("questions_asked", 0) < 4:
+    questions_asked = state.get("questions_asked", 0)
+    confidence = state.get("confidence", 0.0)
+
+    # Enforce deeper follow-up before final synthesis.
+    if questions_asked < MIN_DYNAMIC_QUESTIONS:
+        return "question_generator"
+
+    if confidence < 0.8 and questions_asked < MAX_DYNAMIC_QUESTIONS:
         return "question_generator"
 
     return "fitness_permission"

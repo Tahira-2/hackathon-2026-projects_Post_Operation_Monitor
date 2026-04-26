@@ -17,7 +17,8 @@ def get_session(session_id: str) -> dict:
             is_serious=False,
             is_greeting=False,
             recommended_specialization='',
-            final_response=''
+            final_response='',
+            current_options=[]
         )
     return sessions[session_id]
 
