@@ -56,10 +56,25 @@ export interface ServiceRequestDraft {
   note: Array<{ text: string }>;
 }
 
+export interface FhirMeta {
+  versionId?: string;
+  lastUpdated?: string;
+  [key: string]: unknown;
+}
+
+export interface ServiceRequestCreated {
+  resourceType?: string;
+  id?: string;
+  meta?: FhirMeta;
+  [key: string]: unknown;
+}
+
 export interface ApproveActionResult {
   message: string;
   patient_id: string;
   service_request: ServiceRequestDraft;
+  fhir_service_request_id: string;
+  created_fhir_resource: ServiceRequestCreated;
 }
 
 export interface PatientSummary {
@@ -138,7 +153,7 @@ export async function runTriage(
 }
 
 /**
- * Draft a FHIR ServiceRequest for an approved action.
+ * Create a FHIR ServiceRequest for an approved action.
  */
 export async function approveAction(
   patientId: string,

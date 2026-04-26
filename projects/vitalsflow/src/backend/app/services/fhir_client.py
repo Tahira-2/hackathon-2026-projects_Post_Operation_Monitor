@@ -110,3 +110,27 @@ async def get_observations(patient_id: str) -> list[dict]:
     except Exception as exc:
         logger.warning("FHIR get_observations(%s) failed: %s", patient_id, exc)
         return []  # non-critical — triage can still run without historical vitals
+
+
+async def create_service_request(service_request: dict) -> dict:
+    """
+    Create a ServiceRequest resource on the configured FHIR server.
+
+    Returns the created FHIR resource body.
+    Raises RuntimeError on any failure so routers can convert to HTTP errors.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=FHIR_TIMEOUT) as client:
+            resp = await client.post(
+                f"{settings.fhir_base_url}/ServiceRequest",
+                headers={
+                    "Accept": "application/fhir+json",
+                    "Content-Type": "application/fhir+json",
+                },
+                json=service_request,
+            )
+            resp.raise_for_status()
+            return resp.json()
+    except Exception as exc:
+        logger.warning("FHIR create_service_request failed: %s", exc)
+        raise RuntimeError(f"Failed to create ServiceRequest on FHIR server: {exc}") from exc
