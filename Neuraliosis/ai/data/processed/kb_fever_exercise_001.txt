@@ -1,0 +1,7 @@
+Title: Fever and Exercise
+Category: illness
+Symptoms: elevated body temperature, chills, body aches, fatigue, sometimes cough or sore throat
+Causes: viral infection, bacterial infection, flu, cold
+Guidance: Exercising with fever can be dangerous and worsen illness. General rule: if symptoms are above neck only (runny nose, sneezing) light activity may be okay. If symptoms below neck (cough, body aches, fever) avoid exercise.
+Prevention: Get adequate sleep. Wash hands regularly. Maintain proper nutrition. Stay hydrated.
+When to see doctor: Fever above 103°F, fever lasting more than 3-5 days, fever with severe symptoms, or fever with confusion or difficulty breathing
