@@ -11,6 +11,9 @@ export const API_ENDPOINTS = {
     location: '/users/location/',
     updateLocation: '/users/location/update/',
   },
+  chat: {
+    message: '/chat/message/',
+  },
   doctors: {
     list: '/doctors/',
     create: '/doctors/create/',

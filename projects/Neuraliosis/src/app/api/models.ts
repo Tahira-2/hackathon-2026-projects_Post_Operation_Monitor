@@ -191,3 +191,47 @@ export interface PlaceOrderItemPayload {
 export interface PlaceOrderPayload {
   items: PlaceOrderItemPayload[];
 }
+
+export interface ChatOption {
+  id: string;
+  label: string;
+  value: string;
+}
+
+export interface ChatDoctorRecommendation {
+  id: number;
+  doctor_name: string;
+  specialization: string;
+  hospital_name: string;
+  phone_number: string;
+  source: 'api' | 'mock';
+}
+
+export interface ChatMedicineSuggestion {
+  id: number;
+  name: string;
+  description: string;
+  category: string;
+  requires_prescription: boolean;
+  source: 'api' | 'mock';
+}
+
+export interface ChatMessagePayload {
+  session_id: string;
+  response: string;
+  confidence: number;
+  is_serious: boolean;
+  needs_doctor: boolean;
+  questions_asked: number;
+  recommended_specialization: string;
+  predicted_condition: string;
+  options: ChatOption[];
+  doctor_recommendations: ChatDoctorRecommendation[];
+  medicine_suggestions: ChatMedicineSuggestion[];
+}
+
+export interface SendChatMessageRequest {
+  session_id: string;
+  message: string;
+  fitness_approved?: boolean;
+}

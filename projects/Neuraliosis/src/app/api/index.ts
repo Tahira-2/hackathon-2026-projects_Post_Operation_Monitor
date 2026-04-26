@@ -8,3 +8,4 @@ export * from './doctors-service';
 export * from './appointments-service';
 export * from './medicines-service';
 export * from './orders-service';
+export * from './chat-service';

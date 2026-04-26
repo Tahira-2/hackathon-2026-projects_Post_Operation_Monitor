@@ -1,29 +1,71 @@
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  Animated,
-  Keyboard,
-} from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Animated, Keyboard } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useRef, useState } from 'react';
 import Foundation from '@expo/vector-icons/Foundation';
 import { KeyboardChatScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
+import { sendChatMessage } from 'api/chat-service';
+import { getErrorMessage } from 'api/contracts';
+import AppCard from '../components/AppCard';
+import type {
+  ChatDoctorRecommendation,
+  ChatMedicineSuggestion,
+  ChatOption,
+  ChatMessagePayload,
+} from 'api/models';
 
 type Message = {
-  id: number;
+  id: string;
   role: 'user' | 'ai';
   text: string;
+  options?: ChatOption[];
+  predictedCondition?: string;
+  doctors?: ChatDoctorRecommendation[];
+  medicines?: ChatMedicineSuggestion[];
 };
+
+function localFallbackResponse(message: string): Omit<ChatMessagePayload, 'session_id'> {
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes('stomach')) {
+    return {
+      response: 'Got it. How many hours did you sleep last night?',
+      confidence: 0.58,
+      is_serious: false,
+      needs_doctor: false,
+      questions_asked: 1,
+      recommended_specialization: 'general physician',
+      predicted_condition: '',
+      options: [
+        { id: 'a', label: '1 hour', value: 'I slept 1 hour.' },
+        { id: 'b', label: '2 hours', value: 'I slept 2 hours.' },
+        { id: 'c', label: '3 hours', value: 'I slept 3 hours.' },
+        { id: 'd', label: '4-7 hours', value: 'I slept 4 to 7 hours.' },
+      ],
+      doctor_recommendations: [],
+      medicine_suggestions: [],
+    };
+  }
+
+  return {
+    response: 'I can help with that. Please share one more detail about your symptoms.',
+    confidence: 0.5,
+    is_serious: false,
+    needs_doctor: false,
+    questions_asked: 1,
+    recommended_specialization: 'general physician',
+    predicted_condition: '',
+    options: [],
+    doctor_recommendations: [],
+    medicine_suggestions: [],
+  };
+}
 
 export default function AiChatView() {
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: 1,
+      id: 'welcome-ai',
       role: 'ai',
-      text: 'Hi, I am your health assistant. Ask me anything about sleep, habits, or health.',
+      text: 'Hi, I am your health assistant. Tell me your symptoms and I will ask follow-up questions with choices when needed.',
     },
   ]);
 
@@ -31,8 +73,8 @@ export default function AiChatView() {
   const [isTyping, setIsTyping] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-  const scrollRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const sessionIdRef = useRef(`mobile-${Date.now()}`);
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => {
@@ -49,39 +91,54 @@ export default function AiChatView() {
     };
   }, []);
 
-  const scrollToBottom = () => {
-    requestAnimationFrame(() => {
-      scrollRef.current?.scrollToEnd({ animated: true });
-    });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping]);
-
-  const sendMessage = () => {
-    if (!input.trim()) return;
+  const sendMessage = async (overrideText?: string) => {
+    const content = (overrideText ?? input).trim();
+    if (!content || isTyping) return;
 
     const userMsg: Message = {
-      id: Date.now(),
+      id: `user-${Date.now()}`,
       role: 'user',
-      text: input,
+      text: content,
     };
 
     setMessages((prev) => [...prev, userMsg]);
-    setInput('');
+    if (!overrideText) {
+      setInput('');
+    }
     setIsTyping(true);
 
-    setTimeout(() => {
+    try {
+      const response = await sendChatMessage({
+        session_id: sessionIdRef.current,
+        message: content,
+      });
+
       const aiMsg: Message = {
-        id: Date.now() + 1,
+        id: `ai-${Date.now()}`,
         role: 'ai',
-        text: 'Analyzing your input... This is a simulated health response.',
+        text: response.response,
+        options: response.options,
+        predictedCondition: response.predicted_condition,
+        doctors: response.doctor_recommendations,
+        medicines: response.medicine_suggestions,
       };
 
       setMessages((prev) => [...prev, aiMsg]);
-      setIsTyping(false);
+    } catch (error) {
+      const fallback = localFallbackResponse(content);
+      const fallbackMsg: Message = {
+        id: `ai-fallback-${Date.now()}`,
+        role: 'ai',
+        text: `${fallback.response}\n\n(${getErrorMessage(error)})`,
+        options: fallback.options,
+        predictedCondition: fallback.predicted_condition,
+        doctors: fallback.doctor_recommendations,
+        medicines: fallback.medicine_suggestions,
+      };
 
+      setMessages((prev) => [...prev, fallbackMsg]);
+    } finally {
+      setIsTyping(false);
       Animated.sequence([
         Animated.timing(fadeAnim, {
           toValue: 0.5,
@@ -94,7 +151,7 @@ export default function AiChatView() {
           useNativeDriver: true,
         }),
       ]).start();
-    }, 900);
+    }
   };
 
   const inset = useSafeAreaInsets();
@@ -126,7 +183,7 @@ export default function AiChatView() {
                 style={{ opacity: fadeAnim }}
                 className={`mb-3 flex ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                 <View
-                  className={`max-w-[80%] rounded-3xl px-4 py-3 ${
+                  className={`max-w-[86%] rounded-3xl px-4 py-3 ${
                     msg.role === 'user' ? 'bg-red-400' : 'border border-gray-100 bg-white'
                   }`}>
                   <Text
@@ -135,6 +192,79 @@ export default function AiChatView() {
                     }>
                     {msg.text}
                   </Text>
+
+                  {msg.role === 'ai' && Boolean(msg.options?.length) && (
+                    <View className="mt-3 gap-2">
+                      {msg.options?.map((option) => (
+                        <TouchableOpacity
+                          key={`${msg.id}-${option.id}`}
+                          onPress={() => void sendMessage(option.value)}
+                          disabled={isTyping}
+                          className="rounded-xl border border-red-200 bg-red-50 px-3 py-2">
+                          <Text className="text-sm font-medium text-red-500">{`${option.id}. ${option.label}`}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+
+                  {msg.role === 'ai' && msg.predictedCondition ? (
+                    <View className="mt-3 rounded-xl bg-gray-50 px-3 py-2">
+                      <Text className="text-xs uppercase text-gray-500">Predicted Condition</Text>
+                      <Text className="mt-1 text-sm font-semibold text-gray-800">
+                        {msg.predictedCondition}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  {msg.role === 'ai' && Boolean(msg.doctors?.length) && (
+                    <View className="mt-3 gap-2">
+                      <Text className="text-xs uppercase text-gray-500">Recommended Doctors</Text>
+                      {msg.doctors?.map((doctor) => (
+                        <AppCard key={`${msg.id}-doctor-${doctor.id}`} className="p-3">
+                          <View className="flex-row items-center gap-3">
+                            <View className="h-10 w-10 items-center justify-center rounded-2xl bg-blue-100">
+                              <Foundation name="first-aid" size={18} color="#3b82f6" />
+                            </View>
+                            <View className="flex-1">
+                              <Text className="text-sm font-bold text-gray-900">
+                                {doctor.doctor_name}
+                              </Text>
+                              <Text className="text-[11px] text-gray-600">
+                                {doctor.specialization}
+                              </Text>
+                              <Text className="text-[11px] text-gray-500">
+                                {doctor.hospital_name}
+                              </Text>
+                            </View>
+                          </View>
+                        </AppCard>
+                      ))}
+                    </View>
+                  )}
+
+                  {msg.role === 'ai' && Boolean(msg.medicines?.length) && (
+                    <View className="mt-3 gap-2">
+                      <Text className="text-xs uppercase text-gray-500">Suggested Medicines</Text>
+                      {msg.medicines?.map((medicine) => (
+                        <AppCard key={`${msg.id}-medicine-${medicine.id}`} className="p-3">
+                          <View className="flex-row items-center gap-3">
+                            <View className="h-10 w-10 items-center justify-center rounded-2xl bg-red-100">
+                              <Foundation name="plus" size={16} color="#f87171" />
+                            </View>
+                            <View className="flex-1">
+                              <Text className="text-sm font-bold text-gray-900">
+                                {medicine.name}
+                              </Text>
+                              <Text className="text-[11px] text-gray-600" numberOfLines={2}>
+                                {medicine.description}
+                              </Text>
+                              <Text className="text-[11px] text-gray-500">{medicine.category}</Text>
+                            </View>
+                          </View>
+                        </AppCard>
+                      ))}
+                    </View>
+                  )}
                 </View>
               </Animated.View>
             ))}
@@ -163,7 +293,8 @@ export default function AiChatView() {
             />
 
             <TouchableOpacity
-              onPress={sendMessage}
+              onPress={() => void sendMessage()}
+              disabled={isTyping}
               className="ml-3 rounded-xl bg-red-400 px-4 py-2">
               <Text className="font-bold text-white">Send</Text>
             </TouchableOpacity>
