@@ -55,7 +55,7 @@ def extract_entities(text):
             entities["symptoms"].append(ent.text)
             
             # Check severity based on your high-risk list
-            if any(s.lower() in HIGH_RISK_SYMPTOMS for s in entities["symptoms"]):
+            if ent.text.lower() in HIGH_RISK_SYMPTOMS:
                 entities["severity"] = "high"
         
     return entities

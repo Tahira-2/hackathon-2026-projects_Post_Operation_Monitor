@@ -188,10 +188,22 @@ def get_patient_as_fhir(patient_id: str) -> dict:
     fhir_patient = {
         "resourceType": "Patient",
         "id": patient_id,
+        "active": True,
         "name": [{"text": p.get("name", "")}],
         "gender": p.get("sex", "unknown").lower(),
         "birthDate": _age_to_birthdate(p.get("age")),
-        "address": [{"text": p.get("place", "")}]
+        "address": [{"text": p.get("place", ""), "line": [p.get("place", "")]}],
+        # These extensions are what store your Height and Weight
+        "extension": [
+            {
+                "url": "http://hl7.org/fhir/StructureDefinition/patient-height",
+                "valueQuantity": {"value": p.get("height_cm"), "unit": "cm"}
+            },
+            {
+                "url": "http://hl7.org/fhir/StructureDefinition/patient-weight",
+                "valueQuantity": {"value": p.get("weight_kg"), "unit": "kg"}
+            }
+        ]
     }
     return fhir_patient # Simplified for brevity, same logic as your original
 
@@ -237,6 +249,19 @@ def _ensure_patient_email_column(conn: sqlite3.Connection) -> None:
     if "email" not in col_names:
         conn.execute("ALTER TABLE patients ADD COLUMN email TEXT")
 
+def get_recent_sessions(patient_id: str, limit: int = 2):
+    """Fetches the last X sessions for a specific patient."""
+    conn = get_connection()
+    query = """
+        SELECT symptoms, risk_tier, diagnosis, created_at 
+        FROM sessions 
+        WHERE patient_id = ? 
+        ORDER BY created_at DESC 
+        LIMIT ?
+    """
+    rows = conn.execute(query, (patient_id, limit)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 # ── Main ──────────────────────────────────────────────────────
 
 if __name__ == "__main__":

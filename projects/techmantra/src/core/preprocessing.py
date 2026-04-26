@@ -1,5 +1,5 @@
 # Purpose: Takes user input (raw symptom text) + extracted NER entities + user profile fetched from database
-
+from core.ner import format_for_llm  # Import the helper from NER
 def preprocess(user_input, ner_entities, user_profile):
     # takes in the user input, ner_entities, user_profile and prepares a proper input text for llm
     cleaned_symptoms = user_input.strip()
