@@ -50,10 +50,14 @@ export class MedicineService {
       page: query.page,
       pageSize: query.pageSize,
     });
+<<<<<<< HEAD
+    const where = this.buildSearchWhere(query.search);
+=======
     const where: Prisma.MedicineWhereInput = {
       ...this.buildSearchWhere(query.search),
       ...(query.category ? { category: query.category as any } : {}),
     };
+>>>>>>> e39e1b11ad8aeca3cdf4712813e8a2363acc0b87
 
     const [data, total] = await this.prisma.$transaction([
       this.prisma.medicine.findMany({

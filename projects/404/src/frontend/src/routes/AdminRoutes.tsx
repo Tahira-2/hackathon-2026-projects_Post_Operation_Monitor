@@ -11,9 +11,8 @@ import { Login } from "@/pages/auth/Login";
 export function AdminRoutes() {
   return (
     <Routes>
-      {/* Auth isolated from layout headers/footers */}
       <Route path="login" element={<Login />} />
-      
+
       <Route element={<ProtectedRoute allowedRoles={["admin"]} redirectPath="/admin/login" />}>
         <Route element={<AdminLayout />}>
           <Route path="/" element={<AdminDashboard />} />

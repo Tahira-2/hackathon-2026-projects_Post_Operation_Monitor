@@ -18,6 +18,9 @@ const userSelect = {
   role: true,
   createdAt: true,
   patient: { select: { id: true } },
+<<<<<<< HEAD
+  doctor: { select: { id: true } },
+=======
   doctor: { 
     select: { 
       id: true, 
@@ -25,6 +28,7 @@ const userSelect = {
       specialization: { select: { id: true, name: true } } 
     } 
   },
+>>>>>>> e39e1b11ad8aeca3cdf4712813e8a2363acc0b87
 };
 
 @Injectable()
@@ -193,6 +197,24 @@ export class UsersService {
       }
       return tx.user.delete({ where: { id }, select: userSelect });
     });
+  }
+
+  private async resolveSpecializationId(data: CreateUserDto) {
+    if (data.specializationId) {
+      await this.specializationsService.findOne(data.specializationId);
+      return data.specializationId;
+    }
+
+    if (data.specializationName) {
+      const specialization =
+        await this.specializationsService.getOrCreateByName(
+          data.specializationName,
+          data.specializationDescription,
+        );
+      return specialization.id;
+    }
+
+    throw new BadRequestException('Specialization is required for doctors');
   }
 
   private async resolveSpecializationId(data: CreateUserDto) {

@@ -7,7 +7,6 @@ interface SidebarProps {
   role: "admin" | "physician" | "patient"
 }
 
-// Emulating the requested dark B2B layout mimicking loan dashboard screenshot
 export function Sidebar({ role }: SidebarProps) {
   const location = useLocation()
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -19,11 +18,10 @@ export function Sidebar({ role }: SidebarProps) {
     return () => document.removeEventListener("toggleSidebar", handleToggle)
   }, [])
 
-  // Auto-close mobile sidebar when navigation occurs
   useEffect(() => {
     setMobileOpen(false)
   }, [location.pathname])
-  
+
   const navItems = {
     admin: [
       { name: "Specializations", href: "/admin/specializations", icon: Stethoscope },
@@ -50,34 +48,28 @@ export function Sidebar({ role }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile Backdrop overlay */}
       {mobileOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60] md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
-      
+
       <aside className={cn(
         "border-r bg-card transition-all duration-300 ease-in-out relative z-[70] flex flex-col h-screen sticky top-0",
-        // Desktop logic
         isCollapsed ? "md:w-20" : "md:w-64",
-        // Mobile logic: always visible but defaulted to icon-only unless toggled
         !mobileOpen ? "max-md:w-16" : "max-md:w-64",
         "flex"
       )}>
-        {/* Mobile Sidebar Controls */}
         <div className="flex md:hidden items-center justify-between p-4 border-b">
-          <button 
+          <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className="bg-background p-1.5 rounded-full border text-muted-foreground hover:text-foreground hover:bg-accent shadow-sm transition-all"
           >
             {mobileOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
           </button>
         </div>
-
-        {/* Toggle Button Desktop */}
-        <button 
+        <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute -right-3 top-8 bg-background p-1.5 rounded-full border text-muted-foreground hover:text-foreground hover:bg-accent shadow-sm transition-all z-[80] cursor-pointer hidden md:flex"
         >
@@ -85,12 +77,12 @@ export function Sidebar({ role }: SidebarProps) {
         </button>
 
         <div className="flex flex-col flex-1 py-4 pt-6 overflow-y-auto hide-scrollbars overflow-x-hidden">
-          
+
           <nav className={cn("grid gap-1 mb-6", isCollapsed ? "px-2" : "px-4")}>
             {items.map((item) => {
               const Icon = item.icon
               const isActive = location.pathname === item.href || (item.href !== `/${role}` && location.pathname.startsWith(item.href + '/'))
-              
+
               return (
                 <Link
                   key={item.href}
@@ -98,8 +90,8 @@ export function Sidebar({ role }: SidebarProps) {
                   title={(isCollapsed || (!mobileOpen)) ? item.name : undefined}
                   className={cn(
                     "flex items-center gap-3 rounded-lg py-2.5 transition-all outline-none cursor-pointer px-3",
-                    isActive 
-                      ? "bg-primary/10 text-primary" 
+                    isActive
+                      ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   )}
                 >
@@ -109,8 +101,8 @@ export function Sidebar({ role }: SidebarProps) {
               )
             })}
           </nav>
-        </div>
-      </aside>
+        </div >
+      </aside >
     </>
   )
 }

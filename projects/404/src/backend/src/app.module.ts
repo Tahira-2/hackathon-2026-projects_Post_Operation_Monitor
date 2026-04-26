@@ -23,7 +23,10 @@ import { CloudinaryUploadsModule } from './cloudinary/cloudinary.module';
     SpecializationsModule,
     UsersModule,
     MedicineModule,
+<<<<<<< HEAD
+=======
     CloudinaryUploadsModule,
+>>>>>>> e39e1b11ad8aeca3cdf4712813e8a2363acc0b87
   ],
   controllers: [AppController],
   providers: [AppService],

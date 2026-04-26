@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { PublicLayout } from "@/components/layouts/PublicLayout";
+import { Landing } from "@/pages/Landing";
 import { Home } from "@/pages/public/Home";
 import { AboutUs } from "@/pages/public/AboutUs";
 import { Services } from "@/pages/public/Services";
@@ -11,6 +12,7 @@ export function PublicRoutes() {
   return (
     <Routes>
       <Route path="login" element={<Login />} />
+      <Route path="/" element={<Landing />} />
 
       {/* Dev-only demo — remove before production */}
       <Route path="/demo/consultation" element={<VideoConsultationDemo />} />

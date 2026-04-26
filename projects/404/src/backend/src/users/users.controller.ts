@@ -51,7 +51,11 @@ export class UsersController {
 
   @Get()
   @UseGuards(RolesGuard)
+<<<<<<< HEAD
+  @Roles('ADMIN')
+=======
   @Roles('ADMIN', 'DOCTOR')
+>>>>>>> e39e1b11ad8aeca3cdf4712813e8a2363acc0b87
   findAll(@Query() query: Record<string, string>) {
     const filters: ListUsersQuery = {
       page: parseNumber(query.page),
