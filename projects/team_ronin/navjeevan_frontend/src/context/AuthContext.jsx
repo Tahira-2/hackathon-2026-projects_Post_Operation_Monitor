@@ -1,37 +1,12 @@
 import { createContext, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { clearAuthStorage, getStoredAuthState, persistAuthStorage } from '../utils/authStorage';
 
 const initialAuthState = {
   user: null,
   token: null,
   role: null,
   isAuthenticated: false,
-};
-
-const getStoredAuth = () => {
-  const token = localStorage.getItem('vaxnepal_token');
-  const role = localStorage.getItem('vaxnepal_role');
-  const userRaw = localStorage.getItem('vaxnepal_user');
-
-  if (!token || !role) {
-    return initialAuthState;
-  }
-
-  let user = null;
-  if (userRaw) {
-    try {
-      user = JSON.parse(userRaw);
-    } catch (_error) {
-      user = null;
-    }
-  }
-
-  return {
-    user,
-    token,
-    role,
-    isAuthenticated: true,
-  };
 };
 
 export const AuthContext = createContext({
@@ -42,12 +17,10 @@ export const AuthContext = createContext({
 
 export function AuthProvider({ children }) {
   const navigate = useNavigate();
-  const [authState, setAuthState] = useState(getStoredAuth);
+  const [authState, setAuthState] = useState(() => getStoredAuthState(initialAuthState));
 
   const login = (token, role, userData) => {
-    localStorage.setItem('vaxnepal_token', token);
-    localStorage.setItem('vaxnepal_role', role);
-    localStorage.setItem('vaxnepal_user', JSON.stringify(userData || {}));
+    persistAuthStorage(token, role, userData);
 
     setAuthState({
       user: userData || null,
@@ -58,18 +31,9 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    const currentRole = authState.role || localStorage.getItem('vaxnepal_role');
-
-    localStorage.removeItem('vaxnepal_token');
-    localStorage.removeItem('vaxnepal_role');
-    localStorage.removeItem('vaxnepal_user');
+    clearAuthStorage();
 
     setAuthState(initialAuthState);
-
-    if (currentRole === 'healthcare') {
-      navigate('/healthcare/login');
-      return;
-    }
 
     navigate('/login');
   };

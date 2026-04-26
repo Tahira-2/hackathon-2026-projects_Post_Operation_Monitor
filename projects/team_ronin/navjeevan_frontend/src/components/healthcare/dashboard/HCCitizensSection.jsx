@@ -1,17 +1,37 @@
-import { Calendar, Mail, Phone, Save, Users } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, Mail, Phone, Save, UserPlus, Users } from 'lucide-react';
 
 export default function HCCitizensSection({
   citizens,
   citizenForm,
+  districtOptions,
   onCitizenChange,
   onCitizenSubmit,
   isSubmitting,
+  isCitizensLoading,
   error,
   success,
 }) {
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/7 p-4 shadow-2xl shadow-black/20 backdrop-blur-xl">
+        <div>
+          <h2 className="text-xl font-bold text-white">Citizen Register</h2>
+          <p className="text-sm text-slate-400">All users in the app are listed below.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsAddUserOpen((currentState) => !currentState)}
+          className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2 font-semibold text-white transition hover:bg-emerald-400"
+        >
+          <UserPlus size={16} />
+          {isAddUserOpen ? 'Close Add User' : 'Add User'}
+        </button>
+      </div>
+
+      {isAddUserOpen && (
         <form
           onSubmit={onCitizenSubmit}
           className="rounded-2xl border border-white/10 bg-white/7 p-6 shadow-2xl shadow-black/20 backdrop-blur-xl"
@@ -21,7 +41,7 @@ export default function HCCitizensSection({
               <Users size={20} />
             </span>
             <div>
-              <h2 className="text-xl font-bold text-white">Add Citizen</h2>
+              <h2 className="text-xl font-bold text-white">Add User</h2>
               <p className="text-sm text-slate-400">Register a child and send their Login ID by email.</p>
             </div>
           </div>
@@ -85,9 +105,16 @@ export default function HCCitizensSection({
             <input
               value={citizenForm.region}
               onChange={(event) => onCitizenChange('region', event.target.value)}
-              placeholder="Region / Ward"
+              list="nepal-district-options"
+              placeholder="Select region district or start typing"
+              required
               className="w-full rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <datalist id="nepal-district-options">
+              {districtOptions.map((district) => (
+                <option key={district} value={district} />
+              ))}
+            </datalist>
             <textarea
               value={citizenForm.specialConditions}
               onChange={(event) => onCitizenChange('specialConditions', event.target.value)}
@@ -113,12 +140,13 @@ export default function HCCitizensSection({
             </button>
           </div>
         </form>
+      )}
 
-        <div className="rounded-2xl border border-white/10 bg-white/7 p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
+      <div className="rounded-2xl border border-white/10 bg-white/7 p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
           <div className="mb-5 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl font-bold text-white">Citizen Register</h2>
-              <p className="text-sm text-slate-400">Recently added citizens and profile data.</p>
+              <h2 className="text-xl font-bold text-white">Users</h2>
+              <p className="text-sm text-slate-400">Existing citizens and profile data from backend.</p>
             </div>
             <span className="rounded-full border border-blue-400/20 bg-blue-400/10 px-3 py-1 text-xs font-semibold text-blue-200">
               {citizens.length} entries
@@ -126,6 +154,18 @@ export default function HCCitizensSection({
           </div>
 
           <div className="space-y-4">
+            {isCitizensLoading && (
+              <div className="rounded-xl border border-white/10 bg-slate-900/50 px-4 py-3 text-sm text-slate-300">
+                Loading users...
+              </div>
+            )}
+
+            {!isCitizensLoading && citizens.length === 0 && (
+              <div className="rounded-xl border border-white/10 bg-slate-900/50 px-4 py-3 text-sm text-slate-300">
+                No users found.
+              </div>
+            )}
+
             {citizens.map((citizen) => (
               <div key={`${citizen.loginId}-${citizen.name}`} className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -161,7 +201,6 @@ export default function HCCitizensSection({
               </div>
             ))}
           </div>
-        </div>
       </div>
     </div>
   );

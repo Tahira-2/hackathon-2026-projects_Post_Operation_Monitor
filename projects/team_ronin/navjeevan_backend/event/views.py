@@ -3,12 +3,12 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.exceptions import PermissionDenied, ValidationError, NotFound
+from rest_framework.exceptions import PermissionDenied
 
 from my_project.permissions import IsMedicalPersonnel, IsNormalUser
-from user.models import MedicalPersonnel
+from user.models import MedicalPersonnel, NormalUser
 
-from .models import Vaccination, Event
+from .models import Vaccination, Event, EventUser, UserNotification
 from .serializers import VaccinationSerializer, EventSerializer
 
 logger = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ class EventViewSet(GenericViewSet):
 			logger.error(f"Error listing events: {str(e)}", exc_info=True)
 			return Response({
 				'error': 'Failed to retrieve events',
-				'detail': str(e)
+				'detail': 'An unexpected server error occurred.'
 			}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 	def retrieve(self, request, pk=None):
@@ -70,7 +70,7 @@ class EventViewSet(GenericViewSet):
 			logger.error(f"Error retrieving event {pk}: {str(e)}", exc_info=True)
 			return Response({
 				'error': 'Failed to retrieve event',
-				'detail': str(e)
+				'detail': 'An unexpected server error occurred.'
 			}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 	def create(self, request):
@@ -99,11 +99,37 @@ class EventViewSet(GenericViewSet):
 				}, status=status.HTTP_400_BAD_REQUEST)
 
 			serializer.save()
+			created_event = serializer.instance
+			matched_users_count = 0
+			if created_event and created_event.event_location:
+				matched_users = NormalUser.objects.filter(
+					region__iexact=created_event.event_location.name,
+					status='active',
+				)
+				event_users = [EventUser(event=created_event, user=normal_user) for normal_user in matched_users]
+				if event_users:
+					EventUser.objects.bulk_create(event_users)
+					UserNotification.objects.bulk_create(
+						[
+							UserNotification(
+								user=normal_user,
+								event=created_event,
+								notification_type=UserNotification.NotificationType.PROGRAM,
+								title=f"New program in {created_event.event_location.name}",
+								message=f"{created_event.name} has been scheduled in your district. Check Programs for details.",
+							)
+							for normal_user in matched_users
+						]
+					)
+					matched_users_count = len(event_users)
+
 			logger.info(
-				f"Medical user {request.user} created event: {serializer.data.get('name')}"
+				f"Medical user {request.user} created event: {serializer.data.get('name')} "
+				f"and linked {matched_users_count} users for notifications"
 			)
 			return Response({
 				'message': 'Event created successfully',
+				'linked_users': matched_users_count,
 				'data': serializer.data
 			}, status=status.HTTP_201_CREATED)
 
@@ -118,8 +144,91 @@ class EventViewSet(GenericViewSet):
 			)
 			return Response({
 				'error': 'Failed to create event',
-				'detail': str(e)
+				'detail': 'An unexpected server error occurred.'
 			}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+	def my_notifications(self, request):
+		"""List event notifications for the logged-in normal user."""
+		try:
+			if not isinstance(request.user, NormalUser):
+				raise PermissionDenied(detail='Only normal users can view personal notifications.')
+
+			queryset = (
+				UserNotification.objects.filter(user=request.user)
+				.select_related('event', 'event__event_location')
+				.order_by('-created_at')
+			)
+
+			results = [
+				{
+					'id': str(notification.id),
+					'type': notification.notification_type,
+					'title': notification.title,
+					'message': notification.message,
+					'date': notification.created_at.date().isoformat() if notification.created_at else None,
+					'time': notification.created_at.strftime('%I:%M %p') if notification.created_at else None,
+					'read': notification.is_read,
+					'event_status': notification.event.event_status if notification.event else None,
+					'location': notification.event.event_location.name if notification.event and notification.event.event_location else request.user.region or 'Unknown',
+				}
+				for notification in queryset
+			]
+
+			return Response(
+				{
+					'count': len(results),
+					'results': results,
+				},
+				status=status.HTTP_200_OK,
+			)
+		except PermissionDenied as e:
+			return Response({'error': str(e.detail)}, status=status.HTTP_403_FORBIDDEN)
+		except Exception as e:
+			logger.error(f"Error listing notifications for {request.user}: {str(e)}", exc_info=True)
+			return Response(
+				{
+					'error': 'Failed to retrieve notifications',
+					'detail': 'An unexpected server error occurred.',
+				},
+				status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+			)
+
+	def register_for_event(self, request, pk=None):
+		"""Allow normal users to register themselves for an event."""
+		try:
+			if not isinstance(request.user, NormalUser):
+				raise PermissionDenied(detail='Only normal users can register for events.')
+
+			event = self.get_object()
+			link, created = EventUser.objects.get_or_create(event=event, user=request.user)
+			if created:
+				UserNotification.objects.create(
+					user=request.user,
+					event=event,
+					notification_type=UserNotification.NotificationType.PROGRAM,
+					title='Program registration confirmed',
+					message=f'You are registered for {event.name}.',
+				)
+				return Response(
+					{'message': 'Registered for program successfully.'},
+					status=status.HTTP_201_CREATED,
+				)
+
+			return Response(
+				{'message': 'You are already registered for this program.'},
+				status=status.HTTP_200_OK,
+			)
+		except PermissionDenied as e:
+			return Response({'error': str(e.detail)}, status=status.HTTP_403_FORBIDDEN)
+		except Exception as e:
+			logger.error(f"Error registering user {request.user} for event {pk}: {str(e)}", exc_info=True)
+			return Response(
+				{
+					'error': 'Failed to register for program',
+					'detail': 'An unexpected server error occurred.',
+				},
+				status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+			)
 
 	def update(self, request, pk=None):
 		"""Update an existing event (medical personnel only, full update)."""
@@ -184,7 +293,7 @@ class EventViewSet(GenericViewSet):
 			)
 			return Response({
 				'error': 'Failed to update event',
-				'detail': str(e)
+				'detail': 'An unexpected server error occurred.'
 			}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 	def partial_update(self, request, pk=None):
@@ -251,7 +360,7 @@ class EventViewSet(GenericViewSet):
 			)
 			return Response({
 				'error': 'Failed to update event',
-				'detail': str(e)
+				'detail': 'An unexpected server error occurred.'
 			}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 	def destroy(self, request, pk=None):
@@ -301,7 +410,7 @@ class EventViewSet(GenericViewSet):
 			)
 			return Response({
 				'error': 'Failed to delete event',
-				'detail': str(e)
+				'detail': 'An unexpected server error occurred.'
 			}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -325,7 +434,7 @@ class VaccinationViewSet(GenericViewSet):
 			logger.error(f"Error listing vaccinations: {str(e)}", exc_info=True)
 			return Response({
 				'error': 'Failed to retrieve vaccinations',
-				'detail': str(e)
+				'detail': 'An unexpected server error occurred.'
 			}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 	def retrieve(self, request, pk=None):
@@ -344,7 +453,7 @@ class VaccinationViewSet(GenericViewSet):
 			logger.error(f"Error retrieving vaccination {pk}: {str(e)}", exc_info=True)
 			return Response({
 				'error': 'Failed to retrieve vaccination',
-				'detail': str(e)
+				'detail': 'An unexpected server error occurred.'
 			}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 	def create(self, request):
@@ -375,7 +484,7 @@ class VaccinationViewSet(GenericViewSet):
 			)
 			return Response({
 				'error': 'Failed to create vaccination',
-				'detail': str(e)
+				'detail': 'An unexpected server error occurred.'
 			}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 	def update(self, request, pk=None):
@@ -410,7 +519,7 @@ class VaccinationViewSet(GenericViewSet):
 			)
 			return Response({
 				'error': 'Failed to update vaccination',
-				'detail': str(e)
+				'detail': 'An unexpected server error occurred.'
 			}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 	def partial_update(self, request, pk=None):
@@ -445,5 +554,5 @@ class VaccinationViewSet(GenericViewSet):
 			)
 			return Response({
 				'error': 'Failed to update vaccination',
-				'detail': str(e)
+				'detail': 'An unexpected server error occurred.'
 			}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

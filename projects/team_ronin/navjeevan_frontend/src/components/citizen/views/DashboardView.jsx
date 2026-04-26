@@ -1,159 +1,134 @@
-import { Heart, Calendar, Clock, MapPin } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Heart, Calendar, Clock, MapPin, Bell } from 'lucide-react';
+import { fetchUserProfile } from '../../../api/userProfile';
+import { getVaccinations } from '../../../api/vaccinations';
+import { fetchPrograms } from '../../../api/programs';
+import { fetchUserNotifications } from '../../../api/notifications';
 
 export default function DashboardView() {
-  const childData = {
-    name: 'Aarav Sharma',
-    age: 5,
-    dateOfBirth: '2021-03-15',
-    bloodType: 'O+',
-    photo: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aarav',
-    nextVaccine: 'Measles Booster',
-    nextVaccineDate: '2026-05-10',
-    location: 'Kathmandu, Nepal',
-  };
+  const [profile, setProfile] = useState(null);
+  const [vaccinations, setVaccinations] = useState([]);
+  const [programs, setPrograms] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const vaccinationProgress = {
-    completed: 12,
-    total: 15,
-    percentage: 80,
-  };
+  useEffect(() => {
+    const loadDashboard = async () => {
+      setIsLoading(true);
+      setError('');
+      try {
+        const [profileRes, vaccinationsRes, programsRes, notificationsRes] = await Promise.all([
+          fetchUserProfile(),
+          getVaccinations(),
+          fetchPrograms(),
+          fetchUserNotifications(),
+        ]);
 
-  const upcomingEvents = [
-    {
-      id: 1,
-      title: 'Measles Booster Vaccination',
-      date: '2026-05-10',
-      time: '10:00 AM',
-      location: 'Tribhuvan University Hospital',
-      status: 'upcoming',
-    },
-    {
-      id: 2,
-      title: 'Health Checkup',
-      date: '2026-06-05',
-      time: '2:00 PM',
-      location: 'Norvic Hospital',
-      status: 'upcoming',
-    },
-  ];
+        const eventResults = programsRes?.data?.results || [];
+        setProfile(profileRes?.data || null);
+        setVaccinations(Array.isArray(vaccinationsRes?.data) ? vaccinationsRes.data : []);
+        setPrograms(Array.isArray(eventResults) ? eventResults : []);
+        setNotifications(Array.isArray(notificationsRes?.data?.results) ? notificationsRes.data.results : []);
+      } catch (err) {
+        const message =
+          err?.response?.data?.error ||
+          err?.response?.data?.detail ||
+          err?.message ||
+          'Could not load dashboard data.';
+        setError(message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDashboard();
+  }, []);
+
+  const completedCount = useMemo(
+    () => vaccinations.filter((item) => (item?.status || '').toLowerCase() === 'completed').length,
+    [vaccinations],
+  );
+  const totalCount = vaccinations.length;
+  const percentage = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
+  const upcomingPrograms = useMemo(
+    () =>
+      programs
+        .filter((item) => item?.event_status !== 'ENDED')
+        .slice(0, 3)
+        .map((item) => ({
+          id: item?.id,
+          title: item?.name,
+          date: item?.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A',
+          location: item?.event_location_name || 'Unknown',
+          status: item?.event_status || 'NOT_STARTED',
+        })),
+    [programs],
+  );
+
+  if (isLoading) {
+    return <div className="rounded-2xl border border-white/10 bg-white/7 p-6 text-slate-300">Loading dashboard...</div>;
+  }
 
   return (
     <div className="space-y-6">
-      {/* Child Profile Card */}
+      {error && <div className="rounded-2xl border border-red-400/25 bg-red-400/10 p-4 text-sm text-red-200">{error}</div>}
+
       <div className="rounded-2xl border border-white/10 bg-white/7 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl">
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* Profile Image and Basic Info */}
-          <div className="md:col-span-1 flex flex-col items-center text-center">
-            <img
-              src={childData.photo}
-              alt={childData.name}
-              className="w-32 h-32 rounded-full mb-4 border-4 border-blue-400/30"
-            />
-            <h2 className="text-2xl font-bold text-white">{childData.name}</h2>
-            <p className="text-slate-300">{childData.age} years old</p>
-            <p className="text-sm text-slate-400">DOB: {childData.dateOfBirth}</p>
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="md:col-span-2">
+            <h2 className="text-2xl font-bold text-white">{profile?.name || 'Citizen'}</h2>
+            <p className="mt-1 text-slate-300">{profile?.email || 'No email available'}</p>
+            <p className="mt-1 text-sm text-slate-400">Region: {profile?.region || 'Not set'}</p>
+            <p className="mt-1 text-sm text-slate-400">Phone: {profile?.phone_number || 'Not set'}</p>
           </div>
-
-          {/* Health Info */}
-          <div className="md:col-span-2 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4">
-                <p className="text-sm text-slate-300">Blood Type</p>
-                <p className="text-xl font-bold text-blue-300 mt-1">{childData.bloodType}</p>
-              </div>
-              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-                <p className="text-sm text-slate-300">Age</p>
-                <p className="text-xl font-bold text-emerald-300 mt-1">{childData.age} years</p>
-              </div>
+          <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4">
+            <div className="mb-2 flex items-center gap-2 text-blue-200">
+              <Bell size={18} />
+              <p className="font-semibold">Unread Notifications</p>
             </div>
-
-            <div className="rounded-2xl border border-purple-500/20 bg-purple-500/10 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Heart size={20} className="text-pink-400" />
-                <p className="font-semibold text-white">Vaccination Progress</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 bg-slate-800 rounded-full h-3">
-                  <div
-                    className="bg-gradient-to-r from-emerald-400 to-blue-500 h-3 rounded-full transition-all"
-                    style={{ width: `${vaccinationProgress.percentage}%` }}
-                  />
-                </div>
-                <span className="text-sm font-semibold text-slate-300">
-                  {vaccinationProgress.completed}/{vaccinationProgress.total}
-                </span>
-              </div>
-            </div>
+            <p className="text-3xl font-bold text-white">{notifications.filter((item) => !item?.read).length}</p>
           </div>
         </div>
       </div>
 
-      {/* Next Scheduled Vaccination */}
-      <div className="rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-500/20 to-cyan-500/10 p-6 shadow-2xl shadow-blue-900/20 backdrop-blur-xl">
-        <h3 className="text-xl font-bold mb-4 text-white">Next Vaccination</h3>
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <p className="text-slate-400 text-sm">Vaccine</p>
-            <p className="text-2xl font-bold text-blue-200 mt-1">{childData.nextVaccine}</p>
+      <div className="rounded-2xl border border-purple-500/20 bg-purple-500/10 p-4">
+        <div className="mb-2 flex items-center gap-2">
+          <Heart size={18} className="text-pink-400" />
+          <p className="font-semibold text-white">Vaccination Progress</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="h-3 flex-1 rounded-full bg-slate-800">
+            <div className="h-3 rounded-full bg-gradient-to-r from-emerald-400 to-blue-500" style={{ width: `${percentage}%` }} />
           </div>
-          <div>
-            <p className="text-slate-400 text-sm">Scheduled Date</p>
-            <p className="text-2xl font-bold text-cyan-200 mt-1">{childData.nextVaccineDate}</p>
-          </div>
+          <span className="text-sm font-semibold text-slate-300">
+            {completedCount}/{totalCount}
+          </span>
         </div>
       </div>
 
-      {/* Upcoming Events */}
       <div className="rounded-2xl border border-white/10 bg-white/7 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl">
-        <h3 className="text-xl font-bold text-white mb-4">Upcoming Events</h3>
+        <h3 className="mb-4 text-xl font-bold text-white">Upcoming Programs</h3>
         <div className="space-y-3">
-          {upcomingEvents.map((event) => (
-            <div
-              key={event.id}
-              className="border-l-4 border-blue-500/50 rounded-lg bg-blue-500/10 p-4 border border-blue-500/20"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <h4 className="font-semibold text-white">{event.title}</h4>
-                <span className="inline-block bg-blue-500/30 border border-blue-400/30 text-blue-200 text-xs px-2 py-1 rounded-full">
-                  {event.status}
-                </span>
-              </div>
-              <div className="space-y-1 text-sm text-slate-300">
-                <div className="flex items-center gap-2">
-                  <Calendar size={16} />
-                  <span>{event.date}</span>
+          {upcomingPrograms.length === 0 ? (
+            <p className="text-slate-400">No upcoming programs available.</p>
+          ) : (
+            upcomingPrograms.map((program) => (
+              <div key={program.id} className="rounded-lg border border-blue-500/20 bg-blue-500/10 p-4">
+                <div className="mb-2 flex items-start justify-between gap-3">
+                  <h4 className="font-semibold text-white">{program.title}</h4>
+                  <span className="rounded-full border border-blue-400/30 bg-blue-500/20 px-2 py-0.5 text-xs text-blue-200">
+                    {program.status}
+                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock size={16} />
-                  <span>{event.time}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin size={16} />
-                  <span>{event.location}</span>
+                <div className="space-y-1 text-sm text-slate-300">
+                  <p className="flex items-center gap-2"><Calendar size={14} /> {program.date}</p>
+                  <p className="flex items-center gap-2"><Clock size={14} /> Live updates in notifications</p>
+                  <p className="flex items-center gap-2"><MapPin size={14} /> {program.location}</p>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid md:grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 backdrop-blur-xl">
-          <p className="text-sm text-slate-300 font-semibold">Vaccinations Done</p>
-          <p className="text-3xl font-bold text-emerald-300 mt-2">
-            {vaccinationProgress.completed}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-yellow-500/20 bg-yellow-500/10 p-4 backdrop-blur-xl">
-          <p className="text-sm text-slate-300 font-semibold">Remaining</p>
-          <p className="text-3xl font-bold text-yellow-300 mt-2">
-            {vaccinationProgress.total - vaccinationProgress.completed}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4 backdrop-blur-xl">
-          <p className="text-sm text-slate-300 font-semibold">Location</p>
-          <p className="text-lg font-bold text-blue-300 mt-2">{childData.location}</p>
+            ))
+          )}
         </div>
       </div>
     </div>

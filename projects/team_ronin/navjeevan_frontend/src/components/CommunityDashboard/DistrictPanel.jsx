@@ -4,6 +4,7 @@ import {
   ResponsiveContainer, ReferenceLine, Cell,
 } from "recharts";
 import styles from "./DistrictPanel.module.css";
+import { fetchDistrictCoverageHistory } from "../../api/coverage";
 
 const VAX_KEYS = ["DPT-3", "Penta-3", "OPV-3", "HepB-3", "Measles-1", "MMR"];
 const VAX_COLORS = ["#9f84e8", "#1D9E75", "#D85A30", "#378ADD", "#BA7517", "#D4537E"];
@@ -44,9 +45,7 @@ export default function DistrictPanel({ record, year }) {
 
   useEffect(() => {
     if (!record?.district) return;
-    const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-    fetch(`${BASE_URL}/api/coverage/${record.district}/history/`)
-      .then((r) => r.json())
+    fetchDistrictCoverageHistory(record.district)
       .then(setHistory)
       .catch(() => setHistory([]));
   }, [record?.district]);

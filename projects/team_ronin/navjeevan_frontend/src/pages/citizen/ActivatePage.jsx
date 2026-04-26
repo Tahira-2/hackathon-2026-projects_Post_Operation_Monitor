@@ -3,57 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { ArrowLeft, Hash, Lock, UserCheck } from 'lucide-react';
 import { activateUser } from '../../api/citizenAuth';
+import { extractApiErrorMessage } from '../../utils/apiErrors';
 
 const passwordPolicy =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
-
-const extractErrorMessage = (error) => {
-  if (!error) return 'An unexpected error occurred. Please try again.';
-
-  // Network / connectivity errors
-  if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-    return 'Unable to connect to the server. Please check your internet connection and try again.';
-  }
-
-  // Timeout errors
-  if (error.code === 'ECONNABORTED') {
-    return 'The request timed out. Please try again later.';
-  }
-
-  // Server responded with error status
-  if (error.response) {
-    const status = error.response.status;
-    const data = error.response.data;
-
-    if (status === 400) {
-      if (typeof data === 'object' && !data.detail && !data.error && !data.message) {
-        const fieldErrors = Object.entries(data)
-          .map(([field, msgs]) => {
-            const msg = Array.isArray(msgs) ? msgs.join(', ') : msgs;
-            // Beautify field names
-            const fieldName = field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-            return `${fieldName}: ${msg}`;
-          })
-          .join(' | ');
-        if (fieldErrors) return fieldErrors;
-      }
-      return data?.detail || data?.error || data?.message || 'Invalid data. Please check your Login ID and password.';
-    }
-    if (status === 404) return 'Login ID not found. Please check the ID and try again.';
-    if (status === 409) return data?.detail || 'This account has already been activated.';
-    if (status === 429) return 'Too many attempts. Please wait a moment and try again.';
-    if (status >= 500) return 'Server error. Please try again later.';
-
-    return data?.detail || data?.error || data?.message || 'Activation failed. Please check your details and try again.';
-  }
-
-  // Request was made but no response received
-  if (error.request) {
-    return 'No response from server. Please check your connection and try again.';
-  }
-
-  return error.message || 'Activation failed. Please check your details and try again.';
-};
 
 export default function ActivatePage() {
   const navigate = useNavigate();
@@ -62,8 +15,6 @@ export default function ActivatePage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-  const [isActivated, setIsActivated] = useState(false);
 
   const registeredEmail =
     location.state?.registeredEmail || sessionStorage.getItem('navjeevan_activation_email') || '';
@@ -86,7 +37,6 @@ export default function ActivatePage() {
   const onSubmit = async (formData) => {
     setIsLoading(true);
     setServerError('');
-    setSuccessMessage('');
 
     try {
       await activateUser({
@@ -94,11 +44,23 @@ export default function ActivatePage() {
         password: formData.password,
         confirm_password: formData.confirmPassword,
       });
-
-      setSuccessMessage('Account activated successfully. Choose how you want to continue.');
-      setIsActivated(true);
+      navigate('/login', { replace: true });
     } catch (error) {
-      setServerError(extractErrorMessage(error));
+      setServerError(
+        extractApiErrorMessage(error, {
+          fallbackMessage: 'Activation failed. Please check your details and try again.',
+          beautifyFieldNames: true,
+          statusMessages: {
+            404: 'Login ID not found. Please check the ID and try again.',
+            409: 'This account has already been activated.',
+            429: 'Too many attempts. Please wait a moment and try again.',
+            500: 'Server error. Please try again later.',
+            502: 'Server error. Please try again later.',
+            503: 'Server error. Please try again later.',
+            504: 'Server error. Please try again later.',
+          },
+        }),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -155,125 +117,109 @@ export default function ActivatePage() {
           </div>
 
           {serverError && (
-            <div className="mb-4 rounded-lg border border-red-400/25 bg-red-400/10 px-3 py-2 text-sm text-red-300">
+            <div role="alert" aria-live="polite" className="mb-4 rounded-lg border border-red-400/25 bg-red-400/10 px-3 py-2 text-sm text-red-300">
               {serverError}
             </div>
           )}
-          {successMessage && (
-            <div className="mb-4 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200">
-              {successMessage}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <label htmlFor="activate-login-id" className="mb-1 block text-sm font-medium text-slate-300">Login ID</label>
+              <div className="relative">
+                <Hash size={16} className="pointer-events-none absolute left-3 top-3 text-slate-500" />
+                <input
+                  id="activate-login-id"
+                  type="text"
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 pl-10 text-sm uppercase tracking-wide text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter Login ID"
+                  autoComplete="off"
+                  aria-invalid={Boolean(errors.loginId)}
+                  aria-describedby={errors.loginId ? 'activate-login-id-error' : undefined}
+                  {...register('loginId', { required: 'Login ID is required' })}
+                />
+              </div>
+              {errors.loginId && <p id="activate-login-id-error" className="mt-1 text-xs text-red-400">{errors.loginId.message}</p>}
             </div>
-          )}
 
-          {!isActivated ? (
-            <>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-300">Login ID</label>
-                  <div className="relative">
-                    <Hash size={16} className="pointer-events-none absolute left-3 top-3 text-slate-500" />
-                    <input
-                      type="text"
-                      className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 pl-10 text-sm uppercase tracking-wide text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter Login ID"
-                      autoComplete="off"
-                      {...register('loginId', { required: 'Login ID is required' })}
-                    />
-                  </div>
-                  {errors.loginId && <p className="mt-1 text-xs text-red-400">{errors.loginId.message}</p>}
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-300">Password</label>
-                  <div className="relative">
-                    <Lock size={16} className="pointer-events-none absolute left-3 top-3 text-slate-500" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 pl-10 pr-16 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Create a strong password"
-                      {...register('password', {
-                        required: 'Password is required',
-                        validate: (value) =>
-                          passwordPolicy.test(value) ||
-                          'Password must include uppercase, lowercase, number, and special character',
-                      })}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute right-3 top-2 text-xs font-medium text-blue-400"
-                    >
-                      {showPassword ? 'Hide' : 'Show'}
-                    </button>
-                  </div>
-                  {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password.message}</p>}
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-300">Confirm Password</label>
-                  <div className="relative">
-                    <Lock size={16} className="pointer-events-none absolute left-3 top-3 text-slate-500" />
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 pl-10 pr-16 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Re-enter password"
-                      {...register('confirmPassword', {
-                        required: 'Confirm password is required',
-                        validate: (value) => value === password || 'Passwords do not match',
-                      })}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword((prev) => !prev)}
-                      className="absolute right-3 top-2 text-xs font-medium text-blue-400"
-                    >
-                      {showConfirmPassword ? 'Hide' : 'Show'}
-                    </button>
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="mt-1 text-xs text-red-400">{errors.confirmPassword.message}</p>
-                  )}
-                </div>
-
+            <div>
+              <label htmlFor="activate-password" className="mb-1 block text-sm font-medium text-slate-300">Password</label>
+              <div className="relative">
+                <Lock size={16} className="pointer-events-none absolute left-3 top-3 text-slate-500" />
+                <input
+                  id="activate-password"
+                  type={showPassword ? 'text' : 'password'}
+                  aria-invalid={Boolean(errors.password)}
+                  aria-describedby={errors.password ? 'activate-password-error' : undefined}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 pl-10 pr-16 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Create a strong password"
+                  {...register('password', {
+                    required: 'Password is required',
+                    validate: (value) =>
+                      passwordPolicy.test(value) ||
+                      'Password must include uppercase, lowercase, number, and special character',
+                  })}
+                />
                 <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex w-full items-center justify-center rounded-lg bg-blue-500 px-4 py-2.5 font-semibold text-white transition duration-200 hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-70"
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-2 text-xs font-medium text-blue-400"
                 >
-                  {isLoading ? (
-                    <span className="flex items-center gap-2">
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Activating...
-                    </span>
-                  ) : (
-                    'Activate Account'
-                  )}
+                  {showPassword ? 'Hide' : 'Show'}
                 </button>
-              </form>
-
-              <p className="mt-4 text-center text-sm text-slate-400">
-                Already activated?{' '}
-                <Link to="/login" className="font-semibold text-blue-400 hover:text-blue-300">
-                  Login here
-                </Link>
-              </p>
-            </>
-          ) : (
-            <div className="mt-2 space-y-3">
-              <Link
-                to="/login"
-                className="flex w-full items-center justify-center rounded-lg bg-blue-500 px-4 py-2.5 font-semibold text-white transition duration-200 hover:bg-blue-400"
-              >
-                Citizen Login
-              </Link>
-              <Link
-                to="/healthcare/login"
-                className="flex w-full items-center justify-center rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 font-semibold text-white transition duration-200 hover:bg-white/10"
-              >
-                Staff Login
-              </Link>
+              </div>
+              {errors.password && <p id="activate-password-error" className="mt-1 text-xs text-red-400">{errors.password.message}</p>}
             </div>
-          )}
+
+            <div>
+              <label htmlFor="activate-confirm-password" className="mb-1 block text-sm font-medium text-slate-300">Confirm Password</label>
+              <div className="relative">
+                <Lock size={16} className="pointer-events-none absolute left-3 top-3 text-slate-500" />
+                <input
+                  id="activate-confirm-password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  aria-invalid={Boolean(errors.confirmPassword)}
+                  aria-describedby={errors.confirmPassword ? 'activate-confirm-password-error' : undefined}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 pl-10 pr-16 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Re-enter password"
+                  {...register('confirmPassword', {
+                    required: 'Confirm password is required',
+                    validate: (value) => value === password || 'Passwords do not match',
+                  })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute right-3 top-2 text-xs font-medium text-blue-400"
+                >
+                  {showConfirmPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p id="activate-confirm-password-error" className="mt-1 text-xs text-red-400">{errors.confirmPassword.message}</p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex w-full items-center justify-center rounded-lg bg-blue-500 px-4 py-2.5 font-semibold text-white transition duration-200 hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Activating...
+                </span>
+              ) : (
+                'Activate Account'
+              )}
+            </button>
+          </form>
+
+          <p className="mt-4 text-center text-sm text-slate-400">
+            Already activated?{' '}
+            <Link to="/login" className="font-semibold text-blue-400 hover:text-blue-300">
+              Login here
+            </Link>
+          </p>
         </div>
       </div>
     </div>

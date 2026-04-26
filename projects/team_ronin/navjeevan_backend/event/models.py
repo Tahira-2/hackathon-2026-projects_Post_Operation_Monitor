@@ -118,3 +118,42 @@ class EventUser(models.Model):
     
     def __str__(self):
         return f"{self.user.name} - {self.event.name}"
+
+
+class UserNotification(models.Model):
+    class NotificationType(models.TextChoices):
+        PROGRAM = 'PROGRAM', _('PROGRAM')
+        VACCINATION = 'VACCINATION', _('VACCINATION')
+        PROFILE = 'PROFILE', _('PROFILE')
+        ACCOUNT = 'ACCOUNT', _('ACCOUNT')
+
+    user = models.ForeignKey(
+        NormalUser,
+        on_delete=models.CASCADE,
+        related_name='notifications',
+        verbose_name=_('User'),
+    )
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='notifications',
+        verbose_name=_('Event'),
+    )
+    notification_type = models.CharField(
+        choices=NotificationType.choices,
+        default=NotificationType.PROGRAM,
+        max_length=30,
+    )
+    title = models.CharField(max_length=120)
+    message = models.TextField(max_length=500)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('User Notification')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.login_id} - {self.title}"

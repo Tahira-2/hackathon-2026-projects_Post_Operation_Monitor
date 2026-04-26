@@ -24,29 +24,6 @@ export const initialPrograms = [
   },
 ];
 
-export const initialCitizens = [
-  {
-    name: 'Aarav Sharma',
-    loginId: 'NAV-2048',
-    email: 'aarav@example.com',
-    phoneNumber: '98XXXXXXXX',
-    dateOfBirth: '2025-08-12',
-    region: 'Ward 12',
-    specialConditions: 'None',
-    status: 'inactive',
-  },
-  {
-    name: 'Meera Verma',
-    loginId: 'NAV-2091',
-    email: 'meera@example.com',
-    phoneNumber: '97XXXXXXXX',
-    dateOfBirth: '2025-11-03',
-    region: 'Ward 8',
-    specialConditions: 'Premature birth',
-    status: 'inactive',
-  },
-];
-
 export const analyticsCards = [
   {
     label: 'Total Citizens',

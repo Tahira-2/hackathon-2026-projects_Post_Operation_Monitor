@@ -18,6 +18,16 @@ urlpatterns = [
         }),
         name='event-detail'
     ),
+    path(
+        'events/my-notifications/',
+        EventViewSet.as_view({'get': 'my_notifications'}),
+        name='event-my-notifications'
+    ),
+    path(
+        'events/<uuid:pk>/register/',
+        EventViewSet.as_view({'post': 'register_for_event'}),
+        name='event-register-for-event'
+    ),
 
     # Vaccinations - medical personnel only
     path(

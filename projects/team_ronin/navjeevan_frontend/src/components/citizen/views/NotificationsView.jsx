@@ -1,115 +1,101 @@
-import { Bell, CheckCircle, AlertCircle, Info, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Bell, CheckCircle, Info, Trash2 } from 'lucide-react';
+import { fetchUserNotifications } from '../../../api/notifications';
 
 export default function NotificationsView() {
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'reminder',
-      title: 'Vaccination Reminder',
-      message: 'Your child is due for Measles Booster vaccination. Schedule an appointment today.',
-      date: '2026-04-24',
-      time: '10:30 AM',
-      read: false,
-      icon: Bell,
-      color: 'bg-blue-500/20 text-blue-400',
-    },
-    {
-      id: 2,
-      type: 'success',
-      title: 'Vaccination Completed',
-      message: 'Pentavalent Dose 3 vaccination completed successfully at Norvic Hospital.',
-      date: '2026-04-20',
-      time: '2:15 PM',
-      read: false,
-      icon: CheckCircle,
-      color: 'bg-emerald-500/20 text-emerald-400',
-    },
-    {
-      id: 3,
-      type: 'alert',
-      title: 'Vaccine Appointment Alert',
-      message: 'Appointment tomorrow at 10:00 AM. Please arrive 15 minutes early.',
-      date: '2026-04-22',
-      time: '3:45 PM',
-      read: true,
-      icon: AlertCircle,
-      color: 'bg-red-500/20 text-red-400',
-    },
-    {
-      id: 4,
-      type: 'info',
-      title: 'Program Notification',
-      message: 'New Measles & Rubella elimination campaign starting June 1st in your area.',
-      date: '2026-04-18',
-      time: '9:20 AM',
-      read: true,
-      icon: Info,
-      color: 'bg-purple-500/20 text-purple-400',
-    },
-    {
-      id: 5,
-      type: 'success',
-      title: 'Health Certificate Issued',
-      message: 'Digital vaccination certificate has been issued and is now available for download.',
-      date: '2026-04-15',
-      time: '11:00 AM',
-      read: true,
-      icon: CheckCircle,
-      color: 'bg-emerald-500/20 text-emerald-400',
-    },
-    {
-      id: 6,
-      type: 'info',
-      title: 'Vaccination Status Update',
-      message: 'Your vaccination record has been updated by the healthcare provider.',
-      date: '2026-04-12',
-      time: '4:30 PM',
-      read: true,
-      icon: Info,
-      color: 'bg-indigo-500/20 text-indigo-400',
-    },
-  ]);
+  const [notifications, setNotifications] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
+
+  useEffect(() => {
+    const loadNotifications = async () => {
+      setIsLoading(true);
+      setLoadError('');
+      try {
+        const response = await fetchUserNotifications();
+        const results = response?.data?.results || [];
+        const mapped = (Array.isArray(results) ? results : []).map((item) => {
+          const isEnded = item?.event_status === 'ENDED';
+          return {
+            id: item?.id || `${item?.title || 'notification'}-${Math.random()}`,
+            title: item?.title || 'Program Notification',
+            message: item?.message || 'A new vaccination program is available in your area.',
+            date: item?.date || 'N/A',
+            time: item?.time || '',
+            read: Boolean(item?.read),
+            icon: isEnded ? CheckCircle : Info,
+            color: isEnded ? 'bg-emerald-500/20 text-emerald-400' : 'bg-purple-500/20 text-purple-400',
+          };
+        });
+        setNotifications(mapped);
+      } catch (error) {
+        const message =
+          error?.response?.data?.error ||
+          error?.response?.data?.detail ||
+          error?.message ||
+          'Could not load notifications.';
+        setLoadError(message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadNotifications();
+  }, []);
 
   const deleteNotification = (id) => {
-    setNotifications(notifications.filter((n) => n.id !== id));
+    setNotifications((current) => current.filter((n) => n.id !== id));
   };
 
   const markAsRead = (id) => {
-    setNotifications(
-      notifications.map((n) =>
-        n.id === id ? { ...n, read: true } : n
-      )
-    );
+    setNotifications((current) => current.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  };
+
+  const markAllAsRead = () => {
+    setNotifications((current) => current.map((n) => ({ ...n, read: true })));
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-3xl font-bold text-white">Notifications</h2>
-          <p className="text-slate-300 mt-1">
+          <p className="mt-1 text-slate-300">
             {unreadCount > 0
               ? `You have ${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}`
               : 'All caught up!'}
           </p>
         </div>
         {unreadCount > 0 && (
-          <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-400 transition w-fit border border-blue-400/30">
+          <button
+            type="button"
+            onClick={markAllAsRead}
+            className="w-fit rounded-lg border border-blue-400/30 bg-blue-500 px-4 py-2 text-white transition hover:bg-blue-400"
+          >
             Mark All as Read
           </button>
         )}
       </div>
 
-      {/* Notifications List */}
       <div className="space-y-3">
-        {notifications.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/7 shadow-2xl shadow-black/30 p-12 text-center backdrop-blur-xl">
-            <Bell size={48} className="mx-auto text-slate-500 mb-4" />
-            <p className="text-slate-300 text-lg">No notifications yet</p>
+        {loadError && (
+          <div className="rounded-2xl border border-red-400/20 bg-red-500/10 p-4 text-sm text-red-200">
+            {loadError}
+          </div>
+        )}
+
+        {isLoading && (
+          <div className="rounded-2xl border border-white/10 bg-white/7 p-4 text-sm text-slate-300">
+            Loading notifications...
+          </div>
+        )}
+
+        {!isLoading && notifications.length === 0 ? (
+          <div className="rounded-2xl border border-white/10 bg-white/7 p-12 text-center shadow-2xl shadow-black/30 backdrop-blur-xl">
+            <Bell size={48} className="mx-auto mb-4 text-slate-500" />
+            <p className="text-lg text-slate-300">No notifications yet</p>
           </div>
         ) : (
           notifications.map((notification) => {
@@ -117,52 +103,49 @@ export default function NotificationsView() {
             return (
               <div
                 key={notification.id}
-                className={`rounded-2xl p-4 transition border ${
+                className={`rounded-2xl border p-4 transition ${
                   notification.read
-                    ? 'bg-slate-800/30 border-white/5'
-                    : 'bg-blue-500/10 border-blue-500/20 shadow-lg'
+                    ? 'border-white/5 bg-slate-800/30'
+                    : 'border-blue-500/20 bg-blue-500/10 shadow-lg'
                 }`}
               >
                 <div className="flex items-start gap-4">
-                  {/* Icon */}
-                  <div className={`p-3 rounded-lg flex-shrink-0 ${notification.color}`}>
+                  <div className={`flex-shrink-0 rounded-lg p-3 ${notification.color}`}>
                     <Icon size={24} />
                   </div>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
-                        <h3 className="font-bold text-white text-lg">
-                          {notification.title}
-                        </h3>
+                        <h3 className="text-lg font-bold text-white">{notification.title}</h3>
                         {!notification.read && (
-                          <span className="inline-block bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs px-2 py-0.5 rounded-full mt-1 font-semibold">
+                          <span className="mt-1 inline-block rounded-full border border-blue-400/30 bg-blue-500/20 px-2 py-0.5 text-xs font-semibold text-blue-300">
                             New
                           </span>
                         )}
                       </div>
-                      <div className="text-right flex-shrink-0">
+                      <div className="flex-shrink-0 text-right">
                         <p className="text-xs text-slate-400">{notification.date}</p>
                         <p className="text-xs text-slate-400">{notification.time}</p>
                       </div>
                     </div>
 
-                    <p className="text-slate-300 mt-2">{notification.message}</p>
+                    <p className="mt-2 text-slate-300">{notification.message}</p>
 
-                    {/* Actions */}
-                    <div className="flex gap-3 mt-3">
+                    <div className="mt-3 flex gap-3">
                       {!notification.read && (
                         <button
+                          type="button"
                           onClick={() => markAsRead(notification.id)}
-                          className="text-sm text-blue-400 hover:text-blue-300 font-semibold"
+                          className="text-sm font-semibold text-blue-400 hover:text-blue-300"
                         >
                           Mark as Read
                         </button>
                       )}
                       <button
+                        type="button"
                         onClick={() => deleteNotification(notification.id)}
-                        className="text-sm text-red-400 hover:text-red-300 font-semibold flex items-center gap-1"
+                        className="flex items-center gap-1 text-sm font-semibold text-red-400 hover:text-red-300"
                       >
                         <Trash2 size={14} /> Delete
                       </button>
@@ -173,32 +156,6 @@ export default function NotificationsView() {
             );
           })
         )}
-      </div>
-
-      {/* Notification Settings */}
-      <div className="rounded-2xl border border-white/10 bg-white/7 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl border-t-4 border-t-blue-500/50">
-        <h3 className="text-lg font-bold text-white mb-4">Notification Preferences</h3>
-        <div className="space-y-3">
-          <label className="flex items-center gap-3">
-            <input type="checkbox" defaultChecked className="w-4 h-4 rounded bg-slate-800 border border-white/20 accent-blue-500" />
-            <span className="text-slate-200">Vaccination reminders</span>
-          </label>
-          <label className="flex items-center gap-3">
-            <input type="checkbox" defaultChecked className="w-4 h-4 rounded bg-slate-800 border border-white/20 accent-blue-500" />
-            <span className="text-slate-200">Appointment confirmations</span>
-          </label>
-          <label className="flex items-center gap-3">
-            <input type="checkbox" defaultChecked className="w-4 h-4 rounded bg-slate-800 border border-white/20 accent-blue-500" />
-            <span className="text-slate-200">Program updates</span>
-          </label>
-          <label className="flex items-center gap-3">
-            <input type="checkbox" defaultChecked className="w-4 h-4 rounded bg-slate-800 border border-white/20 accent-blue-500" />
-            <span className="text-slate-200">Health alerts</span>
-          </label>
-        </div>
-        <button className="mt-6 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-400 transition">
-          Save Preferences
-        </button>
       </div>
     </div>
   );

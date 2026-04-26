@@ -5,6 +5,7 @@ import YearSelector from "./YearSelector";
 import NationalSummary from "./NationalSummary";
 import { useCoverageData } from "../Hooks/useCoverageData";
 import styles from "./CommunityDashboard.module.css";
+import { fetchCoverageYears } from "../../api/coverage";
 
 export default function CommunityDashboard() {
   const [selectedYear, setSelectedYear] = useState(2024);
@@ -15,9 +16,7 @@ export default function CommunityDashboard() {
 
   // Fetch available years on mount
   useEffect(() => {
-    const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-    fetch(`${BASE_URL}/api/coverage/years/`)
-      .then((r) => r.json())
+    fetchCoverageYears()
       .then((years) => {
         if (years.length) {
           setAvailableYears(years);
@@ -71,8 +70,7 @@ export default function CommunityDashboard() {
           )}
           {error && (
             <div className={styles.errorBanner}>
-              ⚠ Could not load data from backend. Check that Django is running
-              on localhost:8000.
+              ⚠ Could not load data from backend. Please try again shortly.
             </div>
           )}
           <NepalMap

@@ -1,44 +1,10 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { ArrowLeft, Building2, Hash, Lock } from 'lucide-react';
 import { loginHealthcare } from '../../api/healthcareAuth';
 import { useAuth } from '../../hooks/useAuth';
-
-const extractErrorMessage = (error) => {
-  if (!error) return 'An unexpected error occurred. Please try again.';
-
-  // Network / connectivity errors
-  if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-    return 'Unable to connect to the server. Please check your internet connection and try again.';
-  }
-
-  // Timeout errors
-  if (error.code === 'ECONNABORTED') {
-    return 'The request timed out. Please try again later.';
-  }
-
-  // Server responded with error status
-  if (error.response) {
-    const status = error.response.status;
-    const data = error.response.data;
-
-    if (status === 401) return data?.detail || data?.error || 'Invalid Login ID or password.';
-    if (status === 403) return data?.detail || 'Your account is not activated or has been suspended.';
-    if (status === 404) return 'Login ID not found. Please check and try again.';
-    if (status === 429) return 'Too many login attempts. Please wait a moment and try again.';
-    if (status >= 500) return 'Server error. Please try again later.';
-
-    return data?.detail || data?.error || data?.message || 'Login failed. Please check your credentials.';
-  }
-
-  // Request was made but no response received
-  if (error.request) {
-    return 'No response from server. Please check your connection and try again.';
-  }
-
-  return error.message || 'An unexpected error occurred. Please try again.';
-};
+import { extractApiErrorMessage } from '../../utils/apiErrors';
 
 export default function HCLoginForm() {
   const navigate = useNavigate();
@@ -77,10 +43,9 @@ export default function HCLoginForm() {
 
       const backendUser = response?.data?.user || {};
 
-      // Prevent normal citizens from logging in via healthcare portal
-      // Citizen profiles have date_of_birth or age fields, medical personnel do not.
+      // This tab is for healthcare staff only.
       if ('date_of_birth' in backendUser || 'age' in backendUser) {
-        throw new Error('This portal is strictly for healthcare personnel. Please use the citizen login.');
+        throw new Error('This login is for healthcare staff only. Please use User Login.');
       }
 
       const userData = {
@@ -95,7 +60,21 @@ export default function HCLoginForm() {
       login(token, 'healthcare', userData);
       navigate('/hc-dashboard');
     } catch (error) {
-      setServerError(extractErrorMessage(error));
+      setServerError(
+        extractApiErrorMessage(error, {
+          fallbackMessage: 'Login failed. Please check your credentials.',
+          statusMessages: {
+            401: 'Invalid Login ID or password.',
+            403: 'Your account is not activated or has been suspended.',
+            404: 'Login ID not found. Please check and try again.',
+            429: 'Too many login attempts. Please wait a moment and try again.',
+            500: 'Server error. Please try again later.',
+            502: 'Server error. Please try again later.',
+            503: 'Server error. Please try again later.',
+            504: 'Server error. Please try again later.',
+          },
+        }),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -117,18 +96,21 @@ export default function HCLoginForm() {
       <p className="mb-6 text-sm text-slate-400">Access the healthcare management portal</p>
 
       {serverError && (
-        <div className="mb-4 rounded-lg border border-red-400/25 bg-red-400/10 px-3 py-2 text-sm text-red-300">
+        <div role="alert" aria-live="polite" className="mb-4 rounded-lg border border-red-400/25 bg-red-400/10 px-3 py-2 text-sm text-red-300">
           {serverError}
         </div>
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-300">Login ID</label>
+          <label htmlFor="healthcare-login-id" className="mb-1 block text-sm font-medium text-slate-300">Login ID</label>
           <div className="relative">
             <Hash size={16} className="pointer-events-none absolute left-3 top-3 text-slate-500" />
             <input
+              id="healthcare-login-id"
               type="text"
+              aria-invalid={Boolean(errors.loginId)}
+              aria-describedby={errors.loginId ? 'healthcare-login-id-error' : undefined}
               className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 pl-10 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               placeholder="Enter your Login ID"
               {...register('loginId', {
@@ -140,15 +122,18 @@ export default function HCLoginForm() {
               })}
             />
           </div>
-          {errors.loginId && <p className="mt-1 text-xs text-red-400">{errors.loginId.message}</p>}
+          {errors.loginId && <p id="healthcare-login-id-error" className="mt-1 text-xs text-red-400">{errors.loginId.message}</p>}
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-300">Password</label>
+          <label htmlFor="healthcare-password" className="mb-1 block text-sm font-medium text-slate-300">Password</label>
           <div className="relative">
             <Lock size={16} className="pointer-events-none absolute left-3 top-3 text-slate-500" />
             <input
+              id="healthcare-password"
               type={showPassword ? 'text' : 'password'}
+              aria-invalid={Boolean(errors.password)}
+              aria-describedby={errors.password ? 'healthcare-password-error' : undefined}
               className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 pl-10 pr-16 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               placeholder="Enter your password"
               {...register('password', {
@@ -167,7 +152,7 @@ export default function HCLoginForm() {
               {showPassword ? 'Hide' : 'Show'}
             </button>
           </div>
-          {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password.message}</p>}
+          {errors.password && <p id="healthcare-password-error" className="mt-1 text-xs text-red-400">{errors.password.message}</p>}
         </div>
 
         <div className="flex items-center justify-between">
@@ -192,13 +177,6 @@ export default function HCLoginForm() {
           )}
         </button>
       </form>
-
-      <p className="mt-2 text-center text-xs text-slate-400">
-        Are you a citizen?{' '}
-        <Link to="/login" className="text-emerald-400 hover:text-emerald-300">
-          Login here
-        </Link>
-      </p>
     </div>
   );
 }

@@ -9,18 +9,12 @@ export default function UnauthorizedPage() {
         <h1 className="mt-4 text-3xl font-bold text-gray-900">Access Denied</h1>
         <p className="mt-2 text-sm text-gray-600">You do not have permission to view this page.</p>
 
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+        <div className="mt-6 flex justify-center">
           <Link
             to="/login"
             className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 font-semibold text-white transition hover:bg-blue-700"
           >
-            Go to Citizen Login
-          </Link>
-          <Link
-            to="/healthcare/login"
-            className="inline-flex items-center justify-center rounded-lg bg-green-600 px-4 py-2.5 font-semibold text-white transition hover:bg-green-700"
-          >
-            Go to Staff Login
+            Go to Login
           </Link>
         </div>
       </div>

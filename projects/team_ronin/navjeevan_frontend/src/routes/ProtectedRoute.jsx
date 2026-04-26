@@ -1,14 +1,10 @@
 import { Navigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 export default function ProtectedRoute({ children, role }) {
-  const token = localStorage.getItem('vaxnepal_token');
-  const storedRole = localStorage.getItem('vaxnepal_role');
+  const { isAuthenticated, role: storedRole } = useAuth();
 
-  if (!token) {
-    if (role === 'healthcare') {
-      return <Navigate to="/healthcare/login" replace />;
-    }
-
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 

@@ -4,41 +4,7 @@ import { useForm } from 'react-hook-form';
 import { ArrowLeft, Hash, Lock, User } from 'lucide-react';
 import { loginUser } from '../../api/citizenAuth';
 import { useAuth } from '../../hooks/useAuth';
-
-const extractErrorMessage = (error) => {
-  if (!error) return 'An unexpected error occurred. Please try again.';
-
-  // Network / connectivity errors
-  if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-    return 'Unable to connect to the server. Please check your internet connection and try again.';
-  }
-
-  // Timeout errors
-  if (error.code === 'ECONNABORTED') {
-    return 'The request timed out. Please try again later.';
-  }
-
-  // Server responded with error status
-  if (error.response) {
-    const status = error.response.status;
-    const data = error.response.data;
-
-    if (status === 401) return data?.detail || data?.error || 'Invalid Login ID or password.';
-    if (status === 403) return data?.detail || 'Your account is not activated or has been suspended.';
-    if (status === 404) return 'Login ID not found. Please check and try again.';
-    if (status === 429) return 'Too many login attempts. Please wait a moment and try again.';
-    if (status >= 500) return 'Server error. Please try again later.';
-
-    return data?.detail || data?.error || data?.message || 'Login failed. Please check your credentials.';
-  }
-
-  // Request was made but no response received
-  if (error.request) {
-    return 'No response from server. Please check your connection and try again.';
-  }
-
-  return error.message || 'An unexpected error occurred. Please try again.';
-};
+import { extractApiErrorMessage } from '../../utils/apiErrors';
 
 export default function CitizenLoginForm() {
   const navigate = useNavigate();
@@ -76,18 +42,17 @@ export default function CitizenLoginForm() {
       }
 
       const backendUser = response?.data?.user || {};
-      
-      // Prevent healthcare staff from logging in via citizen portal
-      // Citizen profiles have date_of_birth or age fields, medical personnel do not.
+
+      // This tab is for normal users only.
       if (!('date_of_birth' in backendUser) && !('age' in backendUser)) {
-        throw new Error('This portal is strictly for citizens. Please use the healthcare staff login.');
+        throw new Error('This login is for users only. Please use Healthcare Login.');
       }
 
       const userData = {
         name:
           backendUser?.name ||
           response?.data?.name ||
-          'Citizen',
+          'User',
         email: backendUser?.email || '',
         login_id: backendUser?.login_id || loginId,
       };
@@ -95,7 +60,21 @@ export default function CitizenLoginForm() {
       login(token, 'user', userData);
       navigate('/dashboard');
     } catch (error) {
-      setServerError(extractErrorMessage(error));
+      setServerError(
+        extractApiErrorMessage(error, {
+          fallbackMessage: 'Login failed. Please check your credentials.',
+          statusMessages: {
+            401: 'Invalid Login ID or password.',
+            403: 'Your account is not activated or has been suspended.',
+            404: 'Login ID not found. Please check and try again.',
+            429: 'Too many login attempts. Please wait a moment and try again.',
+            500: 'Server error. Please try again later.',
+            502: 'Server error. Please try again later.',
+            503: 'Server error. Please try again later.',
+            504: 'Server error. Please try again later.',
+          },
+        }),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -112,23 +91,26 @@ export default function CitizenLoginForm() {
       </button>
 
       <h1 className="mb-1 flex items-center gap-2 text-2xl font-bold text-white">
-        <User size={20} className="text-blue-400" /> Citizen Login
+        <User size={20} className="text-blue-400" /> User Login
       </h1>
       <p className="mb-6 text-sm text-slate-400">Access your vaccine tracking dashboard</p>
 
       {serverError && (
-        <div className="mb-4 rounded-lg border border-red-400/25 bg-red-400/10 px-3 py-2 text-sm text-red-300">
+        <div role="alert" aria-live="polite" className="mb-4 rounded-lg border border-red-400/25 bg-red-400/10 px-3 py-2 text-sm text-red-300">
           {serverError}
         </div>
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-300">Login ID</label>
+          <label htmlFor="citizen-login-id" className="mb-1 block text-sm font-medium text-slate-300">Login ID</label>
           <div className="relative">
             <Hash size={16} className="pointer-events-none absolute left-3 top-3 text-slate-500" />
             <input
+              id="citizen-login-id"
               type="text"
+              aria-invalid={Boolean(errors.loginId)}
+              aria-describedby={errors.loginId ? 'citizen-login-id-error' : undefined}
               className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 pl-10 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter your Login ID (e.g. RAM-AB12)"
               {...register('loginId', {
@@ -140,15 +122,18 @@ export default function CitizenLoginForm() {
               })}
             />
           </div>
-          {errors.loginId && <p className="mt-1 text-xs text-red-400">{errors.loginId.message}</p>}
+          {errors.loginId && <p id="citizen-login-id-error" className="mt-1 text-xs text-red-400">{errors.loginId.message}</p>}
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-300">Password</label>
+          <label htmlFor="citizen-password" className="mb-1 block text-sm font-medium text-slate-300">Password</label>
           <div className="relative">
             <Lock size={16} className="pointer-events-none absolute left-3 top-3 text-slate-500" />
             <input
+              id="citizen-password"
               type={showPassword ? 'text' : 'password'}
+              aria-invalid={Boolean(errors.password)}
+              aria-describedby={errors.password ? 'citizen-password-error' : undefined}
               className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 pl-10 pr-16 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter your password"
               {...register('password', {
@@ -167,7 +152,7 @@ export default function CitizenLoginForm() {
               {showPassword ? 'Hide' : 'Show'}
             </button>
           </div>
-          {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password.message}</p>}
+          {errors.password && <p id="citizen-password-error" className="mt-1 text-xs text-red-400">{errors.password.message}</p>}
         </div>
 
         <div className="flex items-center justify-between">

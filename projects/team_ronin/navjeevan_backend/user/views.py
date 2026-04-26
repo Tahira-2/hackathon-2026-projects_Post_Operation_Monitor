@@ -309,6 +309,14 @@ class NormalUserViewSet(GenericViewSet):
             setattr(user, field, value)
 
         user.save()
+        if isinstance(user, NormalUser):
+            from event.models import UserNotification
+            UserNotification.objects.create(
+                user=user,
+                notification_type=UserNotification.NotificationType.PROFILE,
+                title='Profile updated',
+                message='Your profile details were updated successfully.',
+            )
         return Response(
             {
                 'message': 'Profile updated successfully.',
@@ -645,6 +653,13 @@ class MedicalPersonnelViewSet(GenericViewSet):
         serializer = MedicalPersonnelRegisterUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        from event.models import UserNotification
+        UserNotification.objects.create(
+            user=user,
+            notification_type=UserNotification.NotificationType.ACCOUNT,
+            title='Account created by healthcare staff',
+            message='Your account has been created. Activate it using the Login ID sent to your email.',
+        )
 
         try:
             _send_login_id_email(user)
