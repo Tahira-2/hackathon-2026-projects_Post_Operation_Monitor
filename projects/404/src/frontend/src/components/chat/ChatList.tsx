@@ -29,13 +29,13 @@ export function ChatList({ conversations, selectedId, onSelect }: ChatListProps)
             key={conv.id}
             onClick={() => onSelect(conv.id)}
             className={cn(
-              "w-full flex items-center gap-2 sm:gap-3 p-3 sm:p-4 transition-colors hover:bg-accent border-b border-border/50 text-left outline-none",
+              "w-full flex items-center gap-2 sm:gap-3 p-3 sm:p-4 transition-colors hover:bg-accent border-b border-border/50 text-left outline-none cursor-pointer",
               selectedId === conv.id ? "bg-accent border-l-4 border-l-primary" : "border-l-4 border-l-transparent"
             )}
           >
             <div className="relative shrink-0">
               <Avatar className="h-12 w-12 border">
-                <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${conv.avatar}`} />
+                <AvatarImage src={`https://api.dicebear.com/7.x/${(conv.name || '').includes("AI") ? 'bottts' : 'avataaars'}/svg?seed=${conv.avatar}`} />
                 <AvatarFallback>{conv.avatar}</AvatarFallback>
               </Avatar>
               <span className={cn(

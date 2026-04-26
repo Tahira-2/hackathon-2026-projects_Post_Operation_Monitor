@@ -333,9 +333,9 @@ export function useVideoConsultation(appointmentId?: string) {
             console.error("[call:initiate] error:", response?.error);
             return;
           }
-          callSessionIdRef.current = response.session.id;
-          setState((prev) => ({ ...prev, callSessionId: response.session.id }));
-          console.log("[call:initiate] session:", response.session.id);
+          callSessionIdRef.current = response.session!.id;
+          setState((prev) => ({ ...prev, callSessionId: response.session!.id }));
+          console.log("[call:initiate] session:", response.session!.id);
         },
       );
     });
@@ -514,7 +514,7 @@ export function useVideoConsultation(appointmentId?: string) {
     setState((prev) => ({ ...prev, isSidePanelOpen: !prev.isSidePanelOpen }));
   }, []);
 
-  const setActiveTab = useCallback((tab: "notes" | "info" | "chat") => {
+  const setActiveTab = useCallback((tab: "notes" | "info" | "chat" | "summary") => {
     setState((prev) => ({ ...prev, activeTab: tab }));
   }, []);
 

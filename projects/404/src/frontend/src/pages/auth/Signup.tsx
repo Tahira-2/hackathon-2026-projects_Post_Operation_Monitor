@@ -34,7 +34,7 @@ export function Signup() {
     try {
       const result = await signup({ fullName, email, password }).unwrap()
       if (result) {
-        dispatch(setCredentials({ user: result.user, token: result.accessToken || result.token }))
+        dispatch(setCredentials({ user: result.user, token: result.accessToken || result.token || '' }))
       }
       navigate("/patient", { replace: true })
     } catch (err) {

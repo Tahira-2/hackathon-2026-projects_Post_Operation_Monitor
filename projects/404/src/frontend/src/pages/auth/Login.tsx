@@ -53,7 +53,7 @@ export function Login() {
       }
 
       if (result) {
-        dispatch(setCredentials({ user: result.user, token: result.accessToken || result.token }))
+        dispatch(setCredentials({ user: result.user, token: result.accessToken || result.token || '' }))
       }
       navigate(redirect, { replace: true })
     } catch (err) {

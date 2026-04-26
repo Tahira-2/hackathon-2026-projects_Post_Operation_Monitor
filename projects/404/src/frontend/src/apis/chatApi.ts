@@ -3,7 +3,7 @@ import { baseApi } from "./baseApi";
 export const chatApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getConversations: builder.query<any, void>({
-      query: () => "/conversations",
+      query: () => "/chat/conversations",
       // Mocking the behavior for now if backend doesn't exist
       transformResponse: (response: any) => response || [
         { 
@@ -36,7 +36,7 @@ export const chatApi = baseApi.injectEndpoints({
       ],
     }),
     getMessages: builder.query<any, string>({
-      query: (id) => `/conversations/${id}/messages`,
+      query: (id) => `/chat/conversations/${id}/messages`,
       transformResponse: (response: any) => response || [
         { id: "1", sender: "patient", text: "Hello doctor, I have a question about my prescription.", time: "10:00 AM" },
         { id: "2", sender: "doctor", text: "Hello Jane, sure. What's on your mind?", time: "10:05 AM" },
@@ -45,11 +45,18 @@ export const chatApi = baseApi.injectEndpoints({
         { id: "5", sender: "patient", text: "I feel better now, thank you!", time: "10:30 AM" },
       ],
     }),
-    sendMessage: builder.mutation<any, { conversationId: string, text: string }>({
-      query: ({ conversationId, ...body }) => ({
-        url: `/conversations/${conversationId}/messages`,
+    createConversation: builder.mutation<any, { userIds: string[] }>({
+      query: (body) => ({
+        url: "/chat/conversations",
         method: "POST",
         body,
+      }),
+    }),
+    sendMessage: builder.mutation<any, { conversationId: string, content: string }>({
+      query: ({ conversationId, content }) => ({
+        url: "/chat/messages",
+        method: "POST",
+        body: { conversationId, content },
       }),
     }),
   }),
@@ -58,5 +65,6 @@ export const chatApi = baseApi.injectEndpoints({
 export const { 
   useGetConversationsQuery, 
   useGetMessagesQuery, 
-  useSendMessageMutation 
+  useSendMessageMutation,
+  useCreateConversationMutation
 } = chatApi;

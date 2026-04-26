@@ -1,6 +1,6 @@
 import { useSelector, useDispatch } from "react-redux"
 import { cn } from "@/lib/utils"
-import { Bell, Search, User, LogOut, Menu } from "lucide-react"
+import { Bell, User, LogOut, Menu } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 import { NotificationPopover } from "./NotificationPopover"
 import type { RootState } from "@/store"
@@ -15,8 +15,6 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 
 export function DashboardTopBar() {
   const { user } = useSelector((state: RootState) => state.auth)
@@ -48,8 +46,7 @@ export function DashboardTopBar() {
       <div className="flex items-center gap-3">
         <NotificationPopover />
 
-        {user?.role?.toLowerCase() !== 'patient' && (
-          <DropdownMenu>
+        <DropdownMenu>
             <DropdownMenuTrigger className="focus:outline-none">
               <div className={cn(
                 "flex items-center gap-2 rounded-full cursor-pointer border border-emerald-100 bg-emerald-50/50 hover:bg-emerald-50 transition-all",
@@ -79,7 +76,6 @@ export function DashboardTopBar() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        )}
       </div>
     </header>
   )

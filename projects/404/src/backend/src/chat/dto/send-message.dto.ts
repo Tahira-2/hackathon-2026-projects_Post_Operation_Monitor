@@ -12,9 +12,9 @@ export class SendMessageDto {
   @IsNotEmpty()
   conversationId!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  senderId!: string;
+  senderId?: string;
 
   @IsOptional()
   @IsEnum(MessageSender)

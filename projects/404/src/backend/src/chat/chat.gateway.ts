@@ -37,21 +37,47 @@ export class CommunicationGateway implements OnGatewayInit {
   }
 
   @SubscribeMessage('sendMessage')
-  async handleSendMessage(@MessageBody() payload: SendMessageDto) {
-    const { message, aiMessage } = await this.chatService.sendMessage(payload);
+  async handleSendMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: SendMessageDto,
+  ) {
+    const message = await this.chatService.saveUserMessage(payload);
 
-    this.server.to(payload.conversationId).emit('messageCreated', message);
+    client.broadcast.to(payload.conversationId).emit('messageCreated', message);
 
-    if (aiMessage) {
-      this.server.to(payload.conversationId).emit('messageCreated', aiMessage);
+    const conversation = await this.chatService.findConversationById(message.conversationId);
+    const isSystemChat = conversation.userIds.includes('SYSTEM');
+
+    if (isSystemChat) { 
+       this.server.to(message.conversationId).emit('typing', { senderId: 'SYSTEM', isTyping: true });
     }
+
+    this.chatService.generateAiReply(message).then((aiMessage) => {
+      if (aiMessage) {
+        this.server.to(message.conversationId).emit('messageCreated', aiMessage);
+      }
+      if (isSystemChat) this.server.to(message.conversationId).emit('typing', { senderId: 'SYSTEM', isTyping: false });
+    }).catch((err) => {
+      console.error("[generateAiReply Async Error]", err);
+      if (isSystemChat) this.server.to(message.conversationId).emit('typing', { senderId: 'SYSTEM', isTyping: false });
+    });
 
     return {
       event: 'messageAck',
       data: {
         messageId: message.id,
-        aiMessageId: aiMessage?.id ?? null,
       },
     };
+  }
+
+  @SubscribeMessage('typing')
+  handleTyping(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { conversationId: string; senderId: string; isTyping: boolean },
+  ) {
+    client.to(payload.conversationId).emit('typing', {
+      senderId: payload.senderId,
+      isTyping: payload.isTyping,
+    });
   }
 }

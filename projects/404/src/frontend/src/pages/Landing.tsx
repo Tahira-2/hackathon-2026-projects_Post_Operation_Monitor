@@ -12,16 +12,9 @@ import { Link, useNavigate } from "react-router-dom"
 import { useSelector } from "react-redux"
 import type { RootState } from "@/store"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 
 const HERO_VIDEO_URL = "/hero.mp4"
 const DOCTOR_IMAGE_URL = "/doctor.png"
-
-const navItems = [
-  { name: "Home", path: "/" },
-	{ name: "Solutions", path: "/services" },
-  { name: "About", path: "/about" },
-]
 
 export function Landing() {
 	const { user } = useSelector((state: RootState) => state.auth)
@@ -29,8 +22,8 @@ export function Landing() {
 
 	useEffect(() => {
 		if (user) {
-			const dashboardPath = user.role?.toLowerCase() === 'doctor' 
-				? '/physician' 
+			const dashboardPath = user.role?.toLowerCase() === 'doctor'
+				? '/physician'
 				: `/${user.role?.toLowerCase() || 'patient'}`;
 			navigate(dashboardPath, { replace: true });
 		}
