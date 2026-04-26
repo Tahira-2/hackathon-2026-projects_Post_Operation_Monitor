@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary
 
-GuardianPost-Op is a custom forearm-worn medical wearable paired with an AI-driven clinical platform that continuously monitors patients recovering from high-risk surgeries — heart, liver, and kidney. Post-operative complications such as sepsis, internal bleeding, and organ rejection often produce subtle vital-sign changes hours to days before the patient feels unwell. Current discharge practice relies on paper instructions and patient self-assessment, which creates a dangerous gap.
+GuardianPost-Op is a custom forearm-worn medical wearable paired with an AI-driven clinical platform that continuously monitors patients recovering from **high-risk cardiac surgery** (CABG, valve repair / replacement, ablation). Post-operative complications such as new-onset arrhythmia, fluid overload, cardiac decompensation, and surgical-site infection often produce subtle vital-sign changes hours to days before the patient feels unwell. Current discharge practice relies on paper instructions and patient self-assessment, which creates a dangerous gap.
 
 Our solution closes that gap with a **prescription-driven monitoring model**: a clinician defines the safe range for each individual patient, our hardware logs vitals continuously, and an AI "referee" compares live data against the prescription every 30 minutes. Concerning trends trigger a **dual-alert system** — a tactile warning on the device itself and a critical-priority push notification routed through the patient's phone to the clinical dashboard.
 
@@ -22,7 +22,7 @@ Three observations frame the problem we are solving:
 
 1. **Subtle deterioration is invisible.** Post-operative complications announce themselves through small shifts in heart rate, HRV, and respiratory rate long before the patient experiences symptoms.
 2. **Patient self-assessment is unreliable.** Discharged patients are asked to "call if something feels wrong" — a high-stakes judgment call made under medication, fatigue, and anxiety.
-3. **Generic wearables miss the clinical context.** Consumer smart watches use population-average thresholds. A heart patient on beta-blockers and a kidney patient on diuretics need different rules — and current consumer hardware cannot accept them.
+3. **Generic wearables miss the clinical context.** Consumer smart watches use population-average thresholds. A post-CABG patient on beta-blockers needs a different baseline envelope than a post-valve patient with a preserved chronotropic response — and current consumer hardware cannot accept per-patient rules at all.
 
 The cost of this gap is measured in preventable readmissions, permanent organ damage, and avoidable mortality.
 
@@ -51,16 +51,16 @@ When data drifts from the prescribed envelope, alerts escalate through two chann
 
 ## 4. Clinical Data Model
 
-For heart, liver, and kidney recovery patients, six vital signs were selected for their early-warning value:
+For post-cardiac-surgery recovery, six vital signs were selected for their early-warning value:
 
-| Vital Sign | Why It Matters Post-Op | Concerning Trend |
+| Vital Sign | Why It Matters Post-Cardiac-Op | Concerning Trend |
 |---|---|---|
-| Resting Heart Rate | Early sign of infection, pain, or cardiac stress. | Sustained 15% rise over 24h |
-| Heart Rate Variability | Reflects autonomic balance and recovery state. | Sharp decline |
-| Respiratory Rate | Critical for cardiopulmonary recovery; flags fluid overload or PE. | Sudden increase |
-| Sleep Quality | Tissue repair and immune function depend on deep/REM sleep. | Less than 3h deep/REM |
-| Activity (Steps) | Too much risks the surgical site; too little raises clot risk. | Zero activity 6h+ daytime |
-| Blood Pressure | Essential for kidney and liver perfusion. | Rapid drops or spikes |
+| Resting Heart Rate | Early sign of infection, pain, or cardiac stress; tachycardia frequently precedes new-onset arrhythmia. | Sustained 15% rise over 24h |
+| Heart Rate Variability | Reflects autonomic balance and recovery state; collapse is an early signal of cardiac decompensation. | Sharp decline |
+| Respiratory Rate | Flags fluid overload, pulmonary edema, and pulmonary embolism — all common post-cardiac-surgery risks. | Sudden increase |
+| SpO2 | Direct readout of cardiopulmonary efficiency; drops alongside HR/RR shifts during a decompensation event. | Below 94 sustained |
+| Body Temperature | Rising temp is the earliest sign of surgical-site or sternotomy-wound infection. | > 38.0 °C sustained |
+| Movement | Too much risks the sternotomy / chest incision; too little raises post-op DVT and PE risk. | Sustained "None" or repeated "intense" |
 
 ---
 
@@ -161,7 +161,7 @@ During the demo we will show:
 ## 9. Why This Wins the Clinician Track
 
 - **Safety first.** The on-device LED-and-buzzer layer means the patient is alerted even if the phone is unreachable — no other layer can fail past it silently.
-- **Clinician-defined, not one-size-fits-all.** The prescription model lets the same platform serve a heart patient on beta-blockers and a kidney patient on diuretics with rules tailored to each.
+- **Clinician-defined, not one-size-fits-all.** The prescription model lets the same platform serve a post-CABG patient on beta-blockers (low resting HR is normal, tachycardia must trigger fast) and a post-valve patient with intact rate response (different envelope entirely) with rules tailored to each.
 - **Right level of detail at every layer.** Granular 2-minute samples on the device, 30-minute averages in the Recovery Log — clinicians get a clean trend view without losing the ability to drill in.
 - **Realistic deployment story.** BLE-to-mobile is the architecture real medical wearables ship with. Our plan reflects that reality, not a hackathon shortcut.
 
@@ -172,8 +172,9 @@ During the demo we will show:
 1. Fabricate the forearm ring prototype using the documented BoM.
 2. Replace the simulated stream with live BLE data from the prototype.
 3. Build the production mobile gateway app and clinician dashboard.
-4. Run a clinical pilot with a partner hospital to refine the prescription templates and alert thresholds.
-5. Begin the regulatory pathway for medical-device classification.
+4. Run a clinical pilot with a cardiac surgery unit to refine the prescription templates and alert thresholds for post-CABG and post-valve patients.
+5. Extend the prescription-template library beyond cardiac to other high-risk recovery contexts (transplant, major abdominal, etc.) once the cardiac envelope is clinically validated.
+6. Begin the regulatory pathway for medical-device classification.
 
 ---
 
