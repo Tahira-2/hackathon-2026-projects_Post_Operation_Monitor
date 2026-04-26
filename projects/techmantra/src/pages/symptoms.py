@@ -36,7 +36,7 @@ def show():
     patient_id = st.session_state.get('patient_id') 
     
     st.title("🌡️ Symptom Checker")
-    st.markdown(f"Hello **{user_name}**, please describe what symptoms you are experiencing.")
+    st.markdown(f"Hello User!, please describe what symptoms you are experiencing.")
 
     with st.container(border=True):
         st.subheader("Current Distress")
