@@ -1,6 +1,15 @@
-import { CalendarDays, Clock3, IdCard, MapPin, type LucideIcon } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { CalendarDays, Clock3, MapPin, type LucideIcon } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
+import { bookAppointment, getReferral } from "../lib/patient-api";
+
+interface BookingState {
+  preferred_date: string;
+  time_slot: "morning" | "afternoon" | "evening";
+  dateLabel: string;
+  timeLabel: string;
+}
 
 interface AppointmentDetail {
   label: string;
@@ -8,71 +17,34 @@ interface AppointmentDetail {
   Icon: LucideIcon;
 }
 
-interface BookingReviewContent {
-  title: string;
-  subtitle: string;
-  doctor: {
-    name: string;
-    specialty: string;
-    clinic: string;
-    avatarUrl: string;
-  };
-  details: AppointmentDetail[];
-  insurance: {
-    provider: string;
-    memberId: string;
-  };
-  actions: {
-    confirmLabel: string;
-    editLabel: string;
-  };
+function SpecialistAvatar({ name }: { name: string }) {
+  const initials = name
+    .replace(/^Dr\.\s*/i, "")
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  return (
+    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-sm font-semibold text-indigo-700">
+      {initials}
+    </span>
+  );
 }
-
-const REVIEW_CONTENT: BookingReviewContent = {
-  title: "Review Your Request",
-  subtitle: "Submit this request and wait for specialist approval.",
-  doctor: {
-    name: "Dr. Sarah Jenkins",
-    specialty: "Cardiology",
-    clinic: "Westside Heart Clinic",
-    avatarUrl:
-      "https://images.unsplash.com/photo-1614436163996-25cee5f54290?auto=format&fit=crop&w=160&q=80",
-  },
-  details: [
-    {
-      label: "Date",
-      value: "Monday, Oct 12, 2023",
-      Icon: CalendarDays,
-    },
-    {
-      label: "Time",
-      value: "10:15 AM",
-      Icon: Clock3,
-    },
-    {
-      label: "Location",
-      value: "Westside Heart Clinic, Suite 400",
-      Icon: MapPin,
-    },
-  ],
-  insurance: {
-    provider: "Blue Shield",
-    memberId: "XYZ123",
-  },
-  actions: {
-    confirmLabel: "Submit Request",
-    editLabel: "Edit Selection",
-  },
-};
 
 export default function PatientBookingReviewPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { token } = useParams();
+  const state = location.state as BookingState | null;
 
-  const portalBasePath = location.pathname.startsWith("/patient/")
-    ? "/patient"
-    : "/p";
+  const { data: referral } = useQuery({
+    queryKey: ["patient-referral", token],
+    queryFn: () => getReferral(token!),
+    enabled: !!token,
+  });
+
+  const portalBasePath = location.pathname.startsWith("/patient/") ? "/patient" : "/p";
   const bookingPath = token
     ? `${portalBasePath}/${token}/book`
     : `${portalBasePath}/book`;
@@ -80,39 +52,84 @@ export default function PatientBookingReviewPage() {
     ? `${portalBasePath}/${token}/confirmed`
     : `${portalBasePath}/confirmed`;
 
+  const mutation = useMutation({
+    mutationFn: () =>
+      bookAppointment(token!, {
+        preferred_date: state!.preferred_date,
+        time_slot: state!.time_slot,
+      }),
+    onSuccess: (appointment) => {
+      navigate(confirmationPath, {
+        state: {
+          appointment,
+          specialist: referral?.specialists,
+          dateLabel: state?.dateLabel,
+          timeLabel: state?.timeLabel,
+        },
+      });
+    },
+  });
+
+  const specialist = referral?.specialists;
+
+  const details: AppointmentDetail[] = [
+    {
+      label: "Date",
+      value: state?.dateLabel
+        ? new Date(state.preferred_date + "T00:00:00").toLocaleDateString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })
+        : "—",
+      Icon: CalendarDays,
+    },
+    {
+      label: "Time",
+      value: state?.timeLabel ?? "—",
+      Icon: Clock3,
+    },
+    {
+      label: "Location",
+      value: specialist?.hospital ?? "—",
+      Icon: MapPin,
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-[#eceef3]">
       <main className="mx-auto flex w-full max-w-150 justify-center px-4 py-10 sm:py-14 md:py-16">
         <section className="w-full rounded-xl border border-border bg-surface shadow-[0_2px_10px_rgba(15,23,42,0.08)]">
           <div className="border-b border-border p-6 text-center">
             <h2 className="text-xl font-semibold text-primary sm:text-2xl">
-              {REVIEW_CONTENT.title}
+              Review Your Request
             </h2>
-            <p className="mt-2 text-sm text-muted ">
-              {REVIEW_CONTENT.subtitle}
+            <p className="mt-2 text-sm text-muted">
+              Submit this request and wait for specialist approval.
             </p>
           </div>
 
           <div className="space-y-5 px-6 py-6">
             <div className="flex items-center gap-3">
-              <img
-                src={REVIEW_CONTENT.doctor.avatarUrl}
-                alt={REVIEW_CONTENT.doctor.name}
-                className="h-12 w-12 rounded-full object-cover"
-              />
+              {specialist ? (
+                <SpecialistAvatar name={specialist.full_name} />
+              ) : (
+                <div className="h-12 w-12 rounded-full bg-slate-100" />
+              )}
               <div className="min-w-0">
                 <p className="truncate text-lg leading-tight font-semibold text-primary sm:text-xl">
-                  {REVIEW_CONTENT.doctor.name}
+                  {specialist?.full_name ?? "Loading…"}
                 </p>
                 <p className="text-xs font-semibold tracking-wider text-accent uppercase">
-                  {REVIEW_CONTENT.doctor.specialty}
+                  {specialist?.specialty ?? ""}
                 </p>
-                <p className="text-[16px] text-muted">{REVIEW_CONTENT.doctor.clinic}</p>
+                <p className="text-[16px] text-muted">{specialist?.hospital ?? ""}</p>
               </div>
             </div>
 
             <div className="rounded-lg border border-border bg-base p-4">
-              {REVIEW_CONTENT.details.map(({ label, value, Icon }, index) => (
+              {details.map(({ label, value, Icon }, index) => (
                 <div key={label}>
                   <div className="flex gap-3">
                     <Icon size={16} className="mt-0.5 text-muted" />
@@ -123,32 +140,28 @@ export default function PatientBookingReviewPage() {
                       <p className="text-[17px] leading-snug text-primary">{value}</p>
                     </div>
                   </div>
-
-                  {index < REVIEW_CONTENT.details.length - 1 ? (
+                  {index < details.length - 1 ? (
                     <div className="my-3 border-t border-border" />
                   ) : null}
                 </div>
               ))}
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-border bg-base px-3 py-2.5">
-              <div className="flex items-center gap-2 text-[18px] text-primary">
-                <IdCard size={14} className="text-muted" />
-                <span>{REVIEW_CONTENT.insurance.provider}</span>
-              </div>
-              <p className="text-[18px] text-primary">
-                ID: {REVIEW_CONTENT.insurance.memberId}
+            {mutation.isError && (
+              <p className="text-sm text-red-500">
+                Something went wrong. Please try again.
               </p>
-            </div>
+            )}
 
             <div className="space-y-3 pt-1">
               <Button
                 fullWidth
                 size="lg"
                 className="rounded-lg tracking-wider uppercase"
-                onClick={() => navigate(confirmationPath)}
+                onClick={() => mutation.mutate()}
+                disabled={mutation.isPending || !state}
               >
-                {REVIEW_CONTENT.actions.confirmLabel}
+                {mutation.isPending ? "Submitting…" : "Submit Request"}
               </Button>
               <Button
                 fullWidth
@@ -156,8 +169,9 @@ export default function PatientBookingReviewPage() {
                 variant="ghost"
                 className="rounded-lg border border-border bg-surface tracking-wider uppercase hover:bg-base"
                 onClick={() => navigate(bookingPath)}
+                disabled={mutation.isPending}
               >
-                {REVIEW_CONTENT.actions.editLabel}
+                Edit Selection
               </Button>
             </div>
           </div>

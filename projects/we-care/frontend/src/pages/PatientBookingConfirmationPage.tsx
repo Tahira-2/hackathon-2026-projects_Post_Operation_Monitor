@@ -8,51 +8,49 @@ import {
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 
-interface ConfirmationSummaryItem {
+interface ConfirmationState {
+  specialist?: { full_name: string; specialty: string; hospital: string };
+  dateLabel?: string;
+  timeLabel?: string;
+}
+
+interface SummaryItem {
   label: string;
   value: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
 }
 
-const CONFIRMATION_CONTENT = {
-  title: "Appointment Requested",
-  message:
-    "Your appointment request has been sent to Dr. Sarah Jenkins at Westside Heart Clinic. You will receive a confirmation email and SMS once they approve the slot.",
-  ctaLabel: "Back to My Referral",
-  summaryTitle: "Request Summary",
-  summaryItems: [
-    {
-      label: "Specialist",
-      value: "Dr. Sarah Jenkins",
-      icon: Stethoscope,
-    },
-    {
-      label: "Date",
-      value: "Monday, Oct 12, 2023",
-      icon: CalendarDays,
-    },
-    {
-      label: "Time",
-      value: "10:15 AM",
-      icon: Clock3,
-    },
-    {
-      label: "Location",
-      value: "Westside Heart Clinic, Suite 400",
-      icon: MapPin,
-    },
-  ] as ConfirmationSummaryItem[],
-};
-
 export default function PatientBookingConfirmationPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { token } = useParams();
+  const state = location.state as ConfirmationState | null;
 
-  const portalBasePath = location.pathname.startsWith("/patient/")
-    ? "/patient"
-    : "/p";
+  const portalBasePath = location.pathname.startsWith("/patient/") ? "/patient" : "/p";
   const portalPath = token ? `${portalBasePath}/${token}` : portalBasePath;
+
+  const summaryItems: SummaryItem[] = [
+    {
+      label: "Specialist",
+      value: state?.specialist?.full_name ?? "—",
+      icon: Stethoscope,
+    },
+    {
+      label: "Date",
+      value: state?.dateLabel ?? "—",
+      icon: CalendarDays,
+    },
+    {
+      label: "Time",
+      value: state?.timeLabel ?? "—",
+      icon: Clock3,
+    },
+    {
+      label: "Location",
+      value: state?.specialist?.hospital ?? "—",
+      icon: MapPin,
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-[#eceef3]">
@@ -76,19 +74,21 @@ export default function PatientBookingConfirmationPage() {
           </div>
 
           <h1 className="mt-6 text-3xl font-semibold text-primary sm:text-4xl">
-            {CONFIRMATION_CONTENT.title}
+            Appointment Requested
           </h1>
           <p className="mx-auto mt-3 max-w-lg text-[16px] leading-7 text-primary/75">
-            {CONFIRMATION_CONTENT.message}
+            Your appointment request has been sent to{" "}
+            {state?.specialist?.full_name ?? "the specialist"}. You will receive a
+            confirmation once they approve the slot.
           </p>
 
           <div className="mt-8 rounded-xl border border-border bg-surface p-5 text-left sm:p-6">
             <p className="text-xs font-semibold tracking-widest text-muted uppercase">
-              {CONFIRMATION_CONTENT.summaryTitle}
+              Request Summary
             </p>
 
             <div className="mt-4 space-y-0">
-              {CONFIRMATION_CONTENT.summaryItems.map((item, index) => {
+              {summaryItems.map((item, index) => {
                 const Icon = item.icon;
                 return (
                   <div key={item.label}>
@@ -98,13 +98,10 @@ export default function PatientBookingConfirmationPage() {
                         <p className="text-xs font-medium tracking-wider text-muted uppercase">
                           {item.label}
                         </p>
-                        <p className="text-[16px] leading-snug text-primary">
-                          {item.value}
-                        </p>
+                        <p className="text-[16px] leading-snug text-primary">{item.value}</p>
                       </div>
                     </div>
-
-                    {index < CONFIRMATION_CONTENT.summaryItems.length - 1 ? (
+                    {index < summaryItems.length - 1 ? (
                       <div className="border-t border-border" />
                     ) : null}
                   </div>
@@ -119,7 +116,7 @@ export default function PatientBookingConfirmationPage() {
             className="mt-6 rounded-lg text-base"
             onClick={() => navigate(portalPath)}
           >
-            {CONFIRMATION_CONTENT.ctaLabel}
+            Back to My Referral
             <ArrowRight size={16} />
           </Button>
         </section>

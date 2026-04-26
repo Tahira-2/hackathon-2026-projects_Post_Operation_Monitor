@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ChevronLeft,
@@ -9,9 +10,10 @@ import {
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
+import { getReferral } from "../lib/patient-api";
 
 interface DayOption {
-  id: string;
+  id: string; // ISO date: 'YYYY-MM-DD'
   day: string;
   date: string;
   hasAvailability: boolean;
@@ -23,15 +25,7 @@ interface TimeOption {
   disabled?: boolean;
 }
 
-const DATE_OPTIONS: DayOption[] = [
-  { id: "mon", day: "MON", date: "12", hasAvailability: true },
-  { id: "tue", day: "TUE", date: "13", hasAvailability: true },
-  { id: "wed", day: "WED", date: "14", hasAvailability: true },
-  { id: "thu", day: "THU", date: "15", hasAvailability: false },
-  { id: "fri", day: "FRI", date: "16", hasAvailability: true },
-  { id: "sat", day: "SAT", date: "17", hasAvailability: false },
-  { id: "sun", day: "SUN", date: "18", hasAvailability: false },
-];
+const DAY_NAMES = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
 const MORNING_SLOTS: TimeOption[] = [
   { id: "09:00", label: "09:00 AM" },
@@ -48,16 +42,6 @@ const AFTERNOON_SLOTS: TimeOption[] = [
   { id: "15:00", label: "03:00 PM" },
   { id: "16:30", label: "04:30 PM" },
 ];
-
-const DAY_LABELS: Record<string, string> = {
-  mon: "Mon",
-  tue: "Tue",
-  wed: "Wed",
-  thu: "Thu",
-  fri: "Fri",
-  sat: "Sat",
-  sun: "Sun",
-};
 
 function DayCard({
   option,
@@ -123,33 +107,79 @@ function TimeButton({
   );
 }
 
+function SpecialistAvatar({ name }: { name: string }) {
+  const initials = name
+    .replace(/^Dr\.\s*/i, "")
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  return (
+    <span className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 text-base font-semibold text-indigo-700">
+      {initials}
+    </span>
+  );
+}
+
 export default function PatientBookingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { token } = useParams();
-  const [selectedDayId, setSelectedDayId] = useState("mon");
+
+  const { data: referral } = useQuery({
+    queryKey: ["patient-referral", token],
+    queryFn: () => getReferral(token!),
+    enabled: !!token,
+  });
+
+  const dateOptions = useMemo<DayOption[]>(() => {
+    const today = new Date();
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      return {
+        id: d.toISOString().slice(0, 10),
+        day: DAY_NAMES[d.getDay()],
+        date: String(d.getDate()),
+        hasAvailability: d.getDay() !== 0 && d.getDay() !== 6,
+      };
+    });
+  }, []);
+
+  const [selectedDayId, setSelectedDayId] = useState(() => dateOptions[0].id);
   const [selectedTimeId, setSelectedTimeId] = useState("10:15");
 
   const selectedDay = useMemo(
-    () => DATE_OPTIONS.find((option) => option.id === selectedDayId),
-    [selectedDayId],
+    () => dateOptions.find((o) => o.id === selectedDayId),
+    [dateOptions, selectedDayId],
   );
   const selectedTime = useMemo(
-    () =>
-      [...MORNING_SLOTS, ...AFTERNOON_SLOTS].find(
-        (option) => option.id === selectedTimeId,
-      ),
+    () => [...MORNING_SLOTS, ...AFTERNOON_SLOTS].find((o) => o.id === selectedTimeId),
     [selectedTimeId],
   );
 
-  const selectedSummary = `${DAY_LABELS[selectedDay?.id ?? "mon"]} ${selectedDay?.date ?? "12"}, ${selectedTime?.label ?? "10:15 AM"}`;
-  const portalBasePath = location.pathname.startsWith("/patient/")
-    ? "/patient"
-    : "/p";
+  const selectedSummary = selectedDay && selectedTime
+    ? `${selectedDay.day} ${selectedDay.date}, ${selectedTime.label}`
+    : "";
+
+  const portalBasePath = location.pathname.startsWith("/patient/") ? "/patient" : "/p";
   const portalPath = token ? `${portalBasePath}/${token}` : portalBasePath;
-  const reviewPath = token
-    ? `${portalBasePath}/${token}/review`
-    : `${portalBasePath}/review`;
+  const reviewPath = token ? `${portalBasePath}/${token}/review` : `${portalBasePath}/review`;
+
+  function handleReview() {
+    const isAfternoon = AFTERNOON_SLOTS.some((s) => s.id === selectedTimeId);
+    navigate(reviewPath, {
+      state: {
+        preferred_date: selectedDayId,
+        time_slot: isAfternoon ? "afternoon" : "morning",
+        dateLabel: selectedDay ? `${selectedDay.day}, ${selectedDay.date}` : "",
+        timeLabel: selectedTime?.label ?? "",
+      },
+    });
+  }
+
+  const specialist = referral?.specialists;
 
   return (
     <div className="min-h-screen bg-[#f2f4f8] pb-28">
@@ -165,23 +195,25 @@ export default function PatientBookingPage() {
 
         <section className="rounded-lg border border-border bg-surface p-5 shadow-[0_1px_3px_rgba(15,23,42,0.08)]">
           <div className="flex items-center gap-4">
-            <img
-              src="https://images.unsplash.com/photo-1614436163996-25cee5f54290?auto=format&fit=crop&w=160&q=80"
-              alt="Dr. Sarah Jenkins"
-              className="h-16 w-16 rounded-full object-cover"
-            />
+            {specialist ? (
+              <SpecialistAvatar name={specialist.full_name} />
+            ) : (
+              <div className="h-16 w-16 rounded-full bg-slate-100" />
+            )}
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-3">
                 <h1 className="truncate text-3xl font-semibold text-primary">
-                  Dr. Sarah Jenkins
+                  {specialist?.full_name ?? "Loading…"}
                 </h1>
-                <span className="rounded-sm bg-blue-100 px-3 py-1 text-[11px] font-semibold tracking-wider text-accent uppercase">
-                  Cardiology
-                </span>
+                {specialist && (
+                  <span className="rounded-sm bg-blue-100 px-3 py-1 text-[11px] font-semibold tracking-wider text-accent uppercase">
+                    {specialist.specialty}
+                  </span>
+                )}
               </div>
               <p className="mt-1 flex items-center gap-1.5 text-sm text-primary">
                 <MapPin size={12} className="text-muted" />
-                Westside Heart Clinic
+                {specialist?.hospital ?? ""}
               </p>
               <p className="mt-0.5 flex items-center gap-1.5 text-sm text-primary">
                 <Info size={12} className="text-muted" />
@@ -212,7 +244,7 @@ export default function PatientBookingPage() {
             </div>
           </div>
           <div className="grid grid-cols-7 gap-2">
-            {DATE_OPTIONS.map((option) => (
+            {dateOptions.map((option) => (
               <DayCard
                 key={option.id}
                 option={option}
@@ -266,15 +298,9 @@ export default function PatientBookingPage() {
         <div className="mx-auto flex h-20 w-full max-w-130 items-center justify-between px-4">
           <div>
             <p className="text-xs text-muted">Selected</p>
-            <p className="text-3xl font-semibold text-primary">
-              {selectedSummary}
-            </p>
+            <p className="text-3xl font-semibold text-primary">{selectedSummary}</p>
           </div>
-          <Button
-            className="w-37.5"
-            size="md"
-            onClick={() => navigate(reviewPath)}
-          >
+          <Button className="w-37.5" size="md" onClick={handleReview}>
             Review Request
           </Button>
         </div>
