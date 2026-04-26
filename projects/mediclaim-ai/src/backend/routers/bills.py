@@ -28,8 +28,7 @@ async def get_demo_bill(bill_type: str):
         raise HTTPException(status_code=400, detail="Invalid demo bill type")
     
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.abspath(os.path.join(current_dir, "../../.."))
-    file_path = os.path.join(project_root, "demo", f"demo_bill_{bill_type}.pdf")
+    file_path = os.path.abspath(os.path.join(current_dir, "../../demo", f"demo_bill_{bill_type}.pdf"))
     
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Demo bill not found.")
