@@ -28,8 +28,10 @@ TACHY_PEAK_HOUR = 20
 
 SENSOR_HEADER = [
     "minute_offset", "hour",
-    "heart_rate", "hrv", "respiratory_rate", "spo2", "body_temp",
+    "heart_rate", "hrv", "respiratory_rate", "spo2", "body_temp", "movement",
 ]
+
+MOVEMENT_LEVELS = ("None", "little", "medium", "intense")
 
 
 @dataclass
@@ -41,11 +43,35 @@ class SensorSample:
     respiratory_rate: float
     spo2: float
     body_temp: float
+    movement: str = "None"
 
 
 def _circadian_hr_offset(hour: float) -> float:
     """Mild overnight dip, gentle daytime rise. Peak around 16:00, trough ~04:00."""
     return 4.0 * math.sin((hour - 10.0) * math.pi / 12.0)
+
+
+def _movement_level(hour: float, in_crisis: bool, rng: random.Random) -> str:
+    """Pick a movement bucket for this 3-min sample.
+
+    Overnight (22:00-07:00) the patient is mostly resting; daytime brings
+    a mix of light + occasional medium. During the engineered cardiac
+    crisis movement collapses (the patient becomes lethargic / immobile).
+    """
+    if in_crisis:
+        # Bedridden during the event.
+        return "None" if rng.random() < 0.92 else "little"
+    overnight = hour < 7.0 or hour >= 22.0
+    r = rng.random()
+    if overnight:
+        if r < 0.85: return "None"
+        if r < 0.97: return "little"
+        return "medium"
+    # Daytime
+    if r < 0.40: return "None"
+    if r < 0.85: return "little"
+    if r < 0.99: return "medium"
+    return "intense"
 
 
 def _baseline_sample(hour: float, rng: random.Random) -> SensorSample:
@@ -55,7 +81,8 @@ def _baseline_sample(hour: float, rng: random.Random) -> SensorSample:
     spo2 = 97 + rng.gauss(0, 0.5)
     spo2 = min(100.0, spo2)
     temp = 36.7 + 0.2 * math.sin((hour - 6.0) * math.pi / 12.0) + rng.gauss(0, 0.08)
-    return SensorSample(0, hour, hr, hrv, rr, spo2, temp, )
+    movement = _movement_level(hour, in_crisis=False, rng=rng)
+    return SensorSample(0, hour, hr, hrv, rr, spo2, temp, movement)
 
 
 def _apply_crisis(sample: SensorSample, hour: float, rng: random.Random) -> SensorSample:
@@ -90,6 +117,7 @@ def _apply_crisis(sample: SensorSample, hour: float, rng: random.Random) -> Sens
         respiratory_rate=target_rr + rng.gauss(0, 0.9),
         spo2=min(100.0, target_spo2 + rng.gauss(0, 0.4)),
         body_temp=target_temp + rng.gauss(0, 0.07),
+        movement=_movement_level(hour, in_crisis=True, rng=rng),
     )
 
 
@@ -103,7 +131,7 @@ def generate(seed: int = 42) -> list[SensorSample]:
         sample = SensorSample(minute_offset, hour,
                               sample.heart_rate, sample.hrv,
                               sample.respiratory_rate, sample.spo2,
-                              sample.body_temp)
+                              sample.body_temp, sample.movement)
         sample = _apply_crisis(sample, hour, rng)
         out.append(sample)
     return out
@@ -119,7 +147,7 @@ def write_full_stream(samples: list[SensorSample], path: Path) -> None:
                 s.minute_offset, f"{s.hour:.4f}",
                 f"{s.heart_rate:.2f}", f"{s.hrv:.2f}",
                 f"{s.respiratory_rate:.2f}", f"{s.spo2:.2f}",
-                f"{s.body_temp:.3f}",
+                f"{s.body_temp:.3f}", s.movement,
             ])
 
 

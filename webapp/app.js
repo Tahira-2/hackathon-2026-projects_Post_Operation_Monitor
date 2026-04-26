@@ -120,6 +120,15 @@
   function statusPillClass(s) {
     return s === 'CRITICAL' ? 'crit' : (s === 'WARNING' ? 'warn' : 'ok');
   }
+  // Render the four movement buckets with consistent colors so a doctor
+  // can scan the column for outliers (intense post-op = look closer).
+  function movementPillFor(level) {
+    const cls = level === 'intense' ? 'warn'
+              : level === 'medium'  ? 'brand'
+              : level === 'little'  ? 'ok'
+              :                       'muted';
+    return `<span class="pill ${cls}">${escapeHtml(level || 'None')}</span>`;
+  }
 
   // ------------------------------------------------------------- routing
 
@@ -181,14 +190,29 @@
       $sub.textContent = state.me
         ? `Doctor — ${state.me.full_name || state.me.email}${state.me.verified ? '' : '  (unverified)'}`
         : 'Doctor';
-      // No persistent nav links — the only doctor-facing screen is the
-      // patient list, which is the landing target for /doctor; verification
-      // shows an inline dashboard banner if needed.
+      // Doctor-only "Home" button — closes any open patient detail and
+      // returns to the patient list. No-op if already on the list.
+      const home = document.createElement('button');
+      home.className = 'ghost';
+      home.textContent = 'Home';
+      home.onclick = () => doDoctorHome();
+      $nav.appendChild(home);
     }
     const out = document.createElement('button');
     out.className = 'ghost'; out.textContent = 'Sign out';
     out.onclick = () => doLogout();
     $nav.appendChild(out);
+  }
+
+  function doDoctorHome() {
+    state.selectedPatientId = null;
+    const host = document.getElementById('patient-detail-host');
+    if (host) host.innerHTML = '';
+    const wrap = document.getElementById('patients-list-wrap');
+    if (wrap) wrap.style.display = '';
+    if (location.hash !== '#/doctor') {
+      navigate('/doctor');
+    }
   }
   function addNav(label, href) {
     const a = document.createElement('a');
@@ -993,7 +1017,7 @@
     }
     const tbl = document.createElement('table');
     tbl.innerHTML = `<thead><tr>
-      <th>Patient</th><th>Phone</th><th>Last summary</th>
+      <th>Patient</th><th>Phone</th><th>Movement</th><th>Last summary</th>
       <th>Summaries permission</th><th></th>
     </tr></thead>`;
     const tb = document.createElement('tbody');
@@ -1015,6 +1039,7 @@
       const lastTime = p.last_received_at
         ? `<div class="muted" style="font-size:11.5px;">${escapeHtml(fmtTimestamp(p.last_received_at))}</div>`
         : '';
+      const movementPill = movementPillFor(p.current_movement);
 
       tr.innerHTML = `
         <td>
@@ -1023,6 +1048,7 @@
           </a>${alertBadge}${unreadBadge}
         </td>
         <td class="muted">${escapeHtml(p.phone)}</td>
+        <td>${movementPill}</td>
         <td>${lastStatusPill}${lastTime}</td>
         <td><label style="flex-direction:row;align-items:center;gap:6px;">
           <input type="checkbox" data-pid="${p.id}" ${granted ? 'checked' : ''} />

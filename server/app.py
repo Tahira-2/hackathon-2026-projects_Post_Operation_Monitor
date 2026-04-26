@@ -472,7 +472,20 @@ def create_app() -> Flask:
                         p.full_name, p.phone""",
             (did, did, did, did),
         ).fetchall()
-        return jsonify({"patients": [dict(r) for r in rows]})
+        # Enrich each row with the patient's current movement bucket — read
+        # from the in-memory PatientStream's most recent sample. Polled by
+        # the doctor's patient list every 4s.
+        out = []
+        for r in rows:
+            d = dict(r)
+            try:
+                stream = stream_for(int(d["id"]))
+                recent = stream.recent_window(window_minutes=6)
+                d["current_movement"] = recent[-1].movement if recent else "None"
+            except Exception:
+                d["current_movement"] = "None"
+            out.append(d)
+        return jsonify({"patients": out})
 
     @app.get("/api/doctor/patients/<int:patient_id>/live-alerts")
     @require_role("doctor")
