@@ -1,45 +1,173 @@
-import { View, Text, ScrollView, Image } from 'react-native';
+import { View, Text, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Foundation from '@expo/vector-icons/Foundation';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigation, useRoute } from '@react-navigation/native';
+
+import { getMyAppointments, updateAppointment } from 'api/appointments-service';
+import { listDoctors, checkDoctorAvailability } from 'api/doctors-service';
+import type { Appointment, DoctorProfile } from 'api/models';
 import AppButton from '../components/AppButton';
 import AppCard from '../components/AppCard';
+import { CardSkeleton } from '../components/SkeletonLoader';
+
+function getStatusStyle(status: string) {
+  switch (status) {
+    case 'confirmed':
+      return { bg: 'bg-green-100', text: 'text-green-700' };
+    case 'cancelled':
+      return { bg: 'bg-red-100', text: 'text-red-700' };
+    default:
+      return { bg: 'bg-blue-100', text: 'text-blue-700' };
+  }
+}
 
 export default function AppointmentDetails() {
-  const appointment = {
-    doctor: {
-      name: 'Dr. Sarah Lee',
-      specialty: 'Dermatologist',
-      image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200',
-    },
-    date: '12 Apr 2026',
-    time: '10:30 AM',
-    status: 'Completed',
-    diagnosis: 'Mild skin allergy caused by seasonal change',
-    notes:
-      'Patient showed signs of mild allergic reaction on arms and neck. Recommended avoiding harsh soaps and using hypoallergenic moisturizer twice daily. Condition is not severe but should be monitored for 7–10 days.',
-    prescriptions: [
-      'Cetirizine 10mg – once daily',
-      'Hydrocortisone cream – apply twice daily',
-      'Drink more water and avoid allergens',
-    ],
+  const route = useRoute<any>();
+  const nav = useNavigation<any>();
+  const appointmentId = route.params?.appointmentId as number | undefined;
+
+  const [appointment, setAppointment] = useState<Appointment | null>(null);
+  const [doctor, setDoctor] = useState<DoctorProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
+  const [availability, setAvailability] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      setLoading(true);
+      try {
+        const [appts, docs] = await Promise.all([getMyAppointments(), listDoctors()]);
+
+        if (cancelled) return;
+
+        const found = appts.find((a) => a.id === appointmentId);
+        if (found) {
+          setAppointment(found);
+          const doc = docs.find((d) => d.id === found.doctor);
+          setDoctor(doc ?? null);
+
+          // Check availability for the scheduled time
+          if (doc) {
+            try {
+              const av = await checkDoctorAvailability(
+                doc.id,
+                found.scheduled_time,
+              );
+              if (!cancelled) setAvailability(av.is_available);
+            } catch {
+              // silent
+            }
+          }
+        }
+      } catch {
+        // silent
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appointmentId]);
+
+  const handleCancel = () => {
+    if (!appointment) return;
+
+    Alert.alert(
+      'Cancel Appointment',
+      'Are you sure you want to cancel this appointment?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: async () => {
+            setCancelling(true);
+            try {
+              const updated = await updateAppointment(appointment.id, {
+                status: 'cancelled',
+              });
+              setAppointment(updated);
+            } catch {
+              Alert.alert('Error', 'Failed to cancel appointment');
+            } finally {
+              setCancelling(false);
+            }
+          },
+        },
+      ],
+    );
   };
+
+  const formatDate = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-US', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const formatTime = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-pink-50/30">
+        <ScrollView className="flex-1 px-6 pb-10 pt-6">
+          <CardSkeleton />
+          <View className="mt-4">
+            <CardSkeleton />
+          </View>
+          <View className="mt-4">
+            <CardSkeleton />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  if (!appointment) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-pink-50/30">
+        <Text className="text-gray-500">Appointment not found</Text>
+      </SafeAreaView>
+    );
+  }
+
+  const statusStyle = getStatusStyle(appointment.status);
 
   return (
     <SafeAreaView className="flex-1 bg-pink-50/30">
       <ScrollView className="flex-1 px-6 pb-10 pt-6">
+        {/* Doctor + Status */}
         <AppCard className="mb-6 p-5">
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center gap-4">
-              <Image source={{ uri: appointment.doctor.image }} className="h-14 w-14 rounded-2xl" />
+              <View className="h-14 w-14 items-center justify-center rounded-2xl bg-blue-100">
+                <Foundation name="first-aid" size={24} color="#3b82f6" />
+              </View>
 
               <View>
-                <Text className="font-bold text-gray-900">{appointment.doctor.name}</Text>
-                <Text className="text-xs text-gray-500">{appointment.doctor.specialty}</Text>
+                <Text className="font-bold text-gray-900">
+                  {doctor?.specialization ?? 'Doctor'}
+                </Text>
+                <Text className="text-xs text-gray-500">
+                  {doctor?.hospital_name ?? '—'}
+                </Text>
               </View>
             </View>
 
-            <View className="rounded-full bg-green-100 px-3 py-1">
-              <Text className="text-xs font-bold text-green-700">{appointment.status}</Text>
+            <View className={`rounded-full px-3 py-1 ${statusStyle.bg}`}>
+              <Text className={`text-xs font-bold ${statusStyle.text}`}>
+                {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+              </Text>
             </View>
           </View>
 
@@ -47,7 +175,8 @@ export default function AppointmentDetails() {
             <View>
               <Text className="text-xs text-gray-500">Date & Time</Text>
               <Text className="font-bold text-gray-900">
-                {appointment.date} • {appointment.time}
+                {formatDate(appointment.scheduled_time)} •{' '}
+                {formatTime(appointment.scheduled_time)}
               </Text>
             </View>
 
@@ -55,37 +184,77 @@ export default function AppointmentDetails() {
           </View>
         </AppCard>
 
+        {/* Reason */}
         <AppCard className="mb-6 p-5">
-          <Text className="mb-2 text-sm font-bold uppercase text-gray-700">Diagnosis</Text>
-
-          <Text className="text-gray-800">{appointment.diagnosis}</Text>
+          <Text className="mb-2 text-sm font-bold uppercase text-gray-700">Reason</Text>
+          <Text className="text-gray-800">{appointment.reason || 'No reason provided'}</Text>
         </AppCard>
 
-        <AppCard bordered={false} className="mb-6 border border-pink-100 p-5">
-          <View className="mb-2 flex-row items-center gap-2">
-            <Foundation name="clipboard-notes" size={20} color="#ec4899" />
-            <Text className="text-sm font-bold uppercase text-gray-700">Doctor Notes</Text>
-          </View>
-
-          <Text className="leading-5 text-gray-700">{appointment.notes}</Text>
-        </AppCard>
-
-        <AppCard className="mb-6 p-5">
-          <Text className="mb-3 text-sm font-bold uppercase text-gray-700">Prescription</Text>
-
-          {appointment.prescriptions.map((item, index) => (
-            <View key={index} className="mb-2 flex-row items-start gap-2">
-              <View className="mt-1 h-2 w-2 rounded-full bg-orange-400" />
-              <Text className="flex-1 text-gray-700">{item}</Text>
+        {/* Doctor Info */}
+        {doctor && (
+          <AppCard bordered={false} className="mb-6 border border-pink-100 p-5">
+            <View className="mb-2 flex-row items-center gap-2">
+              <Foundation name="clipboard-notes" size={20} color="#ec4899" />
+              <Text className="text-sm font-bold uppercase text-gray-700">Doctor Details</Text>
             </View>
-          ))}
-        </AppCard>
 
-        <View className="flex-row gap-3">
-          <AppButton label="Download Report" variant="secondary" className="flex-1" />
+            <View className="gap-2">
+              <View className="flex-row justify-between">
+                <Text className="text-xs text-gray-500">Specialization</Text>
+                <Text className="text-xs font-bold text-gray-800">
+                  {doctor.specialization}
+                </Text>
+              </View>
+              <View className="flex-row justify-between">
+                <Text className="text-xs text-gray-500">Hospital</Text>
+                <Text className="text-xs font-bold text-gray-800">
+                  {doctor.hospital_name}
+                </Text>
+              </View>
+              <View className="flex-row justify-between">
+                <Text className="text-xs text-gray-500">Available</Text>
+                <Text className="text-xs font-bold text-gray-800">
+                  {doctor.available_from} — {doctor.available_to}
+                </Text>
+              </View>
+              <View className="flex-row justify-between">
+                <Text className="text-xs text-gray-500">Phone</Text>
+                <Text className="text-xs font-bold text-gray-800">
+                  {doctor.phone_number}
+                </Text>
+              </View>
+              {availability !== null && (
+                <View className="flex-row justify-between">
+                  <Text className="text-xs text-gray-500">Currently Available</Text>
+                  <Text
+                    className={`text-xs font-bold ${availability ? 'text-green-600' : 'text-red-500'}`}>
+                    {availability ? 'Yes' : 'No'}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </AppCard>
+        )}
 
-          <AppButton label="Rebook" variant="accent" className="flex-1" />
-        </View>
+        {/* Actions */}
+        {appointment.status !== 'cancelled' && (
+          <View className="flex-row gap-3">
+            <AppButton
+              label="Rebook"
+              variant="secondary"
+              className="flex-1"
+              onPress={() => nav.navigate('chat')}
+            />
+
+            <AppButton
+              label={cancelling ? 'Cancelling...' : 'Cancel Appointment'}
+              variant="accent"
+              className="flex-1"
+              disabled={cancelling}
+              onPress={handleCancel}
+            />
+          </View>
+        )}
 
         <View className="h-10" />
       </ScrollView>

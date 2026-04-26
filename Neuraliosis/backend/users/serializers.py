@@ -96,6 +96,8 @@ class LoginSerializer(serializers.Serializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    photo_url = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         exclude = ("password",)
@@ -109,4 +111,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "is_active",
             "groups",
             "user_permissions",
+            "profile_photo",
         )
+
+    def get_photo_url(self, obj):
+        if obj.profile_photo:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.profile_photo.url)
+            return obj.profile_photo.url
+        return None

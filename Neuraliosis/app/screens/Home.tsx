@@ -6,34 +6,78 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import { useHealthConnect } from 'hooks/useHealthData';
+import { useAuthStore } from 'store/auth-store';
+import { getMyAppointments } from 'api/appointments-service';
+import { listDoctors } from 'api/doctors-service';
+import type { Appointment, DoctorProfile } from 'api/models';
 import AppButton from '../components/AppButton';
 import AppCard from '../components/AppCard';
-
-const UPCOMING_APPOINTMENTS = [
-  {
-    id: 1,
-    doctor: {
-      name: 'Dr. John Doe',
-      specialty: 'Cardiologist',
-      image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=200',
-    },
-    time: '10:00 AM',
-  },
-];
+import SkeletonLoader, { CardSkeleton } from '../components/SkeletonLoader';
 
 const HEALTH_POLL_INTERVAL_MS = 10000;
 const HEALTH_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export default function HomeView() {
   const nav: any = useNavigation();
+  const user = useAuthStore((s) => s.user);
   const [chartWidth, setChartWidth] = useState(0);
   const [stress, setStress] = useState(35);
   const [calories, setCalories] = useState(320);
   const pollInFlightRef = useRef(false);
 
+  // API state
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
+  const [loadingAppts, setLoadingAppts] = useState(true);
+
   const { data: heartRateData, fetchHealthData: fetchHeartRate } = useHealthConnect();
   const { data: stepsData, fetchHealthData: fetchSteps } = useHealthConnect();
   const { data: sleepData, fetchHealthData: fetchSleep } = useHealthConnect();
+
+  // Fetch appointments + doctors from API
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+
+      (async () => {
+        setLoadingAppts(true);
+        try {
+          const [appts, docs] = await Promise.all([
+            getMyAppointments(),
+            listDoctors(),
+          ]);
+
+          if (!cancelled) {
+            setAppointments(appts);
+            setDoctors(docs);
+          }
+        } catch {
+          // silent fail — data stays empty
+        } finally {
+          if (!cancelled) setLoadingAppts(false);
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+      };
+    }, []),
+  );
+
+  const upcomingAppointments = useMemo(() => {
+    const now = new Date();
+    return appointments
+      .filter(
+        (a) =>
+          a.status !== 'cancelled' && new Date(a.scheduled_time) >= now,
+      )
+      .slice(0, 3);
+  }, [appointments]);
+
+  const getDoctorForAppointment = useCallback(
+    (doctorId: number) => doctors.find((d) => d.id === doctorId),
+    [doctors],
+  );
 
   const fetchAllHealthData = useCallback(async () => {
     if (pollInFlightRef.current) return;
@@ -165,6 +209,18 @@ export default function HomeView() {
     return Math.round(((end - start) / (1000 * 60 * 60)) * 10) / 10;
   }, [sleepData]);
 
+  const formatApptTime = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const displayName = user?.full_name?.split(' ')[0] ?? 'User';
+  const todayLabel = new Date().toLocaleDateString('en-US', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'long',
+  });
+
   return (
     <SafeAreaView className="flex flex-1">
       <ScrollView
@@ -172,13 +228,14 @@ export default function HomeView() {
         className="flex-1 bg-pink-50/30 px-6 pb-24 pt-6">
         <View className="mb-8 flex-row items-center justify-between">
           <View className="flex-row items-center gap-3">
-            <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150' }}
-              className="h-12 w-12 rounded-full"
-            />
+            <View className="h-12 w-12 items-center justify-center rounded-full bg-red-400">
+              <Text className="text-lg font-bold text-white">
+                {displayName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
             <View>
-              <Text className="text-xl font-bold text-gray-900">Hello, Alex!</Text>
-              <Text className="font-mono text-xs uppercase text-gray-500">Thu, 08 July</Text>
+              <Text className="text-xl font-bold text-gray-900">Hello, {displayName}!</Text>
+              <Text className="font-mono text-xs uppercase text-gray-500">{todayLabel}</Text>
             </View>
           </View>
           <TouchableOpacity className="rounded-2xl border border-gray-100 bg-white p-3" />
@@ -186,28 +243,52 @@ export default function HomeView() {
 
         <View className="mb-8">
           <Text className="mb-4 text-lg font-bold text-gray-900">Upcoming Appointments</Text>
-          <View className="gap-4">
-            {UPCOMING_APPOINTMENTS.map((appt) => (
-              <AppCard key={appt.id} className="flex-row items-center justify-between p-5">
-                <View className="flex-row items-center gap-4">
-                  <Image source={{ uri: appt.doctor.image }} className="h-16 w-16 rounded-2xl" />
-                  <View>
-                    <Text className="font-bold text-gray-900">{appt.doctor.name}</Text>
-                    <Text className="text-xs text-gray-500">{appt.doctor.specialty}</Text>
-                    <Text className="mt-1 text-xs text-red-400">{appt.time}, Today</Text>
-                  </View>
-                </View>
 
-                <AppButton
-                  onPress={() => nav.navigate('AppointmentDetails')}
-                  label="View Details"
-                  variant="secondary"
-                  className="px-4 py-2"
-                  textClassName="text-xs"
-                />
-              </AppCard>
-            ))}
-          </View>
+          {loadingAppts ? (
+            <View className="gap-4">
+              <CardSkeleton />
+            </View>
+          ) : upcomingAppointments.length === 0 ? (
+            <AppCard className="items-center p-6">
+              <Text className="text-sm text-gray-500">No upcoming appointments</Text>
+            </AppCard>
+          ) : (
+            <View className="gap-4">
+              {upcomingAppointments.map((appt) => {
+                const doctor = getDoctorForAppointment(appt.doctor);
+                return (
+                  <AppCard key={appt.id} className="flex-row items-center justify-between p-5">
+                    <View className="flex-row items-center gap-4">
+                      <View className="h-16 w-16 items-center justify-center rounded-2xl bg-blue-100">
+                        <Foundation name="first-aid" size={28} color="#3b82f6" />
+                      </View>
+                      <View>
+                        <Text className="font-bold text-gray-900">
+                          {doctor?.specialization ?? 'Doctor'}
+                        </Text>
+                        <Text className="text-xs text-gray-500">
+                          {doctor?.hospital_name ?? 'Hospital'}
+                        </Text>
+                        <Text className="mt-1 text-xs text-red-400">
+                          {formatApptTime(appt.scheduled_time)}, Today
+                        </Text>
+                      </View>
+                    </View>
+
+                    <AppButton
+                      onPress={() =>
+                        nav.navigate('AppointmentDetails', { appointmentId: appt.id })
+                      }
+                      label="View"
+                      variant="secondary"
+                      className="px-4 py-2"
+                      textClassName="text-xs"
+                    />
+                  </AppCard>
+                );
+              })}
+            </View>
+          )}
         </View>
 
         <View className="mb-4">
