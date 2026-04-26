@@ -80,6 +80,55 @@ def _parse_structured_question(text: str) -> tuple[str, list[dict]]:
         question = "Can you share one more detail about your symptoms?"
     return question, options
 
+
+def _infer_symptom_focus(state: HealthState) -> str:
+    keywords = " ".join(state.get("keywords", [])).lower()
+    latest_user = next(
+        (m.get("content", "") for m in reversed(state.get("messages", [])) if m.get("role") == "user"),
+        "",
+    ).lower()
+    haystack = f"{keywords} {latest_user}"
+
+    if any(t in haystack for t in ["stomach", "abdomen", "nausea", "vomit", "bloating", "acid"]):
+        return "digestive"
+    if any(t in haystack for t in ["cough", "fever", "sore throat", "breath", "cold", "flu"]):
+        return "respiratory"
+    if any(t in haystack for t in ["headache", "migraine", "dizzy", "vision"]):
+        return "neurological"
+    if any(t in haystack for t in ["chest", "palpitation", "left arm", "jaw"]):
+        return "cardiac"
+    if any(t in haystack for t in ["joint", "back pain", "knee", "muscle", "swelling"]):
+        return "musculoskeletal"
+    if any(t in haystack for t in ["sleep", "insomnia", "tired", "fatigue"]):
+        return "sleep-fatigue"
+    return "general"
+
+
+def _is_baseline_lifestyle_question(question: str) -> bool:
+    q = (question or "").lower()
+    patterns = [
+        "how many hours did you sleep",
+        "how much water",
+        "how many glasses",
+        "sleep yesterday",
+    ]
+    return any(p in q for p in patterns)
+
+
+def _generate_question_with_contract(prompt: str, context: str, output_contract: str) -> tuple[str, list[dict]]:
+    res = client.chat.completions.create(
+        model="gpt-4o-mini",
+        temperature=0.7,
+        max_tokens=260,
+        messages=[
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": f"{context}\n\n{output_contract}"},
+        ],
+    )
+
+    response_text = res.choices[0].message.content.strip()
+    return _parse_structured_question(response_text)
+
 def get_covered_topics(messages: list) -> str:
     topics_to_detect = ["sleep", "hydration", "eating", "exercise", "stress", "heart rate", "symptom timing"]
     covered = set()
@@ -111,6 +160,11 @@ def question_generator(state: HealthState) -> dict:
 
     covered_topics = get_covered_topics(state.get('messages', []))
     recent_conv = format_last_6_messages(state.get('messages', []))
+    symptom_focus = _infer_symptom_focus(state)
+    questions_asked = state.get('questions_asked', 0)
+
+    # Avoid repeating the same first-turn baseline prompts unless symptom focus needs it.
+    force_non_lifestyle = symptom_focus not in ["sleep-fatigue", "general"] and questions_asked < 3
 
     context = f"""
 Topic: {topic}
@@ -128,6 +182,14 @@ Topics already covered in conversation:
 
 Recent conversation:
 {recent_conv}
+
+Symptom focus:
+{symptom_focus}
+
+Rules:
+- Keep next question tightly relevant to symptom focus.
+- Avoid repeating prior topics and question wording.
+- {"Do not ask sleep or hydration in this turn." if force_non_lifestyle else "Sleep/hydration allowed only if strongly relevant."}
 """
 
     output_contract = (
@@ -142,18 +204,16 @@ Recent conversation:
         " The question and options must be directly relevant to user's recent symptoms and the existing conversation context."
     )
 
-    res = client.chat.completions.create(
-        model="gpt-4o-mini",
-        temperature=0.7,
-        max_tokens=260,
-        messages=[
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": f"{context}\n\n{output_contract}"}
-        ]
-    )
+    question_text, options = _generate_question_with_contract(prompt, context, output_contract)
 
-    response_text = res.choices[0].message.content.strip()
-    question_text, options = _parse_structured_question(response_text)
+    # One corrective retry if model still gives baseline lifestyle question too early.
+    if force_non_lifestyle and _is_baseline_lifestyle_question(question_text):
+        correction = (
+            output_contract
+            + " IMPORTANT: The next question must NOT be about sleep or hydration."
+            + " Ask a symptom-specific clarification based on the current complaint."
+        )
+        question_text, options = _generate_question_with_contract(prompt, context, correction)
 
     updated_messages = state.get("messages", []) + [{"role": "assistant", "content": question_text}]
     logger.info("Question generated successfully.")
