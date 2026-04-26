@@ -63,6 +63,7 @@ export default function ActivatePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [isActivated, setIsActivated] = useState(false);
 
   const registeredEmail =
     location.state?.registeredEmail || sessionStorage.getItem('navjeevan_activation_email') || '';
@@ -94,10 +95,8 @@ export default function ActivatePage() {
         confirm_password: formData.confirmPassword,
       });
 
-      setSuccessMessage('Account activated successfully. Redirecting to login...');
-      setTimeout(() => {
-        navigate('/login');
-      }, 1200);
+      setSuccessMessage('Account activated successfully. Choose how you want to continue.');
+      setIsActivated(true);
     } catch (error) {
       setServerError(extractErrorMessage(error));
     } finally {
@@ -166,96 +165,115 @@ export default function ActivatePage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-300">Login ID</label>
-              <div className="relative">
-                <Hash size={16} className="pointer-events-none absolute left-3 top-3 text-slate-500" />
-                <input
-                  type="text"
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 pl-10 text-sm uppercase tracking-wide text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter Login ID"
-                  autoComplete="off"
-                  {...register('loginId', { required: 'Login ID is required' })}
-                />
-              </div>
-              {errors.loginId && <p className="mt-1 text-xs text-red-400">{errors.loginId.message}</p>}
-            </div>
+          {!isActivated ? (
+            <>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-300">Login ID</label>
+                  <div className="relative">
+                    <Hash size={16} className="pointer-events-none absolute left-3 top-3 text-slate-500" />
+                    <input
+                      type="text"
+                      className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 pl-10 text-sm uppercase tracking-wide text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter Login ID"
+                      autoComplete="off"
+                      {...register('loginId', { required: 'Login ID is required' })}
+                    />
+                  </div>
+                  {errors.loginId && <p className="mt-1 text-xs text-red-400">{errors.loginId.message}</p>}
+                </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-300">Password</label>
-              <div className="relative">
-                <Lock size={16} className="pointer-events-none absolute left-3 top-3 text-slate-500" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 pl-10 pr-16 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Create a strong password"
-                  {...register('password', {
-                    required: 'Password is required',
-                    validate: (value) =>
-                      passwordPolicy.test(value) ||
-                      'Password must include uppercase, lowercase, number, and special character',
-                  })}
-                />
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-300">Password</label>
+                  <div className="relative">
+                    <Lock size={16} className="pointer-events-none absolute left-3 top-3 text-slate-500" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 pl-10 pr-16 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Create a strong password"
+                      {...register('password', {
+                        required: 'Password is required',
+                        validate: (value) =>
+                          passwordPolicy.test(value) ||
+                          'Password must include uppercase, lowercase, number, and special character',
+                      })}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute right-3 top-2 text-xs font-medium text-blue-400"
+                    >
+                      {showPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                  {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password.message}</p>}
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-300">Confirm Password</label>
+                  <div className="relative">
+                    <Lock size={16} className="pointer-events-none absolute left-3 top-3 text-slate-500" />
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 pl-10 pr-16 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Re-enter password"
+                      {...register('confirmPassword', {
+                        required: 'Confirm password is required',
+                        validate: (value) => value === password || 'Passwords do not match',
+                      })}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                      className="absolute right-3 top-2 text-xs font-medium text-blue-400"
+                    >
+                      {showConfirmPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="mt-1 text-xs text-red-400">{errors.confirmPassword.message}</p>
+                  )}
+                </div>
+
                 <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-2 text-xs font-medium text-blue-400"
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex w-full items-center justify-center rounded-lg bg-blue-500 px-4 py-2.5 font-semibold text-white transition duration-200 hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  {showPassword ? 'Hide' : 'Show'}
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Activating...
+                    </span>
+                  ) : (
+                    'Activate Account'
+                  )}
                 </button>
-              </div>
-              {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password.message}</p>}
+              </form>
+
+              <p className="mt-4 text-center text-sm text-slate-400">
+                Already activated?{' '}
+                <Link to="/login" className="font-semibold text-blue-400 hover:text-blue-300">
+                  Login here
+                </Link>
+              </p>
+            </>
+          ) : (
+            <div className="mt-2 space-y-3">
+              <Link
+                to="/login"
+                className="flex w-full items-center justify-center rounded-lg bg-blue-500 px-4 py-2.5 font-semibold text-white transition duration-200 hover:bg-blue-400"
+              >
+                Citizen Login
+              </Link>
+              <Link
+                to="/healthcare/login"
+                className="flex w-full items-center justify-center rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 font-semibold text-white transition duration-200 hover:bg-white/10"
+              >
+                Staff Login
+              </Link>
             </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-300">Confirm Password</label>
-              <div className="relative">
-                <Lock size={16} className="pointer-events-none absolute left-3 top-3 text-slate-500" />
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 pl-10 pr-16 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Re-enter password"
-                  {...register('confirmPassword', {
-                    required: 'Confirm password is required',
-                    validate: (value) => value === password || 'Passwords do not match',
-                  })}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword((prev) => !prev)}
-                  className="absolute right-3 top-2 text-xs font-medium text-blue-400"
-                >
-                  {showConfirmPassword ? 'Hide' : 'Show'}
-                </button>
-              </div>
-              {errors.confirmPassword && (
-                <p className="mt-1 text-xs text-red-400">{errors.confirmPassword.message}</p>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex w-full items-center justify-center rounded-lg bg-blue-500 px-4 py-2.5 font-semibold text-white transition duration-200 hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Activating...
-                </span>
-              ) : (
-                'Activate Account'
-              )}
-            </button>
-          </form>
-
-          <p className="mt-4 text-center text-sm text-slate-400">
-            Already activated?{' '}
-            <Link to="/login" className="font-semibold text-blue-400 hover:text-blue-300">
-              Login here
-            </Link>
-          </p>
+          )}
         </div>
       </div>
     </div>

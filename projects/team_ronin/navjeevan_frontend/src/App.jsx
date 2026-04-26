@@ -5,9 +5,9 @@ import RegisterPage from './pages/citizen/RegisterPage';
 import ActivatePage from './pages/citizen/ActivatePage';
 import ForgotPasswordPage from './pages/citizen/ForgotPasswordPage';
 import HCLoginPage from './pages/healthcare/HCLoginPage';
+import HCDashboardPage from './pages/healthcare/HCDashboardPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
-import DashboardPage from './placeholders/DashboardPage';
-import HCDashboardPage from './placeholders/HCDashboardPage';
+import CitizenDashboard from './components/citizen/CitizenDashboard';
 import ProtectedRoute from './routes/ProtectedRoute';
 
 function App() {
@@ -26,7 +26,7 @@ function App() {
         path="/dashboard"
         element={
           <ProtectedRoute role="user">
-            <DashboardPage />
+            <CitizenDashboard />
           </ProtectedRoute>
         }
       />

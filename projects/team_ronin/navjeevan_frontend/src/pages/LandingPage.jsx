@@ -67,6 +67,12 @@ export default function LandingPage() {
 
           <div className="hidden items-center gap-3 md:flex">
             <Link
+              to="/activate"
+              className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/15"
+            >
+              Activate Account
+            </Link>
+            <Link
               to="/login"
               className="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/5"
             >
@@ -95,9 +101,16 @@ export default function LandingPage() {
           <div className="mx-auto max-w-7xl px-4 pb-4 sm:px-6 lg:px-8 md:hidden">
             <div className="rounded-3xl border border-white/10 bg-white/5 p-3 backdrop-blur-xl">
               <Link
+                to="/activate"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block rounded-2xl border border-cyan-400/25 bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-400/15"
+              >
+                Activate Account
+              </Link>
+              <Link
                 to="/login"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5"
+                className="mt-1 block rounded-2xl px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5"
               >
                 Login
               </Link>
