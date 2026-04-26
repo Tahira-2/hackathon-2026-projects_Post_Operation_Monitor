@@ -1,5 +1,6 @@
 from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.tokens import RefreshToken
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -46,7 +47,7 @@ class RegisterView(ApiResponseAPIView):
             )
 
         user = serializer.save()
-        user_data = UserProfileSerializer(user).data
+        user_data = UserProfileSerializer(user, context={"request": request}).data
         return api_response(
             result=user_data,
             is_success=True,
@@ -105,7 +106,7 @@ class UserProfileView(ApiResponseAPIView):
                 error_message=["Authentication credentials were not provided."],
             )
 
-        serializer = UserProfileSerializer(request.user)
+        serializer = UserProfileSerializer(request.user, context={"request": request})
         return api_response(
             result=serializer.data,
             is_success=True,
@@ -128,7 +129,7 @@ class UpdateProfileView(ApiResponseAPIView):
                 error_message=["Authentication credentials were not provided."],
             )
 
-        serializer = UserProfileSerializer(request.user, data=request.data, partial=True)
+        serializer = UserProfileSerializer(request.user, data=request.data, partial=True, context={"request": request})
         if not serializer.is_valid():
             return api_response(
                 result=None,
@@ -202,6 +203,34 @@ class GetLocationView(ApiResponseAPIView):
                 "latitude": request.user.latitude,
                 "longitude": request.user.longitude,
             },
+            is_success=True,
+            status_code=status.HTTP_200_OK,
+            error_message=[],
+        )
+
+
+# View for uploading profile photo
+class UploadProfilePhotoView(ApiResponseAPIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    @extend_schema(tags=["Users"])
+    def post(self, request):
+        photo = request.FILES.get("photo")
+        if not photo:
+            return api_response(
+                result=None,
+                is_success=False,
+                status_code=status.HTTP_400_BAD_REQUEST,
+                error_message=["No photo file provided."],
+            )
+
+        request.user.profile_photo = photo
+        request.user.save(update_fields=["profile_photo"])
+
+        serializer = UserProfileSerializer(request.user, context={"request": request})
+        return api_response(
+            result=serializer.data,
             is_success=True,
             status_code=status.HTTP_200_OK,
             error_message=[],

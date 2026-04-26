@@ -15,6 +15,7 @@ class DoctorProfile(models.Model):
     available_from = models.TimeField()
     available_to = models.TimeField()
     phone_number = models.CharField(max_length=20)
+    profile_photo = models.ImageField(upload_to='doctor_photos/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

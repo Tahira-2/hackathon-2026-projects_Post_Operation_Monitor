@@ -9,10 +9,24 @@ User = get_user_model()
 
 # Serializers for DoctorProfile
 class DoctorProfileSerializer(serializers.ModelSerializer):
+    doctor_name = serializers.SerializerMethodField()
+    photo_url = serializers.SerializerMethodField()
+
     class Meta:
         model = DoctorProfile
         fields = "__all__"
         read_only_fields = ("id", "user", "created_at")
+
+    def get_doctor_name(self, obj):
+        return obj.user.full_name if obj.user else None
+
+    def get_photo_url(self, obj):
+        if obj.profile_photo:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.profile_photo.url)
+            return obj.profile_photo.url
+        return None
 
 # Serializer for creating a doctor profile along with the user account
 class CreateDoctorSerializer(serializers.Serializer):

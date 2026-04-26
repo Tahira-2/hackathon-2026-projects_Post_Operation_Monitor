@@ -6,6 +6,7 @@ from .views import (
     RegisterView,
     UpdateLocationView,
     UpdateProfileView,
+    UploadProfilePhotoView,
     UserProfileView,
 )
 
@@ -18,6 +19,7 @@ urlpatterns = [
     path("login/", LoginView.as_view(), name="login"),
     path("me/", UserProfileView.as_view(), name="me"),
     path("me/update/", UpdateProfileView.as_view(), name="update_profile"),
+    path("me/photo/", UploadProfilePhotoView.as_view(), name="upload_photo"),
     path("location/update/", UpdateLocationView.as_view(), name="update_location"),
     path("location/", GetLocationView.as_view(), name="get_location"),
 ]
