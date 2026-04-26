@@ -3,25 +3,34 @@
 from src.core_logic.models import EscalationResult
 
 RED_FLAG_CUES: dict[str, tuple[str, ...]] = {
+    "cardiac_emergency": (
+        "chest pain", "chest pressure", "crushing chest", "heart pain",
+        "heart attack", "cardiac arrest", "heart stopped",
+        "pain radiating to arm", "pain in left arm", "jaw pain with chest",
+        "palpitations with fainting", "heart racing and dizzy",
+    ),
     "respiratory_distress": (
-        "shortness of breath",
-        "cannot breathe",
-        "difficulty breathing",
-        "chest pain",
-        "can't breathe",
+        "shortness of breath", "cannot breathe", "can't breathe",
+        "difficulty breathing", "not breathing", "choking",
+        "lips turning blue", "oxygen dropping",
+    ),
+    "stroke_warning": (
+        "sudden weakness", "slurred speech", "face drooping",
+        "arm weakness", "sudden confusion", "sudden vision loss",
+        "sudden severe headache", "worst headache of my life",
+        "stroke", "i think i'm having a stroke",
     ),
     "severe_abdominal_warning": (
-        "severe abdominal pain",
-        "blood in stool",
-        "vomiting blood",
-        "black stool",
-        "rigid abdomen",
+        "severe abdominal pain", "blood in stool", "vomiting blood",
+        "black stool", "rigid abdomen",
     ),
-    "neurologic_acute_warning": (
-        "sudden weakness",
-        "slurred speech",
-        "face drooping",
-        "loss of consciousness",
+    "loss_of_consciousness": (
+        "loss of consciousness", "passed out", "unresponsive",
+        "not waking up", "unconscious", "collapsed",
+    ),
+    "severe_allergic": (
+        "anaphylaxis", "throat closing", "throat swelling",
+        "epipen", "allergic reaction and can't breathe",
     ),
 }
 
@@ -38,7 +47,9 @@ def detect_red_flag_escalation(symptom_text: str) -> EscalationResult:
         return EscalationResult(
             escalation_required=True,
             escalation_reason=(
-                "Urgent symptom cues detected. Route for immediate clinical review."
+                "⚠️ These symptoms may indicate a life-threatening emergency. "
+                "Call 911 (or your local emergency number) immediately. "
+                "Do not wait — get emergency help right now."
             ),
             matched_red_flags=sorted(set(matched)),
         )
