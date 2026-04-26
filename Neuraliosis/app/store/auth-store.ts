@@ -33,9 +33,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ isHydrated: true });
       }
     } catch {
-      // Token invalid / expired and refresh failed
-      await UsersService.logout();
+      try {
+        await UsersService.logout();
+      } catch {}
       set({ user: null, isAuthenticated: false, isHydrated: true });
+    } finally {
+      set({ isHydrated: true });
     }
   },
 

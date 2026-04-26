@@ -68,11 +68,25 @@ export async function apiFetch<T>(
     }
   }
 
-  let res = await fetch(url, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+  let res;
+  try {
+    res = await fetch(url, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: controller.signal as any,
+    });
+  } catch (error: any) {
+    throw new ApiClientError(error.name === 'AbortError' ? 'Network timeout' : 'Network error', {
+      httpStatus: 0,
+      errors: [error.name === 'AbortError' ? 'Network timeout: Is the backend running on 0.0.0.0?' : 'Network error'],
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (res.status === 401 && authenticated) {
     if (!refreshPromise) {
