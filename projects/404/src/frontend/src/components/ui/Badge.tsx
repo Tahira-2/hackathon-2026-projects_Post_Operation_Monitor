@@ -1,51 +1,34 @@
-import React from 'react';
+import React from "react";
+import { cn } from "../../lib/utils";
 
-type BadgeVariant = 'blue' | 'green' | 'gray' | 'outline';
+type BadgeVariant = "blue" | "green" | "gray" | "outline";
 
 interface BadgeProps {
   children: React.ReactNode;
   variant?: BadgeVariant;
-  style?: React.CSSProperties;
+  className?: string;
 }
 
-const variantMap: Record<BadgeVariant, React.CSSProperties> = {
-  blue: {
-    backgroundColor: 'var(--color-primary-50)',
-    color: 'var(--color-primary-700)',
-    border: '1px solid var(--color-primary-200)',
-  },
-  green: {
-    backgroundColor: 'var(--color-green-50)',
-    color: 'var(--color-green-700)',
-    border: '1px solid var(--color-green-100)',
-  },
-  gray: {
-    backgroundColor: 'var(--color-gray-100)',
-    color: 'var(--color-gray-600)',
-    border: '1px solid var(--color-gray-200)',
-  },
-  outline: {
-    backgroundColor: 'transparent',
-    color: 'var(--color-gray-700)',
-    border: '1px solid var(--color-gray-300)',
-  },
+const variantMap: Record<BadgeVariant, string> = {
+  blue: "border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]",
+  green:
+    "border border-[var(--color-green-100)] bg-[var(--color-green-50)] text-[var(--color-green-700)]",
+  gray: "border border-[var(--color-gray-200)] bg-[var(--color-gray-100)] text-[var(--color-gray-600)]",
+  outline: "border border-[var(--color-gray-300)] text-[var(--color-gray-700)]",
 };
 
-const Badge: React.FC<BadgeProps> = ({ children, variant = 'blue', style }) => {
+const Badge: React.FC<BadgeProps> = ({
+  children,
+  variant = "blue",
+  className,
+}) => {
   return (
     <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '0.25rem',
-        padding: '0.25rem 0.75rem',
-        borderRadius: '99px',
-        fontSize: '0.75rem',
-        fontWeight: 600,
-        letterSpacing: '0.02em',
-        ...variantMap[variant],
-        ...style,
-      }}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide",
+        variantMap[variant],
+        className,
+      )}
     >
       {children}
     </span>
