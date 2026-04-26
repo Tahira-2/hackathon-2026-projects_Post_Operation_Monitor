@@ -555,3 +555,17 @@ def get_doctor_by_user_id(user_id: str) -> dict | None:
         .execute()
     )
     return _first_or_none(res.data)
+
+
+def get_fhir_record_by_soap_note(soap_note_id: str, resource_type: str = "Bundle") -> dict | None:
+    """Return the most recent FHIR record for a soap note (default: Bundle type)."""
+    res = (
+        supabase.table("fhir_records")
+        .select("id,soap_note_id,resource_type,fhir_json,created_at")
+        .eq("soap_note_id", soap_note_id)
+        .eq("resource_type", resource_type)
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    return _first_or_none(res.data)
