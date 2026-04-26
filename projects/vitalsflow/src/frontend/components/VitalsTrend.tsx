@@ -62,7 +62,7 @@ const CustomTooltip = ({
   if (!active || !payload?.length) return null;
   return (
     <div
-      className="rounded-lg p-3 text-xs shadow-2xl tabular-nums"
+      className="rounded-lg p-3 text-sm shadow-2xl tabular-nums"
       style={{
         background: "var(--bg-surface)",
         border: "1px solid var(--border-default)",
@@ -115,15 +115,15 @@ export function VitalsTrend({
   const data = generateTrend(currentHR, currentSpO2, currentRR, currentTemp);
 
   return (
-    <div className="glass-card overflow-hidden stagger-card">
+    <div className="glass-card overflow-hidden stagger-card" style={{ animationDelay: "300ms" }}>
       {/* Header */}
       <div
-        className="flex items-center justify-between px-5 py-4"
+        className="flex items-center justify-between px-4 py-3"
         style={{ borderBottom: "1px solid var(--border-subtle)" }}
       >
         <div className="flex items-center gap-2">
           <div
-            className="flex h-7 w-7 items-center justify-center rounded-lg"
+            className="flex h-7 w-7 items-center justify-center"
             style={{ background: "var(--accent-blue-dim)" }}
             aria-hidden="true"
           >
@@ -137,22 +137,22 @@ export function VitalsTrend({
           </h3>
         </div>
         <span
-          className="text-[10px] rounded-full px-2.5 py-0.5 tabular-nums"
+          className="text-[10px] px-2 py-1 tabular-nums font-medium"
           style={{
             background: "var(--bg-elevated)",
             border: "1px solid var(--border-subtle)",
             color: "var(--text-tertiary)",
           }}
         >
-          Simulated 8-hour window
+          8-hour window
         </span>
       </div>
 
-      <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* HR + SpO2 chart */}
         <section aria-label="Heart Rate and Oxygen Saturation Trends">
           <p
-            className="mb-3 text-[10px] font-semibold uppercase tracking-wider"
+            className="mb-2 text-[10px] font-semibold uppercase tracking-wider"
             style={{ color: "var(--text-muted)" }}
           >
             Heart Rate &amp; SpO₂
@@ -173,12 +173,12 @@ export function VitalsTrend({
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(51,65,85,0.1)" vertical={false} />
                 <XAxis
                   dataKey="time"
-                  tick={{ fontSize: 9, fill: "var(--text-muted)" }}
+                  tick={{ fontSize: 11, fill: "var(--text-muted)" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 9, fill: "var(--text-muted)" }}
+                  tick={{ fontSize: 11, fill: "var(--text-muted)" }}
                   axisLine={false}
                   tickLine={false}
                 />
@@ -208,7 +208,7 @@ export function VitalsTrend({
               </AreaChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-2 flex items-center gap-4 text-[10px]" style={{ color: "var(--text-muted)" }}>
+          <div className="mt-2 flex items-center gap-4 text-xs" style={{ color: "var(--text-muted)" }}>
             <span className="flex items-center gap-1.5">
               <span className="inline-block h-2 w-2 rounded-full bg-red-500" aria-hidden="true" />
               Heart Rate (bpm)
@@ -234,12 +234,12 @@ export function VitalsTrend({
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(51,65,85,0.1)" vertical={false} />
                 <XAxis
                   dataKey="time"
-                  tick={{ fontSize: 9, fill: "var(--text-muted)" }}
+                  tick={{ fontSize: 11, fill: "var(--text-muted)" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 9, fill: "var(--text-muted)" }}
+                  tick={{ fontSize: 11, fill: "var(--text-muted)" }}
                   axisLine={false}
                   tickLine={false}
                 />
@@ -267,7 +267,7 @@ export function VitalsTrend({
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-2 flex items-center gap-4 text-[10px]" style={{ color: "var(--text-muted)" }}>
+          <div className="mt-2 flex items-center gap-4 text-xs" style={{ color: "var(--text-muted)" }}>
             <span className="flex items-center gap-1.5">
               <span className="inline-block h-2 w-2 rounded-full" style={{ background: "#14b8a6" }} aria-hidden="true" />
               Resp. Rate (/min)
@@ -306,10 +306,10 @@ export function VitalsTrend({
             >
               {value}
             </span>
-            <span className="text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>
+            <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
               {unit}
             </span>
-            <span className="text-[10px] uppercase tracking-wider mt-1 opacity-70" style={{ color: "var(--text-tertiary)" }}>
+            <span className="mt-1 text-xs uppercase tracking-wider opacity-70" style={{ color: "var(--text-tertiary)" }}>
               {label}
             </span>
           </div>

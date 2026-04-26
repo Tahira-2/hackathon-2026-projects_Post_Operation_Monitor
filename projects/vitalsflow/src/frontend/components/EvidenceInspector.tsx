@@ -81,8 +81,8 @@ export function EvidenceInspector({ result, vitals }: EvidenceInspectorProps) {
 
   return (
     <div
-      className="rounded-lg overflow-hidden"
-      style={{ background: tierBg, border: `1px solid ${tierBorder}` }}
+      className="rounded-lg overflow-hidden stagger-card"
+      style={{ animationDelay: "250ms", background: tierBg, border: "1px solid " + tierBorder }}
     >
       {/* Toggle button — SKILL.md: aria-expanded, state-transition */}
       <button
@@ -94,7 +94,7 @@ export function EvidenceInspector({ result, vitals }: EvidenceInspectorProps) {
       >
         <div className="flex items-center gap-3">
           <Brain className="h-5 w-5" style={{ color: tierColor }} aria-hidden="true" />
-          <span className="font-semibold text-sm" style={{ color: tierColor }}>
+          <span className="font-semibold text-sm" style={{ color: tierColor, fontFamily: "var(--font-outfit)" }}>
             Evidence &amp; Scoring
           </span>
         </div>
@@ -111,7 +111,7 @@ export function EvidenceInspector({ result, vitals }: EvidenceInspectorProps) {
           role="region"
           aria-label="Clinical evidence and scoring"
           className="border-t px-4 py-4 space-y-4 expand-down"
-          style={{ borderColor: `${tierColor}40` }}
+          style={{ borderColor: tierColor + "40" }}
         >
           {/* Why This Risk? */}
           <section aria-labelledby="why-risk-heading">
@@ -196,7 +196,7 @@ export function EvidenceInspector({ result, vitals }: EvidenceInspectorProps) {
                   <td>
                     <span
                       className="font-bold tabular-nums px-2 py-0.5 rounded"
-                      style={{ background: `${tierColor}25`, color: tierColor }}
+                      style={{ background: tierColor + "25", color: tierColor }}
                     >
                       {result.news2_score}
                     </span>

@@ -143,17 +143,15 @@ export function VitalsForm({
   };
 
   return (
-    <div
-      className="glass-card overflow-hidden"
-    >
+    <div className="glass-card overflow-hidden stagger-card" style={{ animationDelay: "100ms" }}>
       {/* Header */}
       <div
-        className="flex items-center justify-between px-5 py-4"
+        className="flex items-center justify-between px-4 py-3"
         style={{ borderBottom: "1px solid var(--border-subtle)" }}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <div
-            className="flex h-7 w-7 items-center justify-center rounded-lg"
+            className="flex h-8 w-8 items-center justify-center"
             style={{ background: "var(--accent-blue-dim)" }}
           >
             <Thermometer className="h-4 w-4" style={{ color: "var(--accent-blue)" }} />
@@ -165,17 +163,17 @@ export function VitalsForm({
             >
               Current Vitals
             </p>
-            <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
               {patientName}
             </p>
           </div>
         </div>
         <div
-          className="flex items-center gap-1.5 text-[10px] rounded-full px-3 py-1"
+          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium"
           style={{
-            background: "var(--bg-elevated)",
-            border: "1px solid var(--border-subtle)",
-            color: "var(--text-tertiary)",
+            background: "var(--accent-blue-dim)",
+            border: "1px solid var(--accent-blue)/30",
+            color: "var(--accent-blue)",
           }}
         >
           <Activity className="h-3 w-3" />
@@ -183,9 +181,9 @@ export function VitalsForm({
         </div>
       </div>
 
-      <div className="p-4 sm:p-5 flex flex-col gap-4 sm:gap-5">
+      <div className="p-4 flex flex-col gap-4">
         {/* 6-column numeric grid - responsive */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {numericFields.map(({ key, label, unit, hint, step, min, max, warnLow, warnHigh }) => {
             const val = vitals[key] as number;
             const status = getFieldStatus(val, warnLow, warnHigh);
@@ -196,7 +194,7 @@ export function VitalsForm({
             return (
               <div key={key} className="flex flex-col gap-1">
                 <label
-                  className="text-[9px] sm:text-[10px] font-medium"
+                  className="text-xs font-medium"
                   style={{ color: colors.label }}
                   htmlFor={`vital-${key}`}
                 >
@@ -214,10 +212,10 @@ export function VitalsForm({
                     aria-invalid={isInvalid ? true : undefined}
                     aria-describedby={hintId}
                     onChange={(e) => updateNumeric(key, e.target.value)}
-                    className="w-full rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all duration-200 tabular-nums"
+                    className="w-full px-3 py-2 text-sm font-medium tabular-nums transition-all duration-200"
                     style={{
                       background: "var(--bg-surface)",
-                      border: `1px solid ${colors.border}`,
+                      border: "1px solid " + colors.border,
                       color: "var(--text-primary)",
                       outline: "none",
                       fontFamily: "var(--font-inter)",
@@ -225,7 +223,7 @@ export function VitalsForm({
                       touchAction: "manipulation",
                     }}
                     onFocus={(e) => {
-                      e.currentTarget.style.boxShadow = `0 0 0 3px ${colors.focus}`;
+                      e.currentTarget.style.boxShadow = "0 0 0 3px " + colors.focus;
                       e.currentTarget.style.borderColor = colors.border;
                     }}
                     onBlur={(e) => {
@@ -235,7 +233,7 @@ export function VitalsForm({
                 </div>
                 <p
                   id={hintId}
-                  className="text-[8px] sm:text-[9px]"
+                  className="text-[11px]"
                   style={{ color: colors.text }}
                 >
                   {unit} · {hint}
@@ -250,7 +248,7 @@ export function VitalsForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div className="flex flex-col gap-1.5">
             <label
-              className="text-[9px] sm:text-[10px] font-medium"
+              className="text-xs font-medium"
               style={{ color: "var(--text-secondary)" }}
               htmlFor="vital-consciousness"
             >
@@ -261,7 +259,7 @@ export function VitalsForm({
               value={vitals.consciousness}
               onChange={(e) => update("consciousness", e.target.value)}
               aria-describedby="vital-consciousness-hint"
-              className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm transition-all duration-200"
+              className="px-3 py-2 text-sm transition-all duration-200"
               style={{
                 background: "var(--bg-surface)",
                 border: "1px solid var(--border-default)",
@@ -291,18 +289,18 @@ export function VitalsForm({
 
           <div className="flex flex-col gap-1.5">
             <span
-              className="text-[9px] sm:text-[10px] font-medium"
+              className="text-xs font-medium"
               style={{ color: "var(--text-secondary)" }}
             >
               Supplemental O₂
             </span>
             <label
-              className="flex items-center gap-3 cursor-pointer rounded-lg px-2 sm:px-3 py-1.5 sm:py-2"
+              className="clickable flex items-center gap-3 rounded-lg px-2.5 py-2"
               style={{
                 background: vitals.on_supplemental_o2
                   ? "var(--accent-blue-dim)"
                   : "var(--bg-surface)",
-                border: `1px solid ${vitals.on_supplemental_o2 ? "var(--accent-blue)" : "var(--border-default)"}`,
+                border: "1px solid " + (vitals.on_supplemental_o2 ? "var(--accent-blue)" : "var(--border-default)"),
                 transition: "all 0.2s",
                 minHeight: "44px",
               }}
@@ -333,7 +331,7 @@ export function VitalsForm({
                 />
               </div>
               <span
-                className="text-xs sm:text-sm select-none"
+                className="select-none text-sm"
                 style={{ color: vitals.on_supplemental_o2 ? "var(--accent-blue)" : "var(--text-secondary)" }}
               >
                 {vitals.on_supplemental_o2 ? "Patient on O₂" : "Room air (off)"}
@@ -347,7 +345,7 @@ export function VitalsForm({
           id="run-triage-btn"
           onClick={onSubmit}
           disabled={isLoading}
-          className="btn-primary w-full py-2 sm:py-3 text-xs sm:text-base"
+          className="btn-primary w-full py-3 text-base"
         >
           {isLoading ? (
             <>

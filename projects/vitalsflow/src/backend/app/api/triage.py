@@ -8,7 +8,7 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException
 
 from app.schemas.triage import TriageOutput, VitalsInput
-from app.services.fhir_client import create_service_request
+from app.services.fhir_client import create_service_request, list_recent_service_requests
 from app.services.triage_service import run_triage
 
 router = APIRouter()
@@ -95,6 +95,42 @@ async def approve_action(patient_id: str, payload: dict) -> dict:
             status_code=500,
             detail=f"ServiceRequest create failed: {exc}",
         ) from exc
+
+
+@router.get("/approvals")
+async def approvals(count: int = 20) -> dict:
+    """
+    Return recent ServiceRequest drafts/proposals as approval queue data.
+    """
+    resources = await list_recent_service_requests(count=max(1, min(count, 50)))
+    items: list[dict] = []
+    for resource in resources:
+        if resource.get("resourceType") != "ServiceRequest":
+            continue
+
+        status = str(resource.get("status", "")).lower()
+        intent = str(resource.get("intent", "")).lower()
+        if status != "draft" and intent != "proposal":
+            continue
+
+        subject_ref = resource.get("subject", {}).get("reference", "")
+        patient_id = subject_ref.split("/")[-1] if "/" in subject_ref else subject_ref
+        notes = resource.get("note", [])
+        note_text = notes[0].get("text", "") if notes else ""
+        items.append(
+            {
+                "id": resource.get("id", ""),
+                "patient_id": patient_id,
+                "headline": resource.get("code", {}).get("text", "Draft action"),
+                "status": status or "draft",
+                "intent": intent or "proposal",
+                "priority": resource.get("priority", "routine"),
+                "authored_on": resource.get("authoredOn", ""),
+                "note": note_text,
+            }
+        )
+
+    return {"items": items, "count": len(items)}
 
 
 def _priority_for_tier(tier: str) -> str:

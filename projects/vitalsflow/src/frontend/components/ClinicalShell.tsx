@@ -2,153 +2,120 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Activity,
   Bell,
   ClipboardCheck,
   LayoutDashboard,
-  Monitor,
+  Moon,
+  Stethoscope,
+  Sun,
   UserRound,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 interface ClinicalShellProps {
-  title: string;
-  subtitle: string;
   children: React.ReactNode;
-  actions?: React.ReactNode;
 }
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/patient/882910", label: "Patient Detail", icon: UserRound },
   { href: "/approvals", label: "Approvals", icon: ClipboardCheck },
-  { href: "/system-health", label: "System Health", icon: Monitor },
+  { href: "/system-health", label: "System Health", icon: Activity },
 ];
 
-export function ClinicalShell({ title, subtitle, children, actions }: ClinicalShellProps) {
+export function ClinicalShell({ children }: ClinicalShellProps) {
   const pathname = usePathname();
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("vitalsflow-theme") === "dark";
+  });
 
-  const [timeStr, setTimeStr] = useState<string>("");
   useEffect(() => {
-    const tick = () =>
-      setTimeStr(
-        new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
-      );
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, []);
+    document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+  }, [isDark]);
+
+
+  const toggleTheme = useCallback(() => {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.classList.add("theme-transition");
+    document.documentElement.setAttribute("data-theme", next ? "dark" : "light");
+    localStorage.setItem("vitalsflow-theme", next ? "dark" : "light");
+    setTimeout(
+      () => document.documentElement.classList.remove("theme-transition"),
+      500
+    );
+  }, [isDark]);
 
   return (
-    <div className="min-h-screen text-[var(--text-primary)]">
+    <div className="min-h-dvh text-(--text-primary)">
       <header
-        className="sticky top-0 z-20 backdrop-blur-md flex w-full flex-col items-center"
+        className="sticky top-0 z-20 w-full"
         style={{
-          background: "rgba(255,255,255,0.88)",
-          borderBottom: "1px solid transparent",
-          boxShadow: "0 1px 0 0 var(--border-subtle), 0 2px 12px rgba(5,25,46,0.06)",
+          background: "var(--bg-surface)",
+          borderBottom: "1px solid var(--border-default)",
         }}
       >
-        {/* ── Top bar ── */}
-        <div className="flex w-full max-w-[1280px] items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div>
-            <p
-              className="text-[11px] font-semibold uppercase tracking-[0.18em]"
-              style={{ color: "var(--text-muted)", fontFamily: "var(--font-public-sans)" }}
-            >
-              AI Clinical Triage System
-            </p>
-            <h1
-              className="text-xl font-bold tracking-tight sm:text-2xl"
-              style={{ color: "var(--text-primary)", fontFamily: "var(--font-outfit)" }}
-            >
-              {title}
-            </h1>
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              {subtitle}
-            </p>
+        <div className="mx-auto flex w-full max-w-[2400px] items-center justify-between px-5 py-3 sm:px-8">
+          <div className="flex items-center gap-4">
+            <div className="flex h-10 w-10 items-center justify-center" style={{ background: "var(--accent-blue-dim)" }}>
+              <Stethoscope className="h-5 w-5" style={{ color: "var(--accent-blue)" }} />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold tracking-tight" style={{ fontFamily: "var(--font-outfit)", color: "var(--text-primary)" }}>
+                VitalsFlow
+              </h1>
+              <p className="text-[10px] font-medium tracking-wide" style={{ color: "var(--text-muted)" }}>
+                AI Clinical Triage
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div
-              className="hidden items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium sm:flex"
-              style={{
-                background: "rgba(34,197,94,0.08)",
-                border: "1px solid rgba(34,197,94,0.3)",
-                color: "#15803d",
-              }}
-              aria-label="System live monitoring active"
-            >
-              <Activity className="h-3.5 w-3.5" />
-              Live
-            </div>
-
-            {timeStr && (
-              <span
-                className="hidden tabular-nums rounded-full px-3 py-1 text-xs sm:block"
-                style={{
-                  background: "var(--bg-elevated)",
-                  border: "1px solid var(--border-subtle)",
-                  color: "var(--text-tertiary)",
-                  fontFamily: "var(--font-inter)",
-                  fontVariantNumeric: "tabular-nums",
-                }}
-                aria-label={`Current time: ${timeStr}`}
-              >
-                {timeStr}
-              </span>
-            )}
-
+          <div className="flex items-center gap-3">
             <button
-              type="button"
+              onClick={toggleTheme}
               className="icon-btn press-scale"
-              aria-label="View notifications"
+              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
             >
-              <Bell className="h-4 w-4" aria-hidden="true" />
+              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
 
-            {/* Actions slot (e.g. Pending Approvals button) */}
-            {actions && <div>{actions}</div>}
+            <button className="icon-btn press-scale relative" aria-label="View notifications">
+              <Bell className="h-4 w-4" />
+              <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-critical)" }} />
+            </button>
           </div>
         </div>
 
-        {/* ── Nav strip ── */}
-        <div className="flex w-full max-w-[1280px] items-center gap-2 px-4 pb-3 sm:px-6">
-          <nav aria-label="Primary navigation" className="flex flex-wrap items-center gap-2">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={isActive ? "page" : undefined}
-                  className={cn(
-                    "nav-pill press-scale",
-                    isActive ? "active" : ""
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-                  {item.label}
-                  {isActive && (
-                    <span
-                      className="ml-0.5 h-1.5 w-1.5 rounded-full"
-                      style={{ background: "var(--accent-blue)" }}
-                      aria-hidden="true"
-                    />
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+        <nav className="mx-auto flex max-w-[2400px] gap-3 overflow-x-auto px-5 pt-4 pb-4 sm:px-8">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+            const Icon = item.icon;
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "nav-pill transition-all duration-200 text-xs",
+                  isActive && "active ring-2 ring-offset-1",
+                  isActive && "ring-[var(--accent-blue)]/30"
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
       </header>
 
-      {/* ── Page content ── */}
-      <main id="main-content" className="mx-auto w-full max-w-[1280px] px-4 pb-8 pt-5 sm:px-6">
+      <main className="mx-auto w-full max-w-[2400px] px-5 pb-8 pt-6 sm:px-8">
         {children}
       </main>
     </div>

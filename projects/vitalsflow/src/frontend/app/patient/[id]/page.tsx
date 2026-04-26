@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { AlertCircle, ArrowLeft, Loader2, ChevronRight, User, Clock } from "lucide-react";
+import { AlertCircle, ArrowLeft, Loader2, ChevronRight, User, Clock, Info } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import { ActionCenter } from "@/components/ActionCenter";
-import { ClinicalShell } from "@/components/ClinicalShell";
 import { EvidenceInspector } from "@/components/EvidenceInspector";
 import { RiskBadge } from "@/components/RiskBadge";
 import { TriageScoreCard } from "@/components/TriageScoreCard";
@@ -78,22 +78,25 @@ export default function PatientDetailPage() {
   const titleName = useMemo(() => summary?.name ?? `Patient ${patientId}`, [summary?.name, patientId]);
 
   return (
-    <ClinicalShell
-      title="Patient Triage Detail"
-      subtitle="Evidence-backed risk scoring and clinical decision support"
-      actions={
+    <>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Patient Triage Detail</h1>
+          <p className="page-subtitle">
+            Evidence-backed risk scoring and clinical decision support
+          </p>
+        </div>
         <Link
           href="/"
-          className="btn-primary"
-          style={{ background: "white", color: "var(--text-secondary)", border: "1px solid var(--border-default)", boxShadow: "none" }}
+          className="btn-secondary"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Dashboard
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to Dashboard</span>
         </Link>
-      }
-    >
+      </div>
+
       {/* Breadcrumb (SKILL.md: navigation-context) */}
-      <nav className="mb-8 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider" aria-label="Breadcrumb">
+      <nav className="mb-6 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider" aria-label="Breadcrumb">
         <Link href="/" className="transition-colors hover:text-[var(--accent-blue)]" style={{ color: "var(--text-muted)" }}>
           Dashboard
         </Link>
@@ -102,27 +105,51 @@ export default function PatientDetailPage() {
       </nav>
 
       {error && (
-        <div className="mb-6 flex items-center gap-3 rounded-xl border border-[var(--color-critical-border)] bg-[var(--color-critical-bg)] px-4 py-3 text-sm" style={{ color: "var(--color-critical-text)" }} role="alert">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{error}</span>
+        <div 
+          className={cn(
+            "mb-6 flex items-center gap-3 rounded-xl border px-4 py-3 text-sm stagger-card",
+            error.toLowerCase().includes("not found") 
+              ? "border-[var(--accent-blue)]/30 bg-[var(--accent-blue-dim)] text-[var(--accent-blue)]"
+              : "border-[var(--color-critical-border)] bg-[var(--color-critical-bg)] text-[var(--color-critical-text)]"
+          )}
+          role="alert"
+        >
+          {error.toLowerCase().includes("not found") ? (
+            <Info className="h-4 w-4 shrink-0" />
+          ) : (
+            <AlertCircle className="h-4 w-4 shrink-0" />
+          )}
+          <div className="flex flex-col">
+            <span className="font-bold">
+              {error.toLowerCase().includes("not found") ? "Registry Sync: Local Mode Active" : "System Error"}
+            </span>
+            <span className="opacity-90">{error}</span>
+          </div>
         </div>
       )}
 
       {/* Patient Header Card */}
-      <section className="panel-card p-6 stagger-card">
+      <section className="glass-card p-6 stagger-card">
         <div className="flex flex-wrap items-start justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full" style={{ background: "var(--accent-blue-dim)", border: "2px solid var(--accent-blue)" }}>
-              <User className="h-7 w-7" style={{ color: "var(--accent-blue)" }} />
+          <div className="flex items-center gap-5">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: "var(--accent-blue-dim)", border: "2px solid var(--accent-blue)" }}>
+              <User className="h-8 w-8" style={{ color: "var(--accent-blue)" }} />
             </div>
             <div>
-              <p className="section-kicker">Clinician Review Required</p>
-              <h2 className="text-3xl font-bold tracking-tight text-[var(--text-primary)]" style={{ fontFamily: "var(--font-outfit)" }}>
+              <p className="section-kicker mb-1">Clinician Review Required</p>
+              <h2 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]" style={{ fontFamily: "var(--font-outfit)" }}>
                 {titleName}
               </h2>
-              <p className="mt-1 text-sm font-medium" style={{ color: "var(--text-tertiary)" }}>
-                MRN: <span className="tabular-nums">{patientId}</span> • {summary?.gender} • DOB: <span className="tabular-nums">{summary?.dob}</span>
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-3 text-sm" style={{ color: "var(--text-tertiary)" }}>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="font-semibold" style={{ color: "var(--text-muted)" }}>MRN:</span>
+                  <span className="tabular-nums font-mono">{patientId}</span>
+                </span>
+                <span className="text-[var(--border-subtle)]">•</span>
+                <span className="capitalize">{summary?.gender || "Unknown"}</span>
+                <span className="text-[var(--border-subtle)]">•</span>
+                <span className="tabular-nums">DOB: {summary?.dob || "Unknown"}</span>
+              </div>
             </div>
           </div>
 
@@ -135,18 +162,21 @@ export default function PatientDetailPage() {
                 size="lg"
               />
             ) : (
-              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-default)] bg-[var(--bg-elevated)] px-5 py-2.5 text-sm font-bold text-[var(--text-secondary)]">
+              <div className="inline-flex items-center gap-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-elevated)] px-4 py-2.5 text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>
                 <Clock className="h-4 w-4" />
-                Awaiting Analysis
+                <span>Awaiting Analysis</span>
               </div>
             )}
           </div>
         </div>
 
         <div className="mt-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 p-4">
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
-            Clinical Context (FHIR)
-          </p>
+          <div className="flex items-center gap-2 mb-2">
+            <Info className="h-3.5 w-3.5" style={{ color: "var(--text-muted)" }} />
+            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+              Clinical Context (FHIR)
+            </p>
+          </div>
           <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
             {isLoadingSummary ? (
               <span className="flex items-center gap-2 italic">
@@ -159,7 +189,7 @@ export default function PatientDetailPage() {
       </section>
 
       {/* Vitals Form Section */}
-      <section className="mt-10 stagger-card" style={{ animationDelay: "100ms" }}>
+      <section className="mt-12 stagger-card" style={{ animationDelay: "100ms" }}>
         <VitalsForm
           vitals={vitals}
           onChange={setVitals}
@@ -171,7 +201,7 @@ export default function PatientDetailPage() {
 
       {/* Loading Overlay for Triage */}
       {isTriaging && (
-        <div className="mt-10 flex items-center justify-center gap-3 rounded-xl border border-[var(--accent-blue)]/20 bg-[var(--accent-blue-dim)]/50 p-8 stagger-card" role="status" aria-live="polite">
+        <div className="mt-6 flex items-center justify-center gap-3 border border-[var(--accent-blue)]/20 bg-[var(--accent-blue-dim)]/50 p-6 stagger-card" role="status" aria-live="polite">
           <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--accent-blue)" }} />
           <div className="text-center">
             <p className="font-bold text-[var(--accent-blue)]" style={{ fontFamily: "var(--font-outfit)" }}>AI Analysis in Progress</p>
@@ -182,7 +212,7 @@ export default function PatientDetailPage() {
 
       {/* Results Section */}
       {triageResult && !isTriaging && (
-        <div className="space-y-8 mt-10">
+        <div className="space-y-12 mt-12">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-4 stagger-card" style={{ animationDelay: "200ms" }}>
             <div className="lg:col-span-1 h-full">
               <TriageScoreCard result={triageResult} />
@@ -200,11 +230,11 @@ export default function PatientDetailPage() {
             </div>
           </div>
 
-          <section className="stagger-card mt-10" style={{ animationDelay: "300ms" }}>
+          <section className="stagger-card mt-12" style={{ animationDelay: "300ms" }}>
             <EvidenceInspector result={triageResult} vitals={vitals} />
           </section>
 
-          <section className="stagger-card mt-10" style={{ animationDelay: "400ms" }}>
+          <section className="stagger-card mt-12" style={{ animationDelay: "400ms" }}>
             <VitalsTrend
               currentHR={vitals.heart_rate}
               currentSpO2={vitals.spo2}
@@ -214,6 +244,6 @@ export default function PatientDetailPage() {
           </section>
         </div>
       )}
-    </ClinicalShell>
+    </>
   );
 }

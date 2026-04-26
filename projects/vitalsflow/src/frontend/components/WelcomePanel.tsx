@@ -102,7 +102,7 @@ export function WelcomePanel({ onDismiss, onSearchFocus }: WelcomePanelProps) {
                 {/* Icon circle */}
                 <div
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-                  style={{ background: step.bg, border: `1.5px solid ${step.color}22` }}
+                  style={{ background: step.bg, border: "1.5px solid " + step.color + "22" }}
                   aria-hidden="true"
                 >
                   <Icon className="h-4 w-4" style={{ color: step.color }} />

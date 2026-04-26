@@ -1,127 +1,141 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { CheckCircle2, FileCode2, Info, ShieldAlert } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { Loader2, RefreshCcw, ShieldAlert } from "lucide-react";
 
-import { ClinicalShell } from "@/components/ClinicalShell";
-
-interface ApprovalItem {
-  id: string;
-  patientName: string;
-  mrn: string;
-  headline: string;
-  rationale: string;
-  confidence: string;
-  snippet: string;
-  priority: "High" | "Routine";
-}
-
-const seedItems: ApprovalItem[] = [
-  {
-    id: "a1",
-    patientName: "Doe, Jonathan",
-    mrn: "882910",
-    headline: "Stat Lactate + Troponin Panel",
-    rationale:
-      "Patient presents with acute chest pain and elevated baseline troponin. AI recommends immediate serial Troponin I with broad metabolic panel to rule out NSTEMI.",
-    confidence: "High (94%)",
-    snippet: `{"resourceType":"ServiceRequest","status":"draft","intent":"order","priority":"stat","code":{"coding":[{"system":"http://loinc.org","code":"49563-0","display":"Troponin I"}]}}`,
-    priority: "High",
-  },
-  {
-    id: "a2",
-    patientName: "Smith, Sarah",
-    mrn: "771029",
-    headline: "Medication Renewal: Lisinopril 10mg",
-    rationale:
-      "Current antihypertensive prescription expires in 3 days. Recent vitals show stable BP trend and no contraindication in active medications.",
-    confidence: "Protocol matched",
-    snippet: `{"resourceType":"MedicationRequest","status":"draft","intent":"order","medicationCodeableConcept":{"coding":[{"code":"Lisinopril 10mg"}]},"dispenseRequest":{"expectedSupplyDuration":{"value":90,"unit":"days"}}}`,
-    priority: "Routine",
-  },
-];
+import { getApprovals, type ApprovalItem } from "@/lib/api";
 
 export default function ApprovalsPage() {
-  const [approved, setApproved] = useState<string[]>([]);
+  const [items, setItems] = useState<ApprovalItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const pending = useMemo(() => seedItems.length - approved.length, [approved.length]);
+  const loadApprovals = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await getApprovals(30);
+      setItems(data.items);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load approvals");
+      setItems([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadApprovals();
+  }, []);
+
+  const highPriorityCount = useMemo(
+    () => items.filter((item) => ["stat", "asap", "urgent"].includes(String(item.priority).toLowerCase())).length,
+    [items]
+  );
 
   return (
-    <ClinicalShell
-      title="Action & Approval Queue"
-      subtitle="Review and sign AI-drafted clinical orders before they are posted to FHIR"
-      actions={
-        <div className="inline-flex min-h-11 items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
-          <ShieldAlert className="h-3.5 w-3.5" />
-          {pending} Pending Signatures
+    <>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Action & Approval Queue</h1>
+          <p className="page-subtitle">
+            Live draft/proposal `ServiceRequest` resources from backend + FHIR
+          </p>
         </div>
-      }
-    >
-      <section className="space-y-4">
-        {seedItems.map((item) => {
-          const isApproved = approved.includes(item.id);
-          return (
-            <article
-              key={item.id}
-              className="panel-card p-5 sm:p-6"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="section-kicker">{item.patientName}</p>
-                  <h2 className="mt-1 text-lg font-bold text-[var(--text-primary)]" style={{ fontFamily: "var(--font-outfit)" }}>
-                    {item.headline}
-                  </h2>
-                  <p className="text-sm text-[var(--text-tertiary)]">MRN: {item.mrn} • Priority: {item.priority}</p>
-                </div>
+        <div className="inline-flex min-h-11 items-center gap-2 border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+          <ShieldAlert className="h-3.5 w-3.5" />
+          {items.length} Pending Drafts
+        </div>
+      </div>
 
-                {isApproved ? <span className="status-chip" data-tone="good"><CheckCircle2 className="h-3.5 w-3.5" />Signed</span> : null}
-              </div>
+      <div className="mb-8 glass-card p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="text-sm" style={{ color: "var(--text-secondary)" }}>
+            High priority drafts: <strong style={{ color: "var(--text-primary)" }}>{highPriorityCount}</strong>
+          </div>
+          <button type="button" onClick={() => void loadApprovals()} className="btn-secondary">
+            {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCcw className="h-3.5 w-3.5" />}
+            Refresh
+          </button>
+        </div>
+        {error && (
+          <p className="mt-2 text-sm" style={{ color: "#ef4444" }}>
+            {error}
+          </p>
+        )}
+      </div>
 
-              <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-                <div className="lg:col-span-2 rounded-xl border border-[var(--border-default)] bg-[var(--accent-blue-dim)]/45 p-4">
-                  <div className="mb-2 inline-flex items-center gap-1 rounded-full border border-[var(--accent-blue)]/30 bg-white px-2 py-1 text-[11px] font-semibold text-[var(--accent-blue)]">
-                    <Info className="h-3 w-3" />
-                    Confidence: {item.confidence}
-                  </div>
-                  <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{item.rationale}</p>
-                </div>
-
-                <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-card)] p-4">
-                  <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                    <FileCode2 className="h-3.5 w-3.5" />
-                    FHIR Snippet
-                  </div>
-                  <pre className="overflow-x-auto whitespace-pre-wrap break-all text-[11px] leading-relaxed text-[var(--text-secondary)]">
-                    {item.snippet}
-                  </pre>
-                </div>
-              </div>
-
-              {!isApproved ? (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setApproved((prev) => [...prev, item.id])}
-                    className="btn-primary rounded-full"
-                    style={{
-                      background: "linear-gradient(135deg, #0f8b8d, #0f766e)",
-                      boxShadow: "0 2px 8px rgba(15,139,141,0.24)",
-                    }}
+      <section className="glass-card mt-6 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left" role="grid" aria-label="Approval queue">
+            <thead>
+              <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                {["Action", "Patient ID", "Priority", "Status", "Authored", "Review"].map((h) => (
+                  <th
+                    key={h}
+                    className="px-5 py-3 text-[11px] font-semibold uppercase tracking-widest"
+                    style={{ color: "var(--text-muted)", background: "var(--bg-elevated)" }}
                   >
-                    Review & Sign
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-secondary rounded-full"
-                  >
-                    Modify
-                  </button>
-                </div>
-              ) : null}
-            </article>
-          );
-        })}
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-6 text-sm" style={{ color: "var(--text-secondary)" }}>
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading approvals...
+                    </span>
+                  </td>
+                </tr>
+              )}
+
+              {!isLoading && items.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-6 text-sm" style={{ color: "var(--text-secondary)" }}>
+                    No live approval drafts found.
+                  </td>
+                </tr>
+              )}
+
+              {!isLoading &&
+                items.map((item) => (
+                  <tr key={item.id} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                    <td className="px-6 py-5 text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+                      <div>{item.headline}</div>
+                      {item.note && (
+                        <div className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+                          {item.note}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-5 text-sm font-mono" style={{ color: "var(--text-secondary)" }}>
+                      {item.patient_id || "Unknown"}
+                    </td>
+                    <td className="px-6 py-5 text-sm" style={{ color: "var(--text-secondary)" }}>
+                      {item.priority || "routine"}
+                    </td>
+                    <td className="px-6 py-5 text-sm" style={{ color: "var(--text-secondary)" }}>
+                      {item.status}
+                    </td>
+                    <td className="px-6 py-5 text-sm" style={{ color: "var(--text-secondary)" }}>
+                      {item.authored_on ? new Date(item.authored_on).toLocaleString() : "—"}
+                    </td>
+                    <td className="px-6 py-5">
+                      <Link href={item.patient_id ? `/patient/${item.patient_id}` : "/"} className="btn-secondary rounded-full text-xs">
+                        Open
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
       </section>
-    </ClinicalShell>
+    </>
   );
 }

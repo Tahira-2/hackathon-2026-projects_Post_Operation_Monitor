@@ -9,27 +9,24 @@ interface TriageScoreCardProps {
 type Tier = "critical" | "urgent" | "routine";
 
 // Uses semantic CSS tokens — no raw hex
-const tierMeta: Record<Tier, { color: string; bg: string; label: string; stroke: string; glowClass: string }> = {
+const tierMeta: Record<Tier, { color: string; bg: string; label: string; stroke: string }> = {
   critical: {
     color: "var(--color-critical)",
     bg: "var(--color-critical-bg)",
     label: "CRITICAL",
     stroke: "var(--color-critical)",
-    glowClass: "glow-critical",
   },
   urgent: {
     color: "var(--color-urgent)",
     bg: "var(--color-urgent-bg)",
     label: "URGENT",
     stroke: "var(--color-urgent)",
-    glowClass: "glow-urgent",
   },
   routine: {
     color: "var(--color-routine)",
     bg: "var(--color-routine-bg)",
     label: "ROUTINE",
     stroke: "var(--color-routine)",
-    glowClass: "glow-routine",
   },
 };
 
@@ -143,7 +140,7 @@ function ScoreRing({
       </svg>
 
       <p
-        className="text-[10px] font-semibold uppercase tracking-wider text-center mt-2"
+        className="mt-2 text-center text-xs font-semibold uppercase tracking-wider"
         style={{ color: "var(--text-secondary)" }}
       >
         {sublabel}
@@ -161,10 +158,10 @@ export function TriageScoreCard({ result }: TriageScoreCardProps) {
 
   return (
     <div
-      className={`glass-card flex flex-col items-center gap-5 p-5 h-full ${meta.glowClass}`}
+      className="glass-card flex h-full flex-col items-center gap-5 p-5"
       style={{
-        background: `linear-gradient(160deg, ${meta.bg}, var(--bg-surface))`,
-        borderColor: `${hex.color}33`,
+        background: meta.bg,
+        borderColor: hex.color + "33",
       }}
       // Announce the triage tier to screen readers as a status region
       aria-live="polite"
@@ -172,11 +169,11 @@ export function TriageScoreCard({ result }: TriageScoreCardProps) {
     >
       {/* Tier badge */}
       <div
-        className="w-full text-center rounded-lg py-2 font-bold text-sm tracking-widest uppercase"
+        className="w-full rounded-lg py-2 text-center text-sm font-bold uppercase tracking-widest"
         style={{
           fontFamily: "var(--font-outfit)",
-          background: `${hex.color}18`,
-          border: `1px solid ${hex.color}40`,
+          background: hex.color + "18",
+          border: "1px solid " + hex.color + "40",
           color: hex.color,
         }}
         aria-hidden="true"
@@ -211,14 +208,14 @@ export function TriageScoreCard({ result }: TriageScoreCardProps) {
 
       {/* Threshold guide — data table accessible alternative (SKILL.md: data-table) */}
       <div
-        className="w-full rounded-lg p-3 text-[10px]"
+        className="w-full rounded-lg p-3 text-xs"
         style={{
           background: "var(--bg-elevated)",
           border: "1px solid var(--border-subtle)",
         }}
       >
         <p
-          className="font-semibold mb-2 text-[9px] uppercase tracking-widest"
+          className="mb-2 text-[11px] font-semibold uppercase tracking-widest"
           style={{ color: "var(--text-muted)" }}
         >
           NEWS2 Thresholds

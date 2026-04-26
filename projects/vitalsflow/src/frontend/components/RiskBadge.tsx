@@ -68,7 +68,7 @@ export function RiskBadge({ tier, score, news2Score, size = "sm" }: RiskBadgePro
       )}
       style={{
         background: config.bg,
-        border: `1px solid ${config.border}`,
+        border: "1px solid " + config.border,
         color: config.color,
         boxShadow: config.glow,
         fontFamily: "var(--font-inter)",

@@ -77,6 +77,28 @@ export interface ApproveActionResult {
   created_fhir_resource: ServiceRequestCreated;
 }
 
+export interface ApprovalItem {
+  id: string;
+  patient_id: string;
+  headline: string;
+  status: string;
+  intent: string;
+  priority: string;
+  authored_on: string;
+  note: string;
+}
+
+export interface ApprovalsResponse {
+  items: ApprovalItem[];
+  count: number;
+}
+
+export interface SystemHealthResponse {
+  backend: { status: string };
+  fhir: { status: string; latency_ms: number; error: string };
+  llm: { gemini_ready: boolean; groq_ready: boolean; status: string };
+}
+
 export interface PatientSummary {
   patient_id: string;
   name: string;
@@ -106,7 +128,9 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
   console.debug("[VitalsFlow API] response", { method, url, status: res.status, ok: res.ok });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: "Unknown error" }));
-    console.error("[VitalsFlow API] error response", { method, url, error: err });
+    if (res.status !== 404) {
+      console.error("[VitalsFlow API] error response", { method, url, error: err });
+    }
     throw new Error(err.detail || `HTTP ${res.status}`);
   }
   return res.json() as Promise<T>;
@@ -177,4 +201,18 @@ export async function healthCheck(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Fetch recent draft/proposal ServiceRequests for the approvals queue.
+ */
+export async function getApprovals(count = 20): Promise<ApprovalsResponse> {
+  return apiFetch<ApprovalsResponse>(`${BASE_URL}/triage/approvals?count=${count}`);
+}
+
+/**
+ * Fetch backend, FHIR, and LLM readiness status for system-health UI.
+ */
+export async function getSystemHealth(): Promise<SystemHealthResponse> {
+  return apiFetch<SystemHealthResponse>(`${BASE_URL}/system/health`);
 }
