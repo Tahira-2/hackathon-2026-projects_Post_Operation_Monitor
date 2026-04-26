@@ -3,6 +3,12 @@ Continuous remote monitoring for high-risk surgical recovery — software demo.
 
 This repository contains the hackathon software pipeline described in [PROPOSAL.md](PROPOSAL.md). The wearable hardware design lives in the proposal document; this codebase implements every layer above the BLE radio.
 
+## Team Credit
+* **MD Siam Ahmed** – Lead & System Architect
+    * *Computer Science, Texas State University*
+* **Tahira Juhair Boshra** - Developer
+    * *Electrical Engineering, Texas State University*
+
 ---
 
 ## The Problem
@@ -15,7 +21,40 @@ Post-operative recovery is currently a "black box" once a patient leaves the hos
 GuardianPost-Op introduces a **Prescription-Driven Monitoring Model**. Instead of generic alerts, a clinician defines a "safe envelope" for each specific patient. An AI engine parses these instructions and continuously monitors the patient's data against that unique clinical context. If the data drifts, the system triggers a **Dual-Alert Escalation**—notifying both the patient via the wearable and the clinician via a high-priority dashboard.
 
 ---
+## Solution Description
 
+An integrated platform that connects a patient’s wearable device (via CareDevi) to a specialized clinical dashboard. It uses "Clinical Guardrails" to analyze data and trigger a dual-alert system:
+Patient Alert: Encourages self-care (e.g., "You are dehydrated, drink water").
+Clinician Alert: Escalates critical trends (e.g., "Patient’s heart rate has increased 20% over baseline while activity is 0").
+
+
+---
+## Tech Stack
+
+```
+Backend: Python
+FrontEnd: HTML, CSS, JavaScript
+
+APIs used
+API: Anthropic Claude API (anthropic SDK)
+Where: src/prescription_parser.py
+Description: Reads the surgeon's free-text note (e.g., "keep HR under 110, watch for SpO₂ below 92") and returns a structured CSV
+envelope of warn/critical   thresholds per vital, via a tool-use schema. Falls back to a deterministic keyword parser
+if ANTHROPIC_API_KEY is unset.
+
+API: Mock ID-verification provider
+Where: server/id_verification.py
+Description: Stand-in for a real KYC vendor (Stripe Identity / Persona / Veriff). Doctors must complete it before they can add
+patients. The interface is a small Verifier class — swap the mock for a real provider by implementing start_session / fetch_result.
+
+API: Internal REST API (/api/...)
+Where: server/app.py
+Description: The PWA's only backend. JSON over HTTP, bearer-token auth (PBKDF2 password hashing, opaque session tokens).
+
+Note: No external mail, SMS, or cloud-storage APIs are wired up yet — summary delivery is in-app only. Email/SMS would
+slot in at server/summary.py inside deliver_to_consenting_doctors.
+```
+---
 ## Architecture
 
 ```text
@@ -89,6 +128,7 @@ Each non-normal cycle emits a **dual-alert payload**:
 - **push payload** — what the mobile gateway forwards to the clinician dashboard, with `bypass_dnd: true` on critical so it cuts through Do Not Disturb (the "emergency-broadcast-grade" channel from the proposal).
 
 The full demo runs in well under a second on a laptop — the proposal calls for real-time 30-minute cadence, but the demo replays the whole 24 hours back-to-back so you can see the entire story arc in one go.
+You can view the [demo](https://github.com/Tahira-2/hackathon-2026-projects_Post_Operation_Monitor/tree/main/demo)
 
 ---
 
@@ -149,6 +189,9 @@ The gateway PWA can be published from this GitHub repo straight to [Render.com](
 4. When deploy completes, open the public URL Render shows you, then click **Wipe DB & re-seed demo data** on the landing page to seed the demo doctor + patient.
 
 Subsequent `git push origin main` triggers an auto-redeploy.
+The Website is live here: [Click](https://guardian-postop.onrender.com/#/)
+
+---
 
 ### Free-tier caveats
 * The service sleeps after ~15 min of inactivity and takes ~30 s to wake on the next request.
@@ -182,8 +225,3 @@ If you ever want to fall back to SQLite (e.g. for a quick local change), just un
 
 ---
 
-## Team Credit
-* **MD Siam Ahmed** – Lead & System Architect
-    * *Computer Science, Texas State University*
-* **Tahira Juhair Boshra** - Developer
-    * *Electrical Engineering, Texas State University*
