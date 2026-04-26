@@ -80,6 +80,13 @@ The LLM identifies the required medical specialization, such as cardiologist, ne
 - Chunk size: 500 characters with 50 character overlap
 - Models used: GPT-4o-mini for symptom parsing and question generation, GPT-4o for final synthesis, and `text-embedding-3-small` for embeddings
 
+### Model Choice Rationale
+
+- GPT-4o-mini is used for symptom parsing and question generation to keep routine-turn latency and inference cost lower.
+- GPT-4o is used for final synthesis because the final response combines symptom context, RAG evidence, and fitness signals where response quality matters most.
+- text-embedding-3-small is used for retrieval to maintain good semantic search quality while keeping embedding cost manageable.
+- ChromaDB is used for fast local vector retrieval and easier iteration during development and demos.
+
 ### API
 
 The FastAPI server exposes the main chat endpoint, session history, session clearing, and a list of active sessions. Responses include the wellness message, confidence score, seriousness flag, doctor need flag, recommended specialization, and the number of questions asked.
@@ -105,6 +112,22 @@ The FastAPI server exposes the main chat endpoint, session history, session clea
 The AI should be tested across different symptom descriptions, ages, and user styles so that the output is not overly biased toward one kind of user input.
 
 The system should also handle uncertainty explicitly. When the model does not have enough confidence, it should ask another question or recommend a human review instead of guessing.
+
+### Bias Considerations
+
+- Language-expression bias: users describe symptoms differently by region, age, and education level. Mitigation is to normalize intent using follow-up questions instead of relying on one-shot wording.
+- Demographic bias risk: symptom interpretation may vary across populations. Mitigation is to keep outputs conservative and escalate to professional care for uncertainty or severity.
+- Data-source bias: public wellness sources may underrepresent certain groups or conditions. Mitigation is to treat retrieval content as supportive context, not authoritative diagnosis.
+- Automation bias: users may over-trust confident phrasing. Mitigation is mandatory disclaimer language and explicit non-diagnostic framing in every response.
+
+## Known Failure Cases and Handling
+
+- Ambiguous symptom input: the model may miss key details. Handling: confidence scoring plus one-question follow-up loop before synthesis.
+- Underreported severity: users may omit urgency indicators. Handling: critical keyword fast-track and conservative escalation behavior.
+- Retrieval mismatch: vector search can return partially relevant context. Handling: synthesis stage must combine retrieved text with symptom context and avoid hard claims.
+- Fitness data unavailable: permission denied or no wearable data. Handling: continue with symptom-only path and avoid assuming missing biometrics.
+- Session context drift in long chats: earlier details may become stale. Handling: maintain structured session history and re-ask clarifying questions when confidence drops.
+- False reassurance risk: low-confidence outputs could be interpreted as safe. Handling: uncertainty language, no diagnosis, and recommendation to seek professional care when warranted.
 
 ## Human Oversight
 
