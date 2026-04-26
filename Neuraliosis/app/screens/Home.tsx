@@ -36,9 +36,7 @@ export default function HomeView() {
   const { data: sleepData, fetchHealthData: fetchSleep } = useHealthConnect();
 
   const fetchAllHealthData = useCallback(async () => {
-    if (pollInFlightRef.current) {
-      return;
-    }
+    if (pollInFlightRef.current) return;
 
     pollInFlightRef.current = true;
 
@@ -70,9 +68,7 @@ export default function HomeView() {
         void fetchAllHealthData();
       }, HEALTH_POLL_INTERVAL_MS);
 
-      return () => {
-        clearInterval(intervalId);
-      };
+      return () => clearInterval(intervalId);
     }, [fetchAllHealthData])
   );
 
@@ -102,18 +98,51 @@ export default function HomeView() {
   };
 
   const latestHeartRate = useMemo(() => {
-    const samples = heartRateData?.[0]?.samples ?? [];
-    return samples?.[0]?.beatsPerMinute ?? 78;
+    if (!heartRateData?.length) return 78;
+
+    const allSamples = heartRateData.flatMap((r: any) => r.samples || []);
+    if (!allSamples.length) return 78;
+
+    const sorted = allSamples.sort(
+      (a: any, b: any) => new Date(b.time).getTime() - new Date(a.time).getTime()
+    );
+
+    return sorted[0].beatsPerMinute;
+  }, [heartRateData]);
+
+  const lastUpdatedTime = useMemo(() => {
+    if (!heartRateData?.length) return '';
+
+    const allSamples = heartRateData.flatMap((r: any) => r.samples || []);
+    if (!allSamples.length) return '';
+
+    const sorted = allSamples.sort(
+      (a: any, b: any) => new Date(b.time).getTime() - new Date(a.time).getTime()
+    );
+
+    const latestTime = new Date(sorted[0].time);
+
+    return latestTime.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }, [heartRateData]);
 
   const heartRateChart = useMemo(() => {
-    const samples = heartRateData?.[0]?.samples ?? [];
-
-    if (!samples.length) {
+    if (!heartRateData?.length) {
       return [{ value: 60 }, { value: 70 }, { value: 75 }, { value: 80 }, { value: 78 }];
     }
 
-    return samples.slice(0, 14).map((s: any) => ({
+    const allSamples = heartRateData.flatMap((r: any) => r.samples || []);
+    if (!allSamples.length) return [];
+
+    const sorted = allSamples.sort(
+      (a: any, b: any) => new Date(a.time).getTime() - new Date(b.time).getTime()
+    );
+
+    const lastSamples = sorted.slice(-14);
+
+    return lastSamples.map((s: any) => ({
       value: s.beatsPerMinute,
     }));
   }, [heartRateData]);
@@ -144,9 +173,7 @@ export default function HomeView() {
         <View className="mb-8 flex-row items-center justify-between">
           <View className="flex-row items-center gap-3">
             <Image
-              source={{
-                uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-              }}
+              source={{ uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150' }}
               className="h-12 w-12 rounded-full"
             />
             <View>
@@ -154,13 +181,11 @@ export default function HomeView() {
               <Text className="font-mono text-xs uppercase text-gray-500">Thu, 08 July</Text>
             </View>
           </View>
-
           <TouchableOpacity className="rounded-2xl border border-gray-100 bg-white p-3" />
         </View>
 
         <View className="mb-8">
           <Text className="mb-4 text-lg font-bold text-gray-900">Upcoming Appointments</Text>
-
           <View className="gap-4">
             {UPCOMING_APPOINTMENTS.map((appt) => (
               <AppCard key={appt.id} className="flex-row items-center justify-between p-5">
@@ -174,9 +199,7 @@ export default function HomeView() {
                 </View>
 
                 <AppButton
-                  onPress={() => {
-                    nav.navigate('AppointmentDetails');
-                  }}
+                  onPress={() => nav.navigate('AppointmentDetails')}
                   label="View Details"
                   variant="secondary"
                   className="px-4 py-2"
@@ -191,11 +214,7 @@ export default function HomeView() {
           <Text className="mb-4 text-lg font-bold text-gray-900">Health Vitals & Activity</Text>
 
           <View className="flex-row gap-4">
-            <AppCard
-              className="flex-1"
-              onPress={() => {
-                nav.navigate('HeartRate');
-              }}>
+            <AppCard className="flex-1" onPress={() => nav.navigate('HeartRate')}>
               <View className="pl-5 pr-5 pt-5">
                 <View className="mb-4 flex-row items-center justify-between">
                   <Text className="text-xs font-bold uppercase">Health Vitals</Text>
@@ -204,9 +223,17 @@ export default function HomeView() {
                   </View>
                 </View>
 
-                <View className="mt-auto flex-row items-end">
-                  <Text className="text-4xl font-extrabold">{latestHeartRate}</Text>
-                  <Text className="text-md ml-1 text-gray-500">bpm</Text>
+                <View className="mt-auto">
+                  <View className="flex-row items-end">
+                    <Text className="text-4xl font-extrabold">{latestHeartRate}</Text>
+                    <Text className="text-md ml-1 text-gray-500">bpm</Text>
+                  </View>
+
+                  {!!lastUpdatedTime && (
+                    <Text className="mt-1 text-[10px] text-gray-400">
+                      Last updated: {lastUpdatedTime}
+                    </Text>
+                  )}
                 </View>
               </View>
 
@@ -238,11 +265,7 @@ export default function HomeView() {
             </AppCard>
 
             <View className="flex-1 gap-4">
-              <AppCard
-                className="flex-1 p-4"
-                onPress={() => {
-                  nav.navigate('sleep');
-                }}>
+              <AppCard className="flex-1 p-4" onPress={() => nav.navigate('sleep')}>
                 <View className="flex-row justify-between">
                   <View className="flex-1">
                     <Text className="text-[10px] font-bold uppercase">Sleep</Text>
@@ -257,11 +280,7 @@ export default function HomeView() {
                 </View>
               </AppCard>
 
-              <AppCard
-                className="flex-1 p-4"
-                onPress={() => {
-                  nav.navigate('Steps');
-                }}>
+              <AppCard className="flex-1 p-4" onPress={() => nav.navigate('Steps')}>
                 <View className="flex-row justify-between">
                   <View>
                     <Text className="text-[10px] font-bold uppercase">Daily Steps</Text>
@@ -278,22 +297,12 @@ export default function HomeView() {
         </View>
 
         <View className="flex-row gap-4">
-          <AppCard
-            bordered={false}
-            className="flex-1 p-4"
-            onPress={() => {
-              nav.navigate('Steps');
-            }}>
+          <AppCard bordered={false} className="flex-1 p-4">
             <Text className="text-[10px] font-bold uppercase">Calories Burned</Text>
             <Text className="mt-1 text-2xl font-extrabold text-blue-400">{calories} kcal</Text>
           </AppCard>
 
-          <AppCard
-            bordered={false}
-            className="flex-1 p-4"
-            onPress={() => {
-              nav.navigate('sleep');
-            }}>
+          <AppCard bordered={false} className="flex-1 p-4">
             <Text className="text-[10px] font-bold uppercase">Stress Level</Text>
             <Text className="mt-1 text-2xl font-extrabold">{stress}/100</Text>
 
@@ -304,13 +313,12 @@ export default function HomeView() {
         </View>
 
         <TouchableOpacity
-          onPress={() => {
-            nav.navigate('chat');
-          }}
+          onPress={() => nav.navigate('chat')}
           className="mt-6 rounded-3xl bg-red-400 p-6">
           <Text className="mb-1 text-xl font-bold text-white">Not Feeling Well?</Text>
           <Text className="text-sm text-white/80">Find a specialist now</Text>
         </TouchableOpacity>
+
         <View className="h-32 w-full" />
       </ScrollView>
     </SafeAreaView>

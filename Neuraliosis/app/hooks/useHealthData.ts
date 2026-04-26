@@ -151,7 +151,6 @@ export function useHealthConnect() {
       setError(null);
 
       const accessType = options.accessType ?? 'read';
-      console.log(accessType, options.recordType);
       await ensurePermission(accessType, options.recordType);
 
       const endTime = new Date();
@@ -168,11 +167,9 @@ export function useHealthConnect() {
           timeRangeFilter: options.timeRangeFilter ?? defaultFilter,
         })
       );
-      console.log('RAW RESULT:', JSON.stringify(result, null, 2));
 
       const records = result?.records ?? [];
       setData(records);
-      console.log(`[HealthConnect] ${options.recordType} records:`, records);
 
       return records;
     } catch (err: unknown) {
