@@ -229,53 +229,129 @@ def get_fallback_response(error_message):
         "disclaimer": "This is not a substitute for clinical judgment"
     }
 
+# if __name__ == "__main__":
+#     # 1. Mock Payload (This mimics the output of your preprocessing.py)
+#     test_payload = {
+#         "patient_age": 28,
+#         "known_conditions": "none",
+#         "known_allergies": "penicillin",
+#         "negations": ["fever", "coughing"],
+#         "raw_symptoms": "I have cold and cough",
+#         "extracted_symptoms": ["chest pain", "racing heart"]
+#     }
+
+#     # 2. Mock Context (This mimics the output of your rag.py)
+#     # In the real app, these 'docs' would be chunks from MedlinePlus or CDC
+#     test_context = {
+#         "docs": [
+#             "Chest pain can be a sign of many issues. Sharp pain that worsens with breathing might be pleurisy. However, sudden chest pain with a fast heart rate (tachycardia) can indicate a serious cardiac event or pulmonary embolism.",
+#             "Tachycardia is a heart rate over 100 beats per minute. When combined with chest discomfort, immediate medical evaluation is often required."
+#         ],
+#         "sources": [
+#             {"source": "MedlinePlus - Chest Pain"},
+#             {"source": "CDC - Heart Health"}
+#         ]
+#     }
+
+#     print("=" * 60)
+#     print(f"Testing {MODEL_NAME} Inference...")
+#     print(f"Input Symptoms: {test_payload['raw_symptoms']}")
+#     print("=" * 60)
+
+#     try:
+#         # Run the actual inference
+#         result = run_inference(test_payload, test_context)
+
+#         # Print the structured results
+#         print("\n--- AI ANALYSIS RESULTS ---")
+#         print(f"Risk Tier: {result['risk_tier'].upper()}")
+#         print(f"Confidence: {result['confidence_score']}")
+#         print(f"Top Conditions:")
+#         for cond in result['top_conditions']:
+#             print(f" - {cond['name']} ({cond['probability']}%)")
+        
+#         print(f"\nSummary: {result['summary']}")
+#         print(f"Remedies: {', '.join(result['remedies']) if result['remedies'] else 'None'}")
+#         print(f"Sources: {', '.join(result['sources'])}")
+#         print(f"\nDisclaimer: {result['disclaimer']}")
+
+#     except Exception as e:
+#         print(f"Test Failed! Error: {e}")
+    
+#     print("=" * 60)
+
 if __name__ == "__main__":
-    # 1. Mock Payload (This mimics the output of your preprocessing.py)
+    import sys
+    from pathlib import Path
+
+    # Add the parent directory of 'core' to the search path
+    root_dir = str(Path(__file__).parent.parent)
+    if root_dir not in sys.path:
+        sys.path.append(root_dir)
+    
+    # Import the real RAG function — this generates context from ChromaDB
+    # instead of using hardcoded mock context
+    from core.rag import get_rag_context
+
+    # 1. Mock Payload — mimics output of preprocessing.py
     test_payload = {
         "patient_age": 28,
         "known_conditions": "none",
         "known_allergies": "penicillin",
         "negations": ["fever", "coughing"],
-        "raw_symptoms": "I have cold and cough",
+        "raw_symptoms": "I have chest pain and my heart is racing",
         "extracted_symptoms": ["chest pain", "racing heart"]
     }
 
-    # 2. Mock Context (This mimics the output of your rag.py)
-    # In the real app, these 'docs' would be chunks from MedlinePlus or CDC
-    test_context = {
-        "docs": [
-            "Chest pain can be a sign of many issues. Sharp pain that worsens with breathing might be pleurisy. However, sudden chest pain with a fast heart rate (tachycardia) can indicate a serious cardiac event or pulmonary embolism.",
-            "Tachycardia is a heart rate over 100 beats per minute. When combined with chest discomfort, immediate medical evaluation is often required."
-        ],
-        "sources": [
-            {"source": "MedlinePlus - Chest Pain"},
-            {"source": "CDC - Heart Health"}
-        ]
-    }
-
     print("=" * 60)
-    print(f"Testing {MODEL_NAME} Inference...")
+    print(f"Testing {MODEL_NAME} Inference with REAL RAG context...")
     print(f"Input Symptoms: {test_payload['raw_symptoms']}")
     print("=" * 60)
 
-    try:
-        # Run the actual inference
-        result = run_inference(test_payload, test_context)
+    # 2. Generate REAL context from ChromaDB using the symptom text
+    # This calls get_rag_context() which:
+    # - embeds the symptom text using the embedding model
+    # - searches ChromaDB for the most relevant medical chunks
+    # - returns top 5 matching document chunks + their sources
+    print("\n[Step 1] Fetching RAG context from ChromaDB...")
+    real_context = get_rag_context(test_payload["raw_symptoms"], top_k=5)
 
-        # Print the structured results
+    # 3. Show what RAG actually retrieved so we can verify it's relevant
+    print(f"\n[Step 2] RAG retrieved {len(real_context['docs'])} chunks:")
+    print("-" * 40)
+    for i, (doc, src) in enumerate(zip(real_context["docs"], real_context["sources"]), 1):
+        print(f"  Chunk {i}: [{src['source']}] (similarity: {src.get('similarity', 'N/A')})")
+        # Print first 150 chars of each chunk so we can verify relevance
+        print(f"  Preview: {doc[:150]}...")
+        print()
+
+    # 4. Check if RAG returned anything — warn if empty
+    if not real_context["docs"]:
+        print("WARNING: RAG returned no documents!")
+        print("Make sure you ran: python rag_data/ingest.py first")
+        print("Continuing with empty context — LLM will likely give low confidence")
+
+    # 5. Now run inference with the REAL context
+    print("[Step 3] Running LLM inference with real RAG context...")
+    print("-" * 40)
+
+    try:
+        result = run_inference(test_payload, real_context)
+
+        # 6. Print results
         print("\n--- AI ANALYSIS RESULTS ---")
-        print(f"Risk Tier: {result['risk_tier'].upper()}")
-        print(f"Confidence: {result['confidence_score']}")
+        print(f"Risk Tier:   {result['risk_tier'].upper()}")
+        print(f"Confidence:  {result['confidence_score']}")
         print(f"Top Conditions:")
-        for cond in result['top_conditions']:
-            print(f" - {cond['name']} ({cond['probability']}%)")
-        
-        print(f"\nSummary: {result['summary']}")
+        for cond in result["top_conditions"]:
+            print(f"  - {cond['name']} ({cond['probability']}%)")
+        print(f"\nSummary:  {result['summary']}")
+        print(f"Warnings: {result['warnings']}")
         print(f"Remedies: {', '.join(result['remedies']) if result['remedies'] else 'None'}")
-        print(f"Sources: {', '.join(result['sources'])}")
+        print(f"Sources:  {', '.join(result['sources'])}")
         print(f"\nDisclaimer: {result['disclaimer']}")
 
     except Exception as e:
         print(f"Test Failed! Error: {e}")
-    
+
     print("=" * 60)
