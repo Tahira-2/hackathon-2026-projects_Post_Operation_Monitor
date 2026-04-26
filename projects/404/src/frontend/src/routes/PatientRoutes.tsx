@@ -10,6 +10,7 @@ import { Signup } from "@/pages/auth/Signup";
 import { Profile } from "@/pages/shared/Profile";
 import { VideoConsultationPage } from "@/pages/shared/VideoConsultation";
 import { Appointments } from "@/pages/patient/Appointments";
+import { CarePlan } from "@/pages/patient/CarePlan";
 
 export function PatientRoutes() {
   return (
@@ -30,6 +31,7 @@ export function PatientRoutes() {
           <Route path="/chat" element={<Chat />} />
           <Route path="/consultants" element={<Consultants />} />
           <Route path="/medicines" element={<Medicines />} />
+          <Route path="/care-plan" element={<CarePlan />} />
           <Route path="/appointments" element={<Appointments />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="/patient" replace />} />

@@ -13,7 +13,8 @@ import {
   Clock, 
   MessageSquare, 
   Activity,
-  LogOut
+  LogOut,
+  ClipboardList
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useLogoutMutation } from "@/apis/auth"
@@ -69,6 +70,7 @@ export function Sidebar({ role }: SidebarProps) {
       { name: "Appointments", href: "/patient/appointments", icon: CalendarHeart },
       { name: "Messages", href: "/patient/chat", icon: MessageSquare },
       { name: "Medicines", href: "/patient/medicines", icon: FileStack },
+      { name: "Care Plan", href: "/patient/care-plan", icon: ClipboardList },
       { name: "Profile", href: "/patient/profile", icon: Settings },
 
     ]

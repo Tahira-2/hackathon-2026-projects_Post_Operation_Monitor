@@ -74,33 +74,20 @@ export function CallEndedScreen({
             ) : (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
                 <div className="space-y-1">
-                  <p className="text-xs font-bold text-emerald-500/80 uppercase">Clinical Summary</p>
-                  <p className="text-slate-300 text-sm leading-relaxed">
-                    {summary?.summary || "Analyzing the conversation for key takeaways..."}
+                  <p className="text-xs font-bold text-emerald-500/80 uppercase">Follow-up Instructions</p>
+                  <p className="text-slate-300 text-sm leading-relaxed bg-slate-800/30 p-3 rounded-xl border border-slate-700/50">
+                    {summary?.followUp || summary?.summary || "No specific instructions detected."}
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-bold text-cyan-500 uppercase flex items-center gap-1">
-                      <Activity className="w-3 h-3" /> Diagnoses
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {summary?.diagnoses?.map((d, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[11px] font-medium">
-                          {d}
-                        </span>
-                      )) || <span className="text-slate-600 text-[11px]">None detected</span>}
-                    </div>
-                  </div>
-
+                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
                     <p className="text-[10px] font-bold text-amber-500 uppercase flex items-center gap-1">
-                      <Pill className="w-3 h-3" /> Medications
+                      <Pill className="w-3 h-3" /> Detected Medications
                     </p>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-2">
                       {summary?.medications?.map((m, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-medium">
+                        <span key={i} className="px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold">
                           {m}
                         </span>
                       )) || <span className="text-slate-600 text-[11px]">None detected</span>}

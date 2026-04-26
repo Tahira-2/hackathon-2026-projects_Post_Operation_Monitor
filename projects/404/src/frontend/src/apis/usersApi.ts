@@ -45,6 +45,14 @@ export const usersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["User"],
     }),
+    getMedications: builder.query<any[], string>({
+      query: (patientId) => `/users/patient/${patientId}/medications`,
+      providesTags: ["Medication"],
+    }),
+    getCarePlans: builder.query<any[], string>({
+      query: (patientId) => `/users/patient/${patientId}/care-plans`,
+      providesTags: ["CarePlan"],
+    }),
   }),
 });
 
@@ -55,4 +63,6 @@ export const {
   useCreateUserMutation,
   useUpdateUserMutation,
   useDeleteUserMutation,
+  useGetMedicationsQuery,
+  useGetCarePlansQuery,
 } = usersApi;

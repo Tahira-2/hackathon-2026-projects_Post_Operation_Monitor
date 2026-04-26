@@ -24,6 +24,15 @@ export class TranscriptController {
     return this.transcriptService.saveChunk(callSessionId, dto.speaker, dto.audioBase64);
   }
 
+  /** TEST ONLY: Manually add text to transcript (no STT needed) */
+  @Post(':callSessionId/test-text')
+  addTestText(
+    @Param('callSessionId') callSessionId: string,
+    @Body() body: { speaker: string; content: string },
+  ) {
+    return this.transcriptService.saveTranscriptChunk(callSessionId, body.speaker, body.content);
+  }
+
   /** Get all transcript chunks for a session */
   @Get(':callSessionId')
   getTranscript(@Param('callSessionId') callSessionId: string) {

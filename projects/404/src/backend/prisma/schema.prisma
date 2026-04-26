@@ -149,6 +149,8 @@ model Patient {
 
   user         User          @relation(fields: [userId], references: [id])
   appointments Appointment[]
+  medications  PatientMedication[]
+  carePlans    CarePlan[]
 
   @@map("patients")
   @@schema("users")
@@ -272,6 +274,39 @@ model ConsultationSummary {
 
   @@map("consultation_summaries")
   @@schema("communication")
+}
+
+model PatientMedication {
+  id        String   @id @default(uuid())
+  patientId String
+  name      String
+  dosage    String?
+  frequency String?
+  startDate DateTime @default(now())
+  endDate   DateTime?
+  isActive  Boolean  @default(true)
+  notes     String?
+  
+  patient   Patient  @relation(fields: [patientId], references: [id])
+
+  @@index([patientId])
+  @@map("patient_medications")
+  @@schema("users")
+}
+
+model CarePlan {
+  id        String   @id @default(uuid())
+  patientId String
+  title     String
+  instructions String
+  followUpDate DateTime?
+  createdAt DateTime @default(now())
+  
+  patient   Patient  @relation(fields: [patientId], references: [id])
+
+  @@index([patientId])
+  @@map("care_plans")
+  @@schema("users")
 }
 
 

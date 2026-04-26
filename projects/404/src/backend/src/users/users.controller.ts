@@ -90,4 +90,14 @@ export class UsersController {
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }
+
+  @Get('patient/:patientId/medications')
+  getMedications(@Param('patientId') patientId: string) {
+    return this.usersService.getMedications(patientId);
+  }
+
+  @Get('patient/:patientId/care-plans')
+  getCarePlans(@Param('patientId') patientId: string) {
+    return this.usersService.getCarePlans(patientId);
+  }
 }

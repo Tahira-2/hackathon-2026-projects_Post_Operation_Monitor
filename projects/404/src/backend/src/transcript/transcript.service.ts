@@ -64,6 +64,22 @@ export class TranscriptService {
     return { saved: true, text, chunkId: chunk.id };
   }
 
+  /** Save a text chunk to DB and broadcast */
+  async saveTranscriptChunk(
+    callSessionId: string,
+    speaker: string,
+    content: string,
+  ) {
+    const chunk = await this.prisma.transcriptChunk.create({
+      data: { callSessionId, speaker, content },
+    });
+
+    // Broadcast live caption immediately!
+    this.callsGateway.broadcastCaption(callSessionId, speaker, content);
+
+    return chunk;
+  }
+
   // ─── Fetch all chunks for a session ─────────────────────────────────────
 
   async getTranscript(callSessionId: string) {
@@ -174,13 +190,49 @@ export class TranscriptService {
   async applyMedications(callSessionId: string) {
     const summary = await this.prisma.consultationSummary.findUnique({
       where: { callSessionId },
+      include: {
+        callSession: {
+          select: { patientId: true }
+        }
+      }
     });
 
     if (!summary) throw new NotFoundException('Summary not found');
+    if (summary.isMedicationApplied) return summary;
 
-    return this.prisma.consultationSummary.update({
-      where: { callSessionId },
-      data: { isMedicationApplied: true },
+    const patientId = summary.callSession.patientId;
+
+    // Start transaction to save everything
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Create Medications
+      if (summary.medications && summary.medications.length > 0) {
+        await tx.patientMedication.createMany({
+          data: summary.medications.map(med => ({
+            patientId,
+            name: med,
+            isActive: true,
+            notes: `Prescribed during consultation on ${new Date().toLocaleDateString()}`
+          }))
+        });
+      }
+
+      // 2. Create Care Plan / Follow-up
+      if (summary.followUp || summary.summary) {
+        await tx.carePlan.create({
+          data: {
+            patientId,
+            title: `Follow-up from Consultation`,
+            instructions: summary.followUp || summary.summary,
+            createdAt: new Date()
+          }
+        });
+      }
+
+      // 3. Mark as applied
+      return tx.consultationSummary.update({
+        where: { callSessionId },
+        data: { isMedicationApplied: true },
+      });
     });
   }
 

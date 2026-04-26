@@ -195,6 +195,20 @@ export class UsersService {
     });
   }
 
+  async getMedications(patientId: string) {
+    return this.prisma.patientMedication.findMany({
+      where: { patientId },
+      orderBy: { startDate: 'desc' },
+    });
+  }
+
+  async getCarePlans(patientId: string) {
+    return this.prisma.carePlan.findMany({
+      where: { patientId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   private async resolveSpecializationId(data: CreateUserDto) {
     if (data.specializationId) {
       await this.specializationsService.findOne(data.specializationId);
