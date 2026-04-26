@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { ArrowLeft, Mail, Phone, User } from 'lucide-react';
 import { registerUser } from '../../api/citizenAuth';
+import { NEPAL_DISTRICTS } from '../../constants';
 
 const extractErrorMessage = (error) => {
   if (!error) return 'An unexpected error occurred. Please try again.';
@@ -83,7 +84,7 @@ export default function CitizenRegisterForm() {
         phone_number: formData.phoneNumber || '',
         date_of_birth: formData.dateOfBirth,
         special_conditions: formData.specialConditions || '',
-        region: formData.region || '',
+        region: formData.region.trim(),
       };
 
       const response = await registerUser(payload);
@@ -239,13 +240,25 @@ export default function CitizenRegisterForm() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-300">Region (Optional)</label>
+          <label className="mb-1 block text-sm font-medium text-slate-300">Region (District)</label>
           <input
             type="text"
+            list="nepal-districts"
             className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Province / District"
-            {...register('region')}
+            placeholder="Select region district or start typing"
+            {...register('region', {
+              required: 'District is required',
+              validate: (value) =>
+                NEPAL_DISTRICTS.some((district) => district.toLowerCase() === value.trim().toLowerCase()) ||
+                'Please select a valid Nepal district',
+            })}
           />
+          <datalist id="nepal-districts">
+            {NEPAL_DISTRICTS.map((district) => (
+              <option key={district} value={district} />
+            ))}
+          </datalist>
+          {errors.region && <p className="mt-1 text-xs text-red-400">{errors.region.message}</p>}
         </div>
 
         <div>

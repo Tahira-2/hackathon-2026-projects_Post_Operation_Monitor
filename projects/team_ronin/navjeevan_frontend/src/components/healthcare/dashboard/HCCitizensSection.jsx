@@ -3,6 +3,7 @@ import { Calendar, Mail, Phone, Save, Users } from 'lucide-react';
 export default function HCCitizensSection({
   citizens,
   citizenForm,
+  districtOptions,
   onCitizenChange,
   onCitizenSubmit,
   isSubmitting,
@@ -85,9 +86,16 @@ export default function HCCitizensSection({
             <input
               value={citizenForm.region}
               onChange={(event) => onCitizenChange('region', event.target.value)}
-              placeholder="Region / Ward"
+              list="nepal-district-options"
+              placeholder="Select region district or start typing"
+              required
               className="w-full rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <datalist id="nepal-district-options">
+              {districtOptions.map((district) => (
+                <option key={district} value={district} />
+              ))}
+            </datalist>
             <textarea
               value={citizenForm.specialConditions}
               onChange={(event) => onCitizenChange('specialConditions', event.target.value)}

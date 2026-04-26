@@ -8,6 +8,7 @@ import HCAnalyticsSection from './HCAnalyticsSection';
 import HCProgramsSection from './HCProgramsSection';
 import HCCitizensSection from './HCCitizensSection';
 import HCMapSection from './HCMapSection';
+import { NEPAL_DISTRICTS } from '../../../constants';
 
 export default function HCHealthcareDashboard() {
   const { user, logout } = useAuth();
@@ -64,7 +65,16 @@ export default function HCHealthcareDashboard() {
       region: citizenForm.region.trim(),
     };
 
-    if (!payload.name || !payload.email || !payload.phone_number || !payload.date_of_birth) {
+    if (!payload.name || !payload.email || !payload.phone_number || !payload.date_of_birth || !payload.region) {
+      setCitizenError('Name, email, phone number, date of birth, and district are required.');
+      return;
+    }
+
+    const isValidDistrict = NEPAL_DISTRICTS.some(
+      (district) => district.toLowerCase() === payload.region.toLowerCase(),
+    );
+    if (!isValidDistrict) {
+      setCitizenError('Please select a valid district from Nepal\'s 77 districts.');
       return;
     }
 
@@ -142,6 +152,7 @@ export default function HCHealthcareDashboard() {
           <HCCitizensSection
             citizens={citizens}
             citizenForm={citizenForm}
+            districtOptions={NEPAL_DISTRICTS}
             onCitizenChange={handleCitizenChange}
             onCitizenSubmit={handleCitizenSubmit}
             isSubmitting={isCitizenSubmitting}
