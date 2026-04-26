@@ -236,7 +236,7 @@ async def transcribe_upload(
     # 5. Persist soap_note to DB (best-effort — non-blocking on failure)
     warning: str | None = None
     try:
-        doctor = get_doctor_by_user_id(current_user["user_id"])
+        doctor = get_or_create_doctor_profile(current_user["user_id"])
         doctor_id = doctor["id"] if doctor else current_user["user_id"]
 
         soap_fields = dict(
@@ -450,7 +450,7 @@ async def finalize_session_route(
 
     # Persist final SOAP draft as unapproved draft note (best-effort)
     try:
-        doctor = get_doctor_by_user_id(current_user["user_id"])
+        doctor = get_or_create_doctor_profile(current_user["user_id"])
         doctor_id = doctor["id"] if doctor else current_user["user_id"]
         existing = get_soap_note_by_appointment(session.appointment_id)
         soap_fields = dict(
@@ -515,8 +515,8 @@ async def append_transcript_chunk(
     if not chunk:
         raise HTTPException(status_code=400, detail="Transcript chunk cannot be empty.")
 
-    # Resolve users.id -> doctors.id
-    doctor = get_doctor_by_user_id(current_user["user_id"])
+    # Resolve users.id -> doctors.id (auto-creates profile if needed)
+    doctor = get_or_create_doctor_profile(current_user["user_id"])
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor profile not found for current user.")
     doctor_id = doctor["id"]
@@ -604,8 +604,8 @@ async def approve_soap_note_route(
     doctor_user_id = current_user["user_id"]
     note = request.edited_note
 
-    # Resolve users.id -> doctors.id
-    doctor = get_doctor_by_user_id(doctor_user_id)
+    # Resolve users.id -> doctors.id (auto-creates profile if needed)
+    doctor = get_or_create_doctor_profile(doctor_user_id)
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor profile not found for current user.")
     doctor_id = doctor["id"]

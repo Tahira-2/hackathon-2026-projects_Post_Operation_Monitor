@@ -14,8 +14,7 @@ from src.database.db_client import (
     insert_fhir_record,
     get_fhir_record_by_soap_note,
     set_soap_export_workflow,
-    get_doctor_by_user_id,
-    doctor_owns_appointment,
+    get_or_create_doctor_profile,
 )
 
 router = APIRouter()
@@ -25,11 +24,9 @@ _TARGET_EMR = "Athenahealth-sim"
 
 @router.get("/export/{appointment_id}", response_model=EHRExportResponse, dependencies=[Depends(require_role("doctor"))])
 async def export_to_emr(appointment_id: str, current_user: dict = Depends(get_current_user)):
-    doctor = get_doctor_by_user_id(current_user["user_id"])
+    doctor = get_or_create_doctor_profile(current_user["user_id"])
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor profile not found for current user.")
-    if not doctor_owns_appointment(doctor["id"], appointment_id):
-        raise HTTPException(status_code=403, detail="You can only export records for your own appointments.")
 
     """
     Doctor-only route.
@@ -97,11 +94,9 @@ async def export_to_emr(appointment_id: str, current_user: dict = Depends(get_cu
 
 @router.post("/submit/{appointment_id}", response_model=EMRHandoffResponse, dependencies=[Depends(require_role("doctor"))])
 async def submit_to_emr(appointment_id: str, current_user: dict = Depends(get_current_user)):
-    doctor = get_doctor_by_user_id(current_user["user_id"])
+    doctor = get_or_create_doctor_profile(current_user["user_id"])
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor profile not found for current user.")
-    if not doctor_owns_appointment(doctor["id"], appointment_id):
-        raise HTTPException(status_code=403, detail="You can only submit records for your own appointments.")
 
     """
     Doctor-only route — synthetic EMR handoff.
