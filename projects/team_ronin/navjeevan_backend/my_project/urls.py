@@ -33,6 +33,7 @@ urlpatterns = [
     # Admin site
     path('admin/', admin.site.urls),
     path('api/auth/', include('user.urls')),
+    path('', include("visualisation.urls")),
 
     # Local Apps
 ]
