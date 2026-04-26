@@ -1,14 +1,15 @@
 import { useEffect } from "react";
 import { RouterProvider } from "react-router-dom";
-import { RESET_PASSWORD_TOKEN_KEY } from "./lib/auth-api";
-import { api } from "./lib/axios";
+import { getDoctorProfile, RESET_PASSWORD_TOKEN_KEY } from "./lib/auth-api";
 import { router } from "./routes";
 import { useAuthStore } from "./stores/authStore";
+import { useProfileStore } from "./stores/profileStore";
 
 export default function App() {
   useEffect(() => {
     const { token, setToken, setDoctor, setInitialized, clearAuth } =
       useAuthStore.getState();
+    const { hydrateFromDoctor, resetProfile } = useProfileStore.getState();
 
     const hashParams = new URLSearchParams(
       window.location.hash.replace("#", ""),
@@ -19,6 +20,7 @@ export default function App() {
     if (hashToken && hashType === "recovery") {
       sessionStorage.setItem(RESET_PASSWORD_TOKEN_KEY, hashToken);
       clearAuth();
+      resetProfile();
       window.history.replaceState({}, "", "/reset-password");
       return;
     }
@@ -30,14 +32,15 @@ export default function App() {
 
     setToken(token);
 
-    api
-      .get("/api/v1/doctors/profile")
-      .then((res) => {
-        setDoctor(res.data);
+    getDoctorProfile()
+      .then((doctor) => {
+        setDoctor(doctor);
+        hydrateFromDoctor(doctor);
         setInitialized();
       })
       .catch(() => {
         clearAuth();
+        resetProfile();
       });
   }, []);
 

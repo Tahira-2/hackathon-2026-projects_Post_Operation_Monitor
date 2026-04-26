@@ -90,6 +90,7 @@ Core tables: `doctors`, `specialists`, `patients`, `referrals`, `referral_status
 
 Notable design decisions:
 
+- Doctor profiles now persist presentation metadata such as specialty, license number, hospital affiliation, and avatar URL
 - `referral_status_history` stores a timestamped record per status change, powering the timeline UI
 - `appointments` has a UNIQUE constraint on `referral_id` — one appointment per referral
 - Patient portal access is stateless: a signed token maps to a referral, expires after use
@@ -109,6 +110,7 @@ Schema: `backend/supabase/schema.sql`
 3. Run schema and seed against your Supabase project:
    ```
    backend/supabase/schema.sql
+    backend/supabase/migrations/*.sql
    backend/supabase/seed.sql
    ```
 4. Install and run backend:

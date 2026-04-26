@@ -7,6 +7,7 @@ import referralsRouter from './routes/referrals';
 import patientRouter from './routes/patient';
 import authRouter from './routes/v1/auth';
 import doctorsRouter from './routes/v1/doctors';
+import { HttpError } from './lib/http-error';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,8 +27,9 @@ app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/doctors', doctorsRouter);
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  const statusCode = err instanceof HttpError ? err.statusCode : 500;
   console.error(err.message);
-  res.status(500).json({ error: err.message });
+  res.status(statusCode).json({ error: err.message });
 });
 
 app.listen(PORT, () => {

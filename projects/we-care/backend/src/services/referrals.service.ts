@@ -1,6 +1,7 @@
+import { supabase } from "../lib/supabase";
 import { randomUUID } from 'crypto';
-import { supabase } from '../lib/supabase';
 import { sendPatientPortalEmail } from './email.service';
+import { extractLookupName } from "./lookup-service";
 
 export async function createPatientAndReferral(
   doctorId: string,
@@ -18,11 +19,11 @@ export async function createPatientAndReferral(
     extracted_data?: object;
     diagnosis?: string;
     required_specialty?: string;
-    urgency: 'low' | 'medium' | 'high';
-  }
+    urgency: "low" | "medium" | "high";
+  },
 ) {
   const { data: patient, error: patientError } = await supabase
-    .from('patients')
+    .from("patients")
     .insert(patientData)
     .select()
     .single();
@@ -30,7 +31,7 @@ export async function createPatientAndReferral(
   if (patientError) throw new Error(patientError.message);
 
   const { data: referral, error: referralError } = await supabase
-    .from('referrals')
+    .from("referrals")
     .insert({ doctor_id: doctorId, patient_id: patient.id, ...referralData })
     .select()
     .single();
@@ -42,46 +43,89 @@ export async function createPatientAndReferral(
 
 export async function getReferralsByDoctor(doctorId: string) {
   const { data, error } = await supabase
-    .from('referrals')
-    .select(`
+    .from("referrals")
+    .select(
+      `
       id, clinical_notes, diagnosis, urgency, status, created_at,
       patients (id, full_name),
-      specialists (id, full_name, specialty, hospital)
-    `)
-    .eq('doctor_id', doctorId)
-    .order('created_at', { ascending: false });
+      specialists (
+        id,
+        full_name,
+        specialties(name),
+        hospitals(name)
+      )
+    `,
+    )
+    .eq("doctor_id", doctorId)
+    .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-  return data;
+  const mappedReferrals = data.map((referral) => {
+    const specialist = Array.isArray(referral.specialists)
+      ? referral.specialists[0]
+      : referral.specialists;
+
+    return {
+      ...referral,
+      specialists: specialist
+        ? {
+            ...specialist,
+            specialty: extractLookupName(specialist.specialties) ?? "",
+            hospital: extractLookupName(specialist.hospitals) ?? "",
+          }
+        : specialist,
+    };
+  });
+
+  return mappedReferrals;
 }
 
 export async function getReferralById(referralId: string, doctorId: string) {
   const { data, error } = await supabase
-    .from('referrals')
-    .select(`
+    .from("referrals")
+    .select(
+      `
       *,
       patients (*),
-      specialists (*),
+      specialists (
+        *,
+        specialties(name),
+        hospitals(name)
+      ),
       referral_status_history (status, changed_at)
-    `)
-    .eq('id', referralId)
-    .eq('doctor_id', doctorId)
+    `,
+    )
+    .eq("id", referralId)
+    .eq("doctor_id", doctorId)
     .single();
 
   if (error) throw new Error(error.message);
-  return data;
+  const specialist = Array.isArray(data.specialists)
+    ? data.specialists[0]
+    : data.specialists;
+
+  return {
+    ...data,
+    specialists: specialist
+      ? {
+          ...specialist,
+          specialty: extractLookupName(specialist.specialties) ?? "",
+          hospital: extractLookupName(specialist.hospitals) ?? "",
+        }
+      : specialist,
+  };
 }
 
 export async function updateReferralStatus(
   referralId: string,
   doctorId: string,
-  status: 'pending' | 'sent' | 'accepted' | 'completed'
+  status: "pending" | "sent" | "accepted" | "completed",
 ) {
   const { data, error } = await supabase
-    .from('referrals')
+    .from("referrals")
     .update({ status })
-    .eq('id', referralId)
-    .eq('doctor_id', doctorId)
+    .eq("id", referralId)
+    .eq("doctor_id", doctorId)
     .select()
     .single();
 

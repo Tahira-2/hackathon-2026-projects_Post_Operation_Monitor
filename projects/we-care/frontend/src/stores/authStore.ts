@@ -1,21 +1,15 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-
-interface Doctor {
-  id: string;
-  email: string;
-  full_name: string;
-  created_at?: string;
-}
+import type { DoctorProfile } from "../lib/auth-api";
 
 interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   isInitialized: boolean;
-  doctor: Doctor | null;
-  setAuth: (token: string, doctor: Doctor) => void;
+  doctor: DoctorProfile | null;
+  setAuth: (token: string, doctor: DoctorProfile) => void;
   setToken: (token: string) => void;
-  setDoctor: (doctor: Doctor) => void;
+  setDoctor: (doctor: DoctorProfile) => void;
   setInitialized: () => void;
   clearAuth: () => void;
 }

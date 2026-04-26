@@ -5,6 +5,7 @@ import { FormInput } from "../components/ui/FormInput";
 import { Logo } from "../components/ui/Logo";
 import { getApiErrorMessage, signIn } from "../lib/auth-api";
 import { useAuthStore } from "../stores/authStore";
+import { useProfileStore } from "../stores/profileStore";
 import { loginSchema, type LoginForm } from "../types/auth";
 
 type FormErrors = { email?: string; password?: string };
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const setAuth = useAuthStore((s) => s.setAuth);
   const setInitialized = useAuthStore((s) => s.setInitialized);
+  const hydrateFromDoctor = useProfileStore((s) => s.hydrateFromDoctor);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -40,6 +42,7 @@ export default function LoginPage() {
     try {
       const data = await signIn(form);
       setAuth(data.accessToken, data.doctor);
+      hydrateFromDoctor(data.doctor);
       setInitialized();
       navigate("/", { replace: true });
     } catch (error) {

@@ -6,6 +6,7 @@ import { FormInput } from "../components/ui/FormInput";
 import { Logo } from "../components/ui/Logo";
 import { getApiErrorMessage, signIn, signUp } from "../lib/auth-api";
 import { useAuthStore } from "../stores/authStore";
+import { useProfileStore } from "../stores/profileStore";
 
 const signupSchema = z
   .object({
@@ -35,6 +36,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const setAuth = useAuthStore((s) => s.setAuth);
   const setInitialized = useAuthStore((s) => s.setInitialized);
+  const hydrateFromDoctor = useProfileStore((s) => s.hydrateFromDoctor);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -64,6 +66,7 @@ export default function SignupPage() {
 
       const data = await signIn({ email: form.email, password: form.password });
       setAuth(data.accessToken, data.doctor);
+      hydrateFromDoctor(data.doctor);
       setInitialized();
       navigate("/", { replace: true });
     } catch (error) {

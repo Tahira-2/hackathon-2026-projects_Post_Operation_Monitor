@@ -42,6 +42,7 @@ export const router = createBrowserRouter([
           { path: "/referrals/new", element: <NewReferralPage /> },
           { path: "/referrals/:id", element: <ReferralDetailPage /> },
           { path: "/specialists", element: <SpecialistsPage /> },
+          { path: "/profile", element: <SettingsPage /> },
           { path: "/settings", element: <SettingsPage /> },
         ],
       },

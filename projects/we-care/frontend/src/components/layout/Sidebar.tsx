@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
   Plus,
-  Settings,
+  User,
   UserRound,
   Users,
 } from "lucide-react";
@@ -22,12 +22,13 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/referrals", label: "Referrals", icon: Users },
   { to: "/specialists", label: "Specialists", icon: UserRound },
-  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/profile", label: "Profile", icon: User },
 ];
 
 export function Sidebar() {
   const navigate = useNavigate();
   const { fullName, specialty, avatarUrl } = useProfileStore();
+  const displayName = fullName || "Doctor";
 
   return (
     <aside className="flex w-60 shrink-0 flex-col bg-sidebar text-white">
@@ -61,13 +62,19 @@ export function Sidebar() {
         <div className="flex items-center gap-3 px-3 py-2">
           <div className="h-8 w-8 shrink-0 rounded-full overflow-hidden bg-accent flex items-center justify-center text-sm font-semibold text-white">
             {avatarUrl ? (
-              <img src={avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+              <img
+                src={avatarUrl}
+                alt="Profile"
+                className="h-full w-full object-cover"
+              />
             ) : (
-              <span>{fullName?.[0] ?? "U"}</span>
+              <span>{displayName[0] ?? "U"}</span>
             )}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-white">{fullName}</p>
+            <p className="truncate text-sm font-medium text-white">
+              {displayName}
+            </p>
             {specialty && (
               <p className="truncate text-xs text-slate-400">{specialty}</p>
             )}

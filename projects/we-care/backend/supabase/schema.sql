@@ -3,11 +3,31 @@
 -- Team: We Care
 -- ============================================================
 
+-- Lookup tables to avoid repeating hospital and specialty strings everywhere
+CREATE TABLE specialties (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name       TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE hospitals (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name       TEXT NOT NULL UNIQUE,
+  location   TEXT,
+  contact    TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Doctors (linked to Supabase Auth)
 CREATE TABLE doctors (
   id         UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name  TEXT NOT NULL,
   email      TEXT NOT NULL UNIQUE,
+  contact_number TEXT,
+  specialty_id UUID REFERENCES specialties(id),
+  license_number TEXT,
+  avatar_url TEXT,
+  hospital_id UUID REFERENCES hospitals(id),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -15,8 +35,8 @@ CREATE TABLE doctors (
 CREATE TABLE specialists (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   full_name  TEXT NOT NULL,
-  specialty  TEXT NOT NULL,
-  hospital   TEXT NOT NULL,
+  specialty_id UUID NOT NULL REFERENCES specialties(id),
+  hospital_id UUID NOT NULL REFERENCES hospitals(id),
   phone      TEXT,
   available  BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -145,5 +165,9 @@ CREATE TRIGGER appointments_sync_referral
 CREATE INDEX idx_referrals_doctor_id   ON referrals (doctor_id);
 CREATE INDEX idx_referrals_patient_id  ON referrals (patient_id);
 CREATE INDEX idx_referrals_status      ON referrals (status);
+CREATE INDEX idx_doctors_specialty_id  ON doctors (specialty_id);
+CREATE INDEX idx_doctors_hospital_id   ON doctors (hospital_id);
+CREATE INDEX idx_specialists_specialty_id ON specialists (specialty_id);
+CREATE INDEX idx_specialists_hospital_id  ON specialists (hospital_id);
 CREATE INDEX idx_status_history_referral ON referral_status_history (referral_id);
 CREATE INDEX idx_patient_tokens_referral ON patient_tokens (referral_id);
