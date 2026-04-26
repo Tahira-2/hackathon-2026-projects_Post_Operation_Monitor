@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { LayoutDashboard, Users, CalendarHeart, FileText, Settings, PanelLeftClose, PanelLeftOpen, FileStack, Stethoscope, Wallet, X } from "lucide-react"
+import { LayoutDashboard, Users, CalendarHeart, Settings, PanelLeftClose, PanelLeftOpen, FileStack, Stethoscope, X, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface SidebarProps {
@@ -29,17 +29,17 @@ export function Sidebar({ role }: SidebarProps) {
       { name: "Specializations", href: "/admin/specializations", icon: Stethoscope },
       { name: "Medicines", href: "/admin/medicines", icon: FileStack },
       { name: "Users", href: "/admin/users", icon: Users },
+      { name: "Profile", href: "/admin/profile", icon: Settings },
     ],
     physician: [
       { name: "Overview", href: "/physician", icon: LayoutDashboard },
-      { name: "Patients", href: "/physician/patients", icon: Users },
       { name: "Appointments", href: "/physician/appointments", icon: CalendarHeart },
-      { name: "Treatment Plans", href: "/physician/plans", icon: Stethoscope },
+      { name: "Availability", href: "/physician/availability", icon: Clock },
+      { name: "Profile", href: "/physician/profile", icon: Settings },
     ],
     patient: [
-      { name: "Health Summary", href: "/patient", icon: LayoutDashboard },
-      { name: "My Records", href: "/patient/records", icon: FileText },
-      { name: "Appointments", href: "/patient/appointments", icon: CalendarHeart },
+      { name: "Overview", href: "/patient", icon: LayoutDashboard },
+      { name: "Profile", href: "/patient/profile", icon: Settings },
     ]
   }
 
@@ -74,9 +74,9 @@ export function Sidebar({ role }: SidebarProps) {
         {/* Toggle Button Desktop */}
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute -right-3 top-6 bg-background p-1 rounded-sm border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors z-50 cursor-pointer hidden md:flex"
+          className="absolute -right-3 top-8 bg-background p-1.5 rounded-full border text-muted-foreground hover:text-foreground hover:bg-accent shadow-sm transition-all z-[80] cursor-pointer hidden md:flex"
         >
-          {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          {isCollapsed ? <PanelLeftOpen className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
         </button>
 
         <div className="flex flex-col flex-1 py-4 pt-6 overflow-y-auto hide-scrollbars overflow-x-hidden">

@@ -5,6 +5,7 @@ import { AdminDashboard } from "@/pages/admin/Dashboard";
 import { Users } from "@/pages/admin/Users";
 import { Specializations } from "@/pages/admin/Specializations";
 import { Medicines } from "@/pages/admin/Medicines";
+import { Profile } from "@/pages/shared/Profile";
 import { Login } from "@/pages/auth/Login";
 
 export function AdminRoutes() {
@@ -19,6 +20,7 @@ export function AdminRoutes() {
           <Route path="/users" element={<Users />} />
           <Route path="/specializations" element={<Specializations />} />
           <Route path="/medicines" element={<Medicines />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
       </Route>

@@ -17,6 +17,17 @@ const appointmentSelect = {
   endTime: true,
   reason: true,
   createdAt: true,
+  patient: {
+    select: {
+      id: true,
+      user: {
+        select: {
+          fullName: true,
+          email: true,
+        }
+      }
+    }
+  }
 } satisfies Prisma.AppointmentSelect;
 
 export type AppointmentResponse = Prisma.AppointmentGetPayload<{

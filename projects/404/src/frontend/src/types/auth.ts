@@ -7,6 +7,18 @@ export interface AuthUser {
   fullName?: string;
   createdAt?: string;
   updatedAt?: string;
+  doctor?: {
+    id: string;
+    specializationId?: string;
+    specialization?: {
+      id: string;
+      name: string;
+      description?: string;
+    };
+  };
+  patient?: {
+    id: string;
+  };
 }
 
 export interface AuthResponse {
