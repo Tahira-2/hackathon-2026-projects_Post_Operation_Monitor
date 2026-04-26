@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { Send, Bot, Stethoscope } from 'lucide-react';
+import { Send, Bot, Stethoscope, ChevronLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import apiClient from '../lib/api/axios';
-import { Card } from '../components/ui/Card';
 import DoctorSuggestionCard, { type DoctorSuggestion } from '../components/patient/DoctorSuggestionCard';
+import { Link } from 'react-router-dom';
 
 interface Message {
   id: string;
@@ -15,29 +15,32 @@ interface Message {
   metadata?: { doctorSuggestions?: DoctorSuggestion[] } | null;
 }
 
-// Adapts UI chrome based on whether the logged-in user is a doctor or patient
 const ROLE_CONFIG = {
   DOCTOR: {
     themeFrom: 'from-emerald-500',
     themeTo: 'to-teal-600',
-    ringColor: 'ring-emerald-400',
-    bubbleGradient: 'from-emerald-500 via-emerald-600 to-teal-600',
-    activeDot: 'bg-emerald-500',
+    headerBg: 'bg-emerald-50 border-emerald-100',
+    activeDot: 'bg-emerald-500 ring-white',
     label: 'Clinical AI Assistant',
-    subtitle: 'Clinical decision support · Evidence-based medicine',
-    placeholder: 'Ask about treatment options, drug interactions, ICD codes…',
+    subtitle: 'Decision support & evidence-based medicine',
+    placeholder: 'Ask about guidelines, interactions, or ICD codes...',
     icon: Stethoscope,
+    bubble: 'bg-emerald-600 text-white',
+    userBubble: 'bg-gray-100 text-gray-900',
+    sendBtn: 'bg-emerald-600 hover:bg-emerald-700',
   },
   PATIENT: {
     themeFrom: 'from-indigo-500',
     themeTo: 'to-blue-600',
-    ringColor: 'ring-indigo-400',
-    bubbleGradient: 'from-indigo-500 via-indigo-600 to-blue-600',
-    activeDot: 'bg-emerald-500',
+    headerBg: 'bg-white border-gray-200',
+    activeDot: 'bg-emerald-500 ring-white',
     label: 'CareFlow AI',
-    subtitle: 'Active now · Can suggest doctors',
-    placeholder: 'Ask about symptoms, or type "find a cardiologist"…',
+    subtitle: 'Always here to help you navigate your care',
+    placeholder: 'Message your care team or ask AI...',
     icon: Bot,
+    bubble: 'bg-indigo-600 text-white',
+    userBubble: 'bg-gray-100 text-gray-900',
+    sendBtn: 'bg-indigo-600 hover:bg-indigo-700',
   },
 } as const;
 
@@ -62,11 +65,10 @@ export default function ChatPage() {
     async function initChat() {
       if (!user || !token) return;
 
-      // Fetch patient DB ID (only relevant for patients booking appointments)
       try {
         const meRes = await apiClient.get(`/users/${user.id}`);
         setPatientDbId(meRes.data?.patient?.id ?? null);
-      } catch { /* not critical */ }
+      } catch { /* ignore */ }
 
       let convId = localStorage.getItem(`careflow_ai_conv_${user.id}`);
       if (!convId) {
@@ -91,9 +93,7 @@ export default function ChatPage() {
       const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
       const newSocket = io(`${BASE_URL}/communication`, { transports: ['websocket'] });
 
-      newSocket.on('connect', () => {
-        newSocket.emit('joinRoom', { conversationId: convId });
-      });
+      newSocket.on('connect', () => newSocket.emit('joinRoom', { conversationId: convId }));
       newSocket.on('messageCreated', (msg: Message) => {
         setMessages((prev) => {
           if (prev.some((p) => p.id === msg.id)) return prev;
@@ -115,138 +115,116 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-6rem)] gap-4 lg:gap-6 w-full max-w-full overflow-hidden">
-      {/* Sidebar */}
-      <Card className="w-72 lg:w-80 flex flex-col p-0 shrink-0 overflow-hidden shadow-lg border-white/40 bg-white/70 backdrop-blur-xl rounded-3xl" padding="none">
-        <div className="px-6 py-5 border-b border-gray-100/50">
-          <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">Messages</h2>
-        </div>
-        <div className="flex-1 overflow-y-auto p-3 space-y-2">
-          {/* Pinned AI Contact */}
-          <button className={`w-full flex items-center gap-3.5 p-3 rounded-2xl bg-opacity-10 border border-opacity-20 hover:bg-opacity-20 transition-colors text-left relative overflow-hidden group shadow-sm
-            ${role === 'DOCTOR' ? 'bg-emerald-50 border-emerald-100' : 'bg-indigo-50 border-indigo-100'}`}>
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-            <div className="relative">
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${cfg.themeFrom} ${cfg.themeTo} text-white shadow-md group-hover:scale-105 transition-transform`}>
-                <Icon size={24} />
-              </div>
-              <span className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${cfg.activeDot} shadow-[0_0_8px_rgba(16,185,129,0.5)]`}></span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-[15px] font-bold text-gray-900 truncate">{cfg.label}</h3>
-              <p className={`text-xs font-semibold truncate ${role === 'DOCTOR' ? 'text-emerald-600' : 'text-indigo-600'}`}>
-                Always here to help
-              </p>
-            </div>
-          </button>
-        </div>
-      </Card>
-
-      {/* Main Chat Area */}
-      <Card className="flex-1 min-w-0 flex flex-col p-0 overflow-hidden shadow-lg border-white/40 bg-white/70 backdrop-blur-xl rounded-3xl" padding="none">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100/50 bg-white/60 backdrop-blur-md z-10 flex items-center gap-4">
+    <div className="absolute inset-0 md:static flex flex-col w-full h-[calc(100vh-64px)] md:h-full bg-white md:rounded-3xl md:border border-gray-200 md:shadow-[0_4px_24px_-8px_rgba(0,0,0,0.1)] overflow-hidden">
+      {/* Header */}
+      <div className={`shrink-0 flex items-center justify-between px-4 md:px-6 py-3.5 border-b z-10 ${cfg.headerBg}`}>
+        <div className="flex items-center gap-3 md:gap-4">
+          <Link to=".." className="md:hidden p-1 -ml-1 text-gray-500 hover:text-gray-900 transition-colors">
+            <ChevronLeft size={24} />
+          </Link>
           <div className="relative">
-            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${cfg.themeFrom} ${cfg.themeTo} text-white shadow-sm`}>
-              <Icon size={22} />
+            <div className={`flex h-10 w-10 md:h-12 md:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr ${cfg.themeFrom} ${cfg.themeTo} text-white shadow-md`}>
+              <Icon size={20} className="md:w-6 md:h-6" />
             </div>
-            <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${cfg.activeDot}`} />
+            <span className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 ${cfg.activeDot}`} />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-base font-extrabold text-gray-900 tracking-tight">{cfg.label}</h3>
-            <p className="text-xs font-semibold text-emerald-500">{cfg.subtitle}</p>
+            <h1 className="text-base md:text-lg font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+              {cfg.label}
+              {role === 'DOCTOR' && (
+                <span className="hidden md:inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 tracking-wide uppercase">
+                  Physician Mode
+                </span>
+              )}
+            </h1>
+            <p className={`text-xs font-semibold truncate ${role === 'DOCTOR' ? 'text-emerald-700' : 'text-gray-500'}`}>
+              {cfg.subtitle}
+            </p>
           </div>
-          {role === 'DOCTOR' && (
-            <span className="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
-              Physician Mode
-            </span>
-          )}
         </div>
+      </div>
 
-        {/* Messages */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-5 bg-slate-50/30">
-          {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full opacity-60">
-              <Icon size={48} className={`mb-4 ${role === 'DOCTOR' ? 'text-emerald-300' : 'text-indigo-300'}`} />
-              <p className="text-[15px] font-bold text-gray-600">
-                {role === 'DOCTOR' ? 'Clinical AI ready' : 'Start a secure conversation'}
-              </p>
-              <p className="text-sm font-medium text-gray-500 mt-1">
-                {role === 'DOCTOR'
-                  ? 'Ask about treatment options, guidelines, or referrals.'
-                  : 'Ask about symptoms, medications, or request a doctor.'}
-              </p>
+      {/* Messages Area */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-6 md:px-6 space-y-6 bg-slate-50/50">
+        {messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full opacity-70">
+            <div className={`w-16 h-16 rounded-3xl flex items-center justify-center mb-4 border-2 border-dashed bg-white ${role === 'DOCTOR' ? 'border-emerald-200 text-emerald-400' : 'border-indigo-200 text-indigo-400'}`}>
+              <Icon size={32} />
             </div>
-          )}
+            <p className="text-base font-extrabold text-gray-900 text-center">
+              {role === 'DOCTOR' ? 'Clinical AI Ready' : 'Start a secure conversation'}
+            </p>
+            <p className="text-sm font-semibold text-gray-500 text-center max-w-sm mt-1 mb-8">
+              {cfg.subtitle}
+            </p>
+          </div>
+        )}
 
-          {messages.map((msg) => {
-            const isMe = msg.senderId === user?.id;
-            const suggestions: DoctorSuggestion[] = (msg.metadata as { doctorSuggestions?: DoctorSuggestion[] } | null)?.doctorSuggestions ?? [];
+        {messages.map((msg) => {
+          const isMe = msg.senderId === user?.id;
+          const suggestions: DoctorSuggestion[] = (msg.metadata as { doctorSuggestions?: DoctorSuggestion[] } | null)?.doctorSuggestions ?? [];
 
-            return (
-              <div key={msg.id} className="flex flex-col w-full">
-                <div className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
-                  <div className="flex items-end gap-2 max-w-[85%] lg:max-w-[75%]">
-                    {!isMe && (
-                      <div className={`shrink-0 hidden md:flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br ${cfg.themeFrom} ${cfg.themeTo} text-white shadow-sm mb-1`}>
-                        <Icon size={16} />
-                      </div>
-                    )}
-                    <div className={`relative px-5 py-3.5 shadow-sm ${
-                      isMe
-                        ? `bg-gradient-to-br ${cfg.bubbleGradient} text-white rounded-3xl rounded-br-sm`
-                        : 'bg-white border border-gray-100 text-gray-800 rounded-3xl rounded-bl-sm shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]'
-                    }`}>
-                      <p className={`text-[15px] leading-relaxed break-words whitespace-pre-wrap ${isMe ? 'font-medium' : ''}`}>
-                        {msg.content}
-                      </p>
-                      <p className={`text-[10px] mt-1.5 font-bold text-right ${isMe ? 'text-white/60' : 'text-gray-400'}`}>
-                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Doctor suggestion cards (only shown to patients) */}
-                {!isMe && suggestions.length > 0 && role === 'PATIENT' && (
-                  <div className="mt-2 ml-10 space-y-2 max-w-[85%] lg:max-w-[75%]">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wide px-1">Available Doctors</p>
-                    {suggestions.map((doc) => (
-                      <DoctorSuggestionCard
-                        key={doc.doctorId}
-                        doctor={doc}
-                        patientId={patientDbId ?? user?.id ?? ''}
-                      />
-                    ))}
+          return (
+            <div key={msg.id} className={`flex flex-col w-full ${isMe ? 'items-end' : 'items-start'}`}>
+              <div className="flex items-end gap-2 max-w-[85%] md:max-w-[70%]">
+                {!isMe && (
+                  <div className={`hidden md:flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr ${cfg.themeFrom} ${cfg.themeTo} text-white shadow-sm mb-1`}>
+                    <Icon size={14} />
                   </div>
                 )}
+                <div className={`px-5 py-3.5 shadow-sm text-[15px] leading-relaxed break-words whitespace-pre-wrap ${
+                  isMe
+                    ? 'bg-gray-100 text-gray-900 rounded-[24px] rounded-br-md'
+                    : `${cfg.bubble} rounded-[24px] rounded-bl-md`
+                }`}>
+                  {msg.content}
+                </div>
               </div>
-            );
-          })}
-          <div ref={messagesEndRef} className="h-2" />
-        </div>
+              
+              <div className={`flex items-center gap-1.5 mt-1.5 px-1 md:px-11 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                <span className="text-[10px] font-bold text-gray-400">
+                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+                {isMe && <span className="text-[10px] font-bold text-emerald-500">Sent</span>}
+              </div>
 
-        {/* Input */}
-        <div className="p-4 bg-white/80 backdrop-blur-md border-t border-gray-100/50">
-          <form onSubmit={handleSend} className="relative flex items-center max-w-4xl mx-auto">
-            <input
-              type="text"
-              value={inputMsg}
-              onChange={(e) => setInputMsg(e.target.value)}
-              placeholder={cfg.placeholder}
-              className={`w-full bg-slate-50 hover:bg-white focus:bg-white border border-gray-200 focus:border-current rounded-full pl-6 pr-16 py-4 text-[15px] font-medium focus:outline-none focus:ring-4 transition-all text-gray-800 placeholder:text-gray-400 shadow-inner
-                ${role === 'DOCTOR' ? 'focus:border-emerald-400 focus:ring-emerald-500/10' : 'focus:border-indigo-400 focus:ring-indigo-500/10'}`}
-            />
-            <button
-              type="submit"
-              disabled={!inputMsg.trim()}
-              className={`absolute right-2.5 p-2.5 rounded-full bg-gradient-to-r ${cfg.themeFrom} ${cfg.themeTo} text-white hover:shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed`}
-            >
-              <Send size={18} className="translate-x-[1px]" />
-            </button>
-          </form>
-        </div>
-      </Card>
+              {/* Suggestions logic remains identical */}
+              {!isMe && suggestions.length > 0 && role === 'PATIENT' && (
+                <div className="mt-3 md:ml-10 space-y-2 max-w-[85%] md:max-w-[70%] w-full">
+                  <p className="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider mb-2">Available Providers</p>
+                  <div className="flex flex-col gap-2">
+                    {suggestions.map((doc) => (
+                      <DoctorSuggestionCard key={doc.doctorId} doctor={doc} patientId={patientDbId ?? user?.id ?? ''} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        <div ref={messagesEndRef} className="h-1" />
+      </div>
+
+      {/* Input Area */}
+      <div className="shrink-0 p-3 md:p-4 bg-white border-t border-gray-100/80">
+        <form onSubmit={handleSend} className="relative flex items-center max-w-4xl mx-auto">
+          <input
+            type="text"
+            value={inputMsg}
+            onChange={(e) => setInputMsg(e.target.value)}
+            placeholder={cfg.placeholder}
+            className="w-full bg-gray-50 border border-gray-200 hover:border-gray-300 focus:bg-white focus:border-current focus:ring-4 rounded-full pl-5 pr-14 py-3.5 md:py-4 text-sm md:text-[15px] font-medium placeholder:text-gray-400 transition-all outline-none"
+            style={{ color: 'var(--color-gray-900)', outlineColor: role === 'DOCTOR' ? 'var(--color-emerald-400)' : 'var(--color-indigo-400)' }}
+          />
+          <button
+            type="submit"
+            disabled={!inputMsg.trim()}
+            className={`absolute right-1.5 md:right-2 p-2.5 md:p-3 rounded-full text-white shadow-sm hover:shadow active:scale-95 transition-all disabled:opacity-40 disabled:scale-100 disabled:cursor-not-allowed ${cfg.sendBtn}`}
+          >
+            <Send size={16} className="translate-x-[1px]" />
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
