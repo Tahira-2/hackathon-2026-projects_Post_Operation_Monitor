@@ -1,14 +1,30 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { TrendingUp, ShieldCheck, ChevronDown } from "lucide-react";
-import { PieChart, Pie, Cell, Tooltip, Sector, ResponsiveContainer } from "recharts";
+import { TrendingUp, ShieldCheck, ChevronDown, FileText, Database, Layers } from "lucide-react";
+import { PieChart, Pie, Cell, Tooltip, Sector, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { MONTHS, Month, monthlyData, yearData, Category, Activity } from "@/lib/data";
 
 const COLORS = ["#0d9488", "#14b8a6", "#5eead4", "#99f6e4", "#0891b2", "#22d3ee"];
 const FILTERS = ["All", "Medical", "Wellness", "Mental Health"] as const;
 type Filter = (typeof FILTERS)[number];
 type View = "year" | "month";
+
+type PolicyDoc = {
+  id: string;
+  document_name: string;
+  policy_id: string;
+  extraction_summary?: {
+    entities_extracted?: number;
+    nodes_created?: number;
+    relationships_created?: number;
+  };
+  graph_preview?: {
+    coverage_types?: string[];
+    key_entities?: string[];
+  };
+  upload_date: string;
+};
 
 const CATEGORY_ICONS: Record<string, string> = {
   Physiotherapy: "🦴",
@@ -51,6 +67,30 @@ export default function SavingsDashboard() {
   const [activeSlice, setActiveSlice] = useState<number>(0);
   const onPieEnter = useCallback((_: unknown, index: number) => setActiveSlice(index), []);
   const [extensionVisits, setExtensionVisits] = useState<Activity[]>([]);
+  const [policyDocs, setPolicyDocs] = useState<PolicyDoc[]>([]);
+
+  // Fetch policy documents for the insights panel
+  useEffect(() => {
+    fetch("/api/documents")
+      .then((r) => r.json())
+      .then(setPolicyDocs)
+      .catch(() => {});
+  }, []);
+
+  // Compute coverage-type frequency across all uploaded policies
+  const coverageFreq: Record<string, number> = {};
+  policyDocs.forEach((doc) => {
+    (doc.graph_preview?.coverage_types ?? []).forEach((ct) => {
+      coverageFreq[ct] = (coverageFreq[ct] ?? 0) + 1;
+    });
+  });
+  const coverageChartData = Object.entries(coverageFreq)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+  const totalEntities = policyDocs.reduce(
+    (s, d) => s + (d.extraction_summary?.entities_extracted ?? 0),
+    0
+  );
 
   useEffect(() => {
     function load() {
@@ -337,6 +377,178 @@ export default function SavingsDashboard() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Policy Intelligence — only shown when documents exist */}
+      {policyDocs.length > 0 && (
+        <div className="space-y-4">
+          {/* Section header */}
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-gray-200" />
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+              Policy Intelligence
+            </span>
+            <div className="h-px flex-1 bg-gray-200" />
+          </div>
+
+          {/* Aggregate stat cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white rounded-2xl shadow p-5 flex items-center gap-4">
+              <div className="w-11 h-11 bg-teal-50 rounded-xl flex items-center justify-center shrink-0">
+                <FileText className="w-5 h-5 text-teal-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-800">{policyDocs.length}</p>
+                <p className="text-xs text-gray-500">Policies Analyzed</p>
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl shadow p-5 flex items-center gap-4">
+              <div className="w-11 h-11 bg-purple-50 rounded-xl flex items-center justify-center shrink-0">
+                <Database className="w-5 h-5 text-purple-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-800">{totalEntities}</p>
+                <p className="text-xs text-gray-500">Total Entities Extracted</p>
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl shadow p-5 flex items-center gap-4">
+              <div className="w-11 h-11 bg-amber-50 rounded-xl flex items-center justify-center shrink-0">
+                <Layers className="w-5 h-5 text-amber-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-800">
+                  {Object.keys(coverageFreq).length}
+                </p>
+                <p className="text-xs text-gray-500">Unique Coverage Types</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Coverage frequency chart + policy cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Horizontal bar chart */}
+            <div className="bg-white p-6 rounded-2xl shadow">
+              <h3 className="font-semibold text-gray-800 mb-1">Coverage Type Frequency</h3>
+              <p className="text-xs text-gray-400 mb-4">How many of your policies include each type</p>
+              <ResponsiveContainer width="100%" height={coverageChartData.length * 42 + 20}>
+                <BarChart
+                  data={coverageChartData}
+                  layout="vertical"
+                  margin={{ top: 0, right: 20, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+                  <XAxis
+                    type="number"
+                    allowDecimals={false}
+                    tick={{ fontSize: 11, fill: "#9ca3af" }}
+                    tickLine={false}
+                    axisLine={false}
+                    domain={[0, policyDocs.length]}
+                    ticks={Array.from({ length: policyDocs.length + 1 }, (_, i) => i)}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={190}
+                    tick={{ fontSize: 11, fill: "#374151" }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip
+                    formatter={(v) => [`${v} of ${policyDocs.length} ${policyDocs.length === 1 ? "policy" : "policies"}`, "Coverage"]}
+                    contentStyle={{ borderRadius: 10, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.12)", fontSize: 12 }}
+                  />
+                  <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={18}>
+                    {coverageChartData.map((_, i) => (
+                      <Cell
+                        key={i}
+                        fill={i % 2 === 0 ? "#0d9488" : "#14b8a6"}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Per-policy summary cards */}
+            <div className="space-y-3">
+              {policyDocs.map((doc, i) => {
+                const coverage = doc.graph_preview?.coverage_types ?? [];
+                const entities = doc.extraction_summary?.entities_extracted ?? 0;
+                const nodes = doc.extraction_summary?.nodes_created;
+                return (
+                  <div key={doc.id} className="bg-white rounded-2xl shadow p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center shrink-0">
+                          {i + 1}
+                        </span>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800 truncate max-w-50">
+                            {doc.document_name}
+                          </p>
+                          <p className="text-xs text-gray-400 font-mono">{doc.upload_date}</p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-lg font-bold text-teal-600">{entities}</p>
+                        <p className="text-xs text-gray-400">entities</p>
+                      </div>
+                    </div>
+
+                    {nodes !== undefined && nodes > 0 && (
+                      <div className="flex items-center gap-4 mb-3 text-xs text-gray-500">
+                        <span>{nodes} graph nodes</span>
+                        {doc.extraction_summary?.relationships_created && (
+                          <span>{doc.extraction_summary.relationships_created} relationships</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Coverage chips */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {coverage.map((ct) => (
+                        <span
+                          key={ct}
+                          className="bg-teal-50 text-teal-700 text-xs px-2 py-0.5 rounded-full border border-teal-100"
+                        >
+                          {ct}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Cross-policy coverage overlap notice */}
+          {(() => {
+            const sharedTypes = Object.entries(coverageFreq)
+              .filter(([, count]) => count > 1)
+              .map(([name]) => name);
+            if (sharedTypes.length === 0) return null;
+            return (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                <p className="text-sm font-semibold text-amber-800 mb-1">Coverage Overlap Detected</p>
+                <p className="text-xs text-amber-700 mb-2">
+                  These {sharedTypes.length} coverage type{sharedTypes.length !== 1 ? "s" : ""} appear in multiple
+                  policies — you may be paying for duplicate coverage:
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {sharedTypes.map((ct) => (
+                    <span
+                      key={ct}
+                      className="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full border border-amber-200"
+                    >
+                      {ct} ×{coverageFreq[ct]}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>
