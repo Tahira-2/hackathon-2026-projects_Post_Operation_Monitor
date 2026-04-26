@@ -17,12 +17,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/hooks/useAuth"
-import { 
-  useGetAppointmentsQuery, 
-  useUpdateAppointmentMutation,
-  useCreateAppointmentMutation
-} from "@/apis/appointmentsApi"
-import { useGetUsersQuery } from "@/apis/usersApi"
+import { useGetAppointmentsQuery, useUpdateAppointmentMutation, useCreateAppointmentMutation } from "@/apis/appointmentsApi"
+import { useGetDoctorsQuery } from "@/apis/usersApi"
 import {
   Dialog,
   DialogContent,
@@ -59,8 +55,8 @@ export function Appointments() {
     { skip: !patientId }
   )
 
-  const { data: doctorsData } = useGetUsersQuery({ role: "doctor" })
-  const doctors = doctorsData || []
+  const { data: doctorsData } = useGetDoctorsQuery({})
+  const doctors = doctorsData?.data || []
 
   const handleCreateAppointment = async (e: React.FormEvent) => {
     e.preventDefault()

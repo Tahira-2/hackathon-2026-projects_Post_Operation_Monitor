@@ -1,10 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { useNavigate } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
 import { Search, Star, MapPin, Clock } from "lucide-react"
 import { Input } from "@/components/ui/input"
 
 export function Consultants() {
+  const navigate = useNavigate()
   const consultants = [
     {
       name: "Dr. Sarah Jenkins",
@@ -86,7 +88,10 @@ export function Consultants() {
                     <p className="font-bold text-slate-900">{doc.nextAvailable}</p>
                   </div>
                 </div>
-                <Button className="w-full rounded-xl bg-slate-900 hover:bg-slate-800">
+                <Button 
+                  className="w-full rounded-xl bg-slate-900 hover:bg-slate-800"
+                  onClick={() => navigate("/patient/appointments")}
+                >
                   Book Appointment
                 </Button>
               </div>

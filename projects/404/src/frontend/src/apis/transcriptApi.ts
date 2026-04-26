@@ -22,9 +22,16 @@ export const transcriptApi = baseApi.injectEndpoints({
         url: `transcript/${callSessionId}/apply-medications`,
         method: "POST",
       }),
-      invalidatesTags: (result, error, arg) => [{ type: "ConsultationSummary" as const, id: arg }],
+    }),
+    getHistory: builder.query<any[], string>({
+      query: (patientId) => `transcript/history/${patientId}`,
+      providesTags: ["ConsultationSummary"],
     }),
   }),
 });
 
-export const { useGetSummaryQuery, useApplyMedicationsMutation } = transcriptApi;
+export const { 
+  useGetSummaryQuery, 
+  useApplyMedicationsMutation,
+  useGetHistoryQuery 
+} = transcriptApi;

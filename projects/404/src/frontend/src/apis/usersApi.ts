@@ -9,6 +9,13 @@ export const usersApi = baseApi.injectEndpoints({
       }),
       providesTags: ["User"],
     }),
+    getDoctors: builder.query<any, Record<string, any>>({
+      query: (params) => ({
+        url: "/users/doctors",
+        params,
+      }),
+      providesTags: ["User"],
+    }),
     getUser: builder.query<any, string>({
       query: (id) => ({
         url: `/users/${id}`,
@@ -43,6 +50,7 @@ export const usersApi = baseApi.injectEndpoints({
 
 export const {
   useGetUsersQuery,
+  useGetDoctorsQuery,
   useGetUserQuery,
   useCreateUserMutation,
   useUpdateUserMutation,

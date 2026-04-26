@@ -9,9 +9,19 @@ import { toast } from "sonner";
 import { Loader2, Clock, CalendarIcon } from "lucide-react";
 import { useGetWorkingHoursQuery, useGetBusyBlocksQuery } from "@/apis/availabilityApi";
 import { format } from "date-fns";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { Edit2, Mail, User as UserIcon } from "lucide-react";
 
 export function Profile() {
   const { user } = useAuth();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
   // Only query if we have an active ID
   const { data: profileData, isLoading, refetch } = useGetUserQuery(user?.id ?? "", {
@@ -66,6 +76,7 @@ export function Profile() {
       }
       
       toast.success("Profile updated successfully!");
+      setIsEditDialogOpen(false);
       refetch();
     } catch (error) {
       console.error("Failed to update profile", error);
@@ -84,82 +95,148 @@ export function Profile() {
   }
 
   return (
-    <div className="flex-1 space-y-6">
+    <div className="flex-1 space-y-8 pb-10">
       <div className="flex flex-col gap-1">
-        <h2 className="text-3xl font-bold tracking-tight">Profile Settings</h2>
-        <p className="text-muted-foreground text-sm">Manage your account information and preferences.</p>
+        <h2 className="text-3xl font-bold tracking-tight text-slate-900">Profile Settings</h2>
+        <p className="text-muted-foreground">Manage your account information and preferences.</p>
       </div>
 
-      <div className="grid gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Personal Details</CardTitle>
-            <CardDescription>
-              Update your basic profile information and security credentials.
-            </CardDescription>
+      <div className="grid gap-8">
+        {/* Personal Details Card (Read-only View) */}
+        <Card className="border-none shadow-md shadow-slate-200/50 overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 pb-4">
+            <div>
+              <CardTitle className="text-xl">Personal Details</CardTitle>
+              <CardDescription>Your basic account information.</CardDescription>
+            </div>
+            <Button 
+              onClick={() => setIsEditDialogOpen(true)}
+              variant="outline" 
+              className="rounded-xl border-emerald-100 text-emerald-600 hover:bg-emerald-50 gap-2"
+            >
+              <Edit2 className="h-4 w-4" /> Edit Profile
+            </Button>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  name="fullName"
-                  placeholder="John Doe"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  required
-                />
+          <CardContent className="pt-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="flex items-start gap-4">
+                <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
+                  <UserIcon className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Full Name</p>
+                  <p className="font-semibold text-slate-900">{profileData?.fullName || "Not set"}</p>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="john@example.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">New Password (Optional)</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="Leave blank to keep unchanged"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
+              <div className="flex items-start gap-4">
+                <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
+                  <Mail className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Email Address</p>
+                  <p className="font-semibold text-slate-900">{profileData?.email || "Not set"}</p>
+                </div>
               </div>
 
               {isDoctor && profileData?.doctor?.specialization && (
-                <div className="pt-4 space-y-4 border-t">
-                  <div className="space-y-1">
-                    <Label className="text-muted-foreground uppercase text-[10px] font-bold tracking-wider">Medical Focus</Label>
-                    <div className="flex items-center gap-2">
-                       <span className="font-semibold text-primary">{profileData.doctor.specialization.name}</span>
-                    </div>
+                <div className="flex items-start gap-4 md:col-span-2 pt-4 border-t border-slate-50">
+                  <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-0.5">Medical Specialization</p>
+                    <p className="font-semibold text-slate-900">{profileData.doctor.specialization.name}</p>
                     {profileData.doctor.specialization.description && (
-                      <p className="text-sm text-muted-foreground">{profileData.doctor.specialization.description}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{profileData.doctor.specialization.description}</p>
                     )}
                   </div>
                 </div>
               )}
-
-              <div className="pt-4 flex justify-end">
-                <Button type="submit" disabled={isUpdating}>
-                  {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Save Changes
-                </Button>
-              </div>
-            </form>
+            </div>
           </CardContent>
         </Card>
+
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[500px] rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
+            <div className="bg-emerald-600 px-8 py-10 text-white relative">
+               <div className="absolute top-0 right-0 p-10 opacity-10">
+                 <UserIcon className="h-28 w-28" />
+               </div>
+               <DialogHeader className="relative z-10">
+                 <DialogTitle className="text-3xl font-bold tracking-tight">Edit Profile</DialogTitle>
+                 <DialogDescription className="text-emerald-50 opacity-90 text-base mt-2">
+                   Update your personal information and security credentials.
+                 </DialogDescription>
+               </DialogHeader>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="px-8 pt-10 pb-8 space-y-8">
+              <div className="space-y-6">
+                <div className="space-y-2.5">
+                  <Label htmlFor="fullName" className="text-sm font-bold text-slate-700 ml-1">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    name="fullName"
+                    className="h-12 rounded-2xl border-slate-200 focus:ring-emerald-500/20 bg-slate-50/50 px-4"
+                    placeholder="John Doe"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2.5">
+                  <Label htmlFor="email" className="text-sm font-bold text-slate-700 ml-1">Email Address</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    className="h-12 rounded-2xl border-slate-200 focus:ring-emerald-500/20 bg-slate-50/50 px-4"
+                    placeholder="john@example.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2.5">
+                  <Label htmlFor="password" className="text-sm font-bold text-slate-700 ml-1">New Password (Optional)</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    className="h-12 rounded-2xl border-slate-200 focus:ring-emerald-500/20 bg-slate-50/50 px-4"
+                    placeholder="Leave blank to keep unchanged"
+                    value={formData.password}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <DialogFooter className="gap-3 sm:gap-4">
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    className="rounded-2xl h-12 px-6 font-semibold text-slate-600 hover:bg-slate-100"
+                    onClick={() => setIsEditDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    className="rounded-2xl h-12 bg-emerald-600 hover:bg-emerald-700 min-w-[160px] font-bold shadow-lg shadow-emerald-600/20" 
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Save Changes
+                  </Button>
+                </DialogFooter>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         {isDoctor && (
           <div className="grid gap-6 md:grid-cols-2">
