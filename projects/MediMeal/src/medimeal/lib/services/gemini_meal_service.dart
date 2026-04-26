@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -9,6 +10,28 @@ import '../models/medications.dart';
 
 class GeminiMealService {
   static final String _apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+
+  // Keep only models that you can actually use.
+  static const List<String> _modelFallbackOrder = [
+    // --- TOP TIER (Your highest quota & latest tech) ---
+    'gemini-3.1-flash-lite-preview', // 500 RPD - Your primary target
+    'gemini-3-flash-preview', // Newer v3 stable-ish
+    'gemini-2.5-flash-lite', // 20 RPD - Use as quick fallback
+    'gemini-2.5-flash', // 20 RPD - Your current default
+
+    // --- STEADY TIER (Aliases that often bypass 404s) ---
+    'gemini-flash-latest', // Points to the most stable Flash version
+    'gemini-2.0-flash', // Older but still supported in many regions
+
+    // --- SAFETY NET TIER (Massive quotas, different architecture) ---
+    'gemma-3-27b-it', // 14.4K RPD - Won't hit 404/503 easily
+    'gemma-4-26b-a4b-it', // 1.5K RPD - Very reliable
+    'gemma-3-12b-it', // 14.4K RPD - Fast
+    'gemma-3-4b-it', // 14.4K RPD - Lightest/Fastest
+  ];
+
+  // Total attempts across all models.
+  static const int _maxTotalAttempts = 10;
 
   static Future<MealPlan> generateMealPlan({
     required String mealType,
@@ -77,8 +100,9 @@ YOUR JOB
 4. In "whyIngredientsWereBlocked", explain in simple user-friendly language why each blocked ingredient was excluded.
 5. If the timing window is still active, make it clear in "timingMessage" that the meal is for preparation now and eating later.
 6. If a support routine is active, make the meal feel simple, supportive, and easy to follow for today.
-7. Do not use vague phrases like "adheres to workflow constraints" or "balanced meal" unless you also explain specifically why.
-8. Keep the wording human and direct.
+7. If weekly tracking is active, make the meal feel careful and compatible with the remaining weekly allowance.
+8. Do not use vague phrases like "adheres to workflow constraints" or "balanced meal" unless you also explain specifically why.
+9. Keep the wording human and direct.
 
 IMPORTANT JSON FORMATTING RULES
 - Return valid JSON only.
@@ -109,9 +133,45 @@ RETURN VALID JSON ONLY
 }
 ''';
 
+    Exception? lastError;
+
+    for (int attempt = 0; attempt < _maxTotalAttempts; attempt++) {
+      final modelName =
+          _modelFallbackOrder[attempt % _modelFallbackOrder.length];
+
+      try {
+        final mealPlan = await _callModel(
+          modelName: modelName,
+          prompt: prompt,
+        );
+        return mealPlan;
+      } catch (e) {
+        final isRetryable = _isRetryableError(e);
+
+        if (!isRetryable) {
+          rethrow;
+        }
+
+        lastError = e is Exception ? e : Exception(e.toString());
+
+        // progressive backoff: 500ms, 1000ms, 1500ms, ...
+        final waitMs = 500 * (attempt + 1);
+        await Future.delayed(Duration(milliseconds: waitMs));
+      }
+    }
+
+    throw lastError ??
+        Exception(
+            'All Gemini fallback attempts failed to generate a meal plan.');
+  }
+
+  static Future<MealPlan> _callModel({
+    required String modelName,
+    required String prompt,
+  }) async {
     final response = await http.post(
       Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+        'https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent',
       ),
       headers: {
         'Content-Type': 'application/json',
@@ -129,7 +189,9 @@ RETURN VALID JSON ONLY
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to generate meal plan: ${response.body}');
+      throw Exception(
+        'Gemini call failed for model $modelName with status ${response.statusCode}: ${response.body}',
+      );
     }
 
     final decoded = jsonDecode(response.body);
@@ -137,13 +199,28 @@ RETURN VALID JSON ONLY
         decoded['candidates']?[0]?['content']?['parts']?[0]?['text'];
 
     if (content == null || content.toString().trim().isEmpty) {
-      throw Exception('Gemini returned an empty response.');
+      throw Exception(
+          'Gemini returned an empty response for model $modelName.');
     }
 
     final cleaned = _stripCodeFences(content.toString().trim());
     final Map<String, dynamic> mealJson = jsonDecode(cleaned);
 
     return MealPlan.fromJson(mealJson);
+  }
+
+  static bool _isRetryableError(Object error) {
+    final text = error.toString().toLowerCase();
+
+    return text.contains('503') ||
+        text.contains('502') ||
+        text.contains('504') ||
+        text.contains('500') ||
+        text.contains('429') ||
+        text.contains('unavailable') ||
+        text.contains('overloaded') ||
+        text.contains('deadline exceeded') ||
+        text.contains('temporarily');
   }
 
   static String _stripCodeFences(String text) {
