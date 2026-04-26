@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+.venv
 
 # Python bytecode and cache
 __pycache__/
