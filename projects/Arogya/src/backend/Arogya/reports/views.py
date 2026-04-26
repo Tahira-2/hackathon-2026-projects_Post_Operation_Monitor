@@ -24,7 +24,6 @@ class ReportListView(generics.ListAPIView):
 class ReportDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = DischargeReportSerializer
     permission_classes = [IsAuthenticated]
-    lookup_url_kwarg = "id"
 
     def get_queryset(self):
         return DischargeReport.objects.filter(patient=self.request.user)
