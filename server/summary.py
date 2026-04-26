@@ -19,7 +19,7 @@ from src.prescription_parser import (
     CSV1_HEADER, PrescriptionRow, parse_prescription, write_csv1,
 )
 from src.sensor_simulator import SAMPLE_INTERVAL_MIN
-from src.vitals import VITAL_BY_KEY, VITAL_KEYS
+from src.vitals import VITAL_BY_KEY
 
 from .config import SUMMARY_WINDOW_HOURS
 from .db import standalone_connection
@@ -227,66 +227,56 @@ def generate_summary_for_patient(patient_row: dict) -> GeneratedSummary | None:
     )
 
 
-def summary_to_csv(summary_row: dict, patient_row: dict) -> str:
-    """Render a stored summary as a doctor-friendly CSV download.
+_CSV_BUCKET_MIN = 10  # one CSV row per N simulated minutes
 
-    Two sections:
-      1. metadata KEY,VALUE rows at the top (patient, window, overall status,
-         alert counts, narrative);
-      2. a blank line and then a per-vital table with the average value, the
-         per-vital classification, and the envelope ranges that drove it.
+
+def summary_to_csv(summary_row: dict, patient_row: dict) -> str:
+    """Render the raw vitals stream that fed this summary as a CSV.
+
+    The doctor-facing in-app summary view still has the rich metadata,
+    classification, and narrative; this CSV is the doctor-friendly
+    timeline export of what the patient's vitals actually were during
+    the summary window.
+
+    Format: six columns, one row per 10 simulated minutes (averaged
+    across whatever 3-min samples fell in each bucket).
+        heart_rate, hrv, respiratory_rate, spo2, body_temp, time
+    `time` is the bucket midpoint as HH:MM since admission.
     """
-    prescription = _prescription_for(patient_row)
+    pid = int(summary_row["patient_id"])
+    sim_start = float(summary_row["sim_hour_start"])
+    sim_end   = float(summary_row["sim_hour_end"])
+
+    stream = stream_for(pid)
+    samples = stream.samples_in_window(hour_start=sim_start, hour_end=sim_end)
+
+    # Bucket samples into 10-min windows from sim_start onward.
+    start_minute = sim_start * 60.0
+    buckets: dict[int, list] = {}
+    for s in samples:
+        idx = int((s.minute_offset - start_minute) // _CSV_BUCKET_MIN)
+        if idx < 0:
+            continue
+        buckets.setdefault(idx, []).append(s)
+
     buf = io.StringIO()
     w = csv.writer(buf)
-
-    avg_for = {
-        "heart_rate":       summary_row["hr_avg"],
-        "hrv":              summary_row["hrv_avg"],
-        "respiratory_rate": summary_row["rr_avg"],
-        "spo2":             summary_row["spo2_avg"],
-        "body_temp":        summary_row["temp_avg"],
-    }
-
-    w.writerow(["GuardianPost-Op summary"])
-    w.writerow(["patient", patient_row.get("full_name") or patient_row.get("phone") or ""])
-    w.writerow(["sim_hour_start", f"{summary_row['sim_hour_start']:.2f}"])
-    w.writerow(["sim_hour_end",   f"{summary_row['sim_hour_end']:.2f}"])
-    w.writerow(["overall_status", summary_row["status_overall"]])
-    w.writerow(["critical_cycles_in_window", summary_row["alert_count_critical"]])
-    w.writerow(["warning_cycles_in_window",  summary_row["alert_count_warn"]])
-    w.writerow([])
-    w.writerow([
-        "vital", "unit", "average", "classification", "deviation_note",
-        "baseline_low", "baseline_high",
-        "warn_low", "warn_high",
-        "critical_low", "critical_high",
-    ])
-    for key in VITAL_KEYS:
-        rule = prescription.get(key)
-        if rule is None:
-            continue
-        avg = float(avg_for[key])
-        if avg < rule.critical_low:
-            cls, note = "CRITICAL", f"{avg:.2f} below critical_low {rule.critical_low}"
-        elif avg > rule.critical_high:
-            cls, note = "CRITICAL", f"{avg:.2f} above critical_high {rule.critical_high}"
-        elif avg < rule.warn_low:
-            cls, note = "WARNING", f"{avg:.2f} below warn_low {rule.warn_low}"
-        elif avg > rule.warn_high:
-            cls, note = "WARNING", f"{avg:.2f} above warn_high {rule.warn_high}"
-        else:
-            cls, note = "NORMAL", f"within baseline {rule.baseline_low}-{rule.baseline_high}"
+    w.writerow(["heart_rate", "hrv", "respiratory_rate", "spo2", "body_temp", "time"])
+    for idx in sorted(buckets):
+        rows = buckets[idx]
+        n = len(rows)
+        avg = lambda key: sum(getattr(r, key) for r in rows) / n
+        mid_minute = start_minute + idx * _CSV_BUCKET_MIN + _CSV_BUCKET_MIN / 2.0
+        h = int(mid_minute // 60)
+        m = int(mid_minute % 60)
         w.writerow([
-            key, rule.unit, f"{avg:.2f}", cls, note,
-            rule.baseline_low, rule.baseline_high,
-            rule.warn_low, rule.warn_high,
-            rule.critical_low, rule.critical_high,
+            f"{avg('heart_rate'):.2f}",
+            f"{avg('hrv'):.2f}",
+            f"{avg('respiratory_rate'):.2f}",
+            f"{avg('spo2'):.2f}",
+            f"{avg('body_temp'):.3f}",
+            f"{h:02d}:{m:02d}",
         ])
-    w.writerow([])
-    w.writerow(["narrative"])
-    for line in (summary_row["narrative"] or "").splitlines():
-        w.writerow([line])
     return buf.getvalue()
 
 

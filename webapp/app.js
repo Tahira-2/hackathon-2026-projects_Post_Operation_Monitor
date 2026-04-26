@@ -921,27 +921,29 @@
 
     const frag = html`
       ${banner}
-      <div class="card">
-        <h2 class="card-title">My patients</h2>
-        <p class="card-sub">
-          Click a patient's name to open their summaries. Toggle "summaries" to
-          control whether GuardianPost-Op delivers their 12-hour summaries
-          (auto and manual) to you.
-        </p>
-        <div id="patients-host"></div>
-        <hr class="sep" />
-        <form id="add-form" style="flex-direction:row;align-items:end;flex-wrap:wrap;gap:10px;">
-          <label style="flex:1;min-width:240px;">Patient phone
-            <span class="helper">they must have paired their device first</span>
-            <input name="phone" type="tel" required ${state.me.verified ? '' : 'disabled'} placeholder="+1-555-0299" />
-          </label>
-          <button type="submit" ${state.me.verified ? '' : 'disabled'}>Add patient</button>
-        </form>
-        <p class="muted" style="font-size:12.5px;margin:8px 0 0 0;">
-          After adding, click the patient's name to open their page and write
-          your note there — the AI parses it into the safe-range envelope used
-          for live monitoring and the 12-hour summaries.
-        </p>
+      <div id="patients-list-wrap">
+        <div class="card">
+          <h2 class="card-title">My patients</h2>
+          <p class="card-sub">
+            Click a patient's name to open their summaries. Toggle "summaries" to
+            control whether GuardianPost-Op delivers their 12-hour summaries
+            (auto and manual) to you.
+          </p>
+          <div id="patients-host"></div>
+          <hr class="sep" />
+          <form id="add-form" style="flex-direction:row;align-items:end;flex-wrap:wrap;gap:10px;">
+            <label style="flex:1;min-width:240px;">Patient phone
+              <span class="helper">they must have paired their device first</span>
+              <input name="phone" type="tel" required ${state.me.verified ? '' : 'disabled'} placeholder="+1-555-0299" />
+            </label>
+            <button type="submit" ${state.me.verified ? '' : 'disabled'}>Add patient</button>
+          </form>
+          <p class="muted" style="font-size:12.5px;margin:8px 0 0 0;">
+            After adding, click the patient's name to open their page and write
+            your note there — the AI parses it into the safe-range envelope used
+            for live monitoring and the 12-hour summaries.
+          </p>
+        </div>
       </div>
 
       <div id="patient-detail-host"></div>
@@ -1070,11 +1072,14 @@
 
   async function selectPatient(pid) {
     state.selectedPatientId = pid;
-    // Re-render so the row gets the .row-selected highlight.
-    await refreshPatients();
+    // Hide the "My patients" + Add-patient block — the detail panel is now
+    // a full-page replacement until the doctor closes it.
+    const wrap = document.getElementById('patients-list-wrap');
+    if (wrap) wrap.style.display = 'none';
     await refreshSelectedPatient(pid, { silent: false });
     // Mark all of this patient's deliveries as read; the patients list will
-    // pick up the cleared badge on the next tick.
+    // pick up the cleared badge on the next tick (still polled in the
+    // background so the badge is fresh when the doctor returns).
     try {
       await api(`/api/doctor/patients/${pid}/mark-read`, { method: 'POST' });
       await refreshPatients();
@@ -1209,6 +1214,8 @@
     document.getElementById('close-detail-btn').onclick = () => {
       state.selectedPatientId = null;
       host.innerHTML = '';
+      const wrap = document.getElementById('patients-list-wrap');
+      if (wrap) wrap.style.display = '';
       refreshPatients();
     };
     document.getElementById('save-note-btn').onclick = async () => {
