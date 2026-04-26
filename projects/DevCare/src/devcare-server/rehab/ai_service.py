@@ -1,6 +1,10 @@
 import google.generativeai as genai
 import json
+import logging
 from django.conf import settings
+from .models import ExerciseTemplate
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """
 Your role is to SUPPORT a licensed doctor, not replace them.
@@ -51,81 +55,111 @@ Avoid high-intensity or risky movements
 Assume doctor will review and edit
 """
 
-CHATBOT_PROMPT = """
+CHATBOT_PROMPT_TEMPLATE = """
 Your role is to SUPPORT a licensed doctor by generating a recovery todo list for a patient based on a query.
 
-If the user query is a greeting (like 'hi', 'hello'), respond with exactly this introductory sentence:
-"Hello! To help me generate a tailored recovery todo list for your doctor to review, please provide the following details:"
-Followed by this natural template:
-Condition:
-Patient:
-Severity: 
-Recovery stage: 
-Pain level:
-Medical history: 
-Doctor notes:
-Rehabilitation goal:
+CRITICAL INSTRUCTIONS:
+1. ONLY generate a `todoList` if the user provides clear patient data or asks for a recovery plan.
+2. The `todoList` MUST be an array of OBJECTS with 'name', 'metadata', and 'instruction'.
+3. 'name' should be just the exercise name.
+4. 'metadata' MUST be exactly this format: "ID Name Joint Min Max" from the database.
+5. 'instruction' should be the detailed instruction (reps, frequency, goal). No "sets".
 
-In this case, the todoList should be EMPTY.
+AVAILABLE EXERCISE TEMPLATES IN DATABASE:
+{exercise_list}
 
-If the user query describes a condition or asks for a recovery plan, generate a suggested recovery todo list.
+Example formatting for an item in `todoList`:
+{{
+  "name": "Ankle Pumps",
+  "metadata": "7 Ankle Pumps Ankle -20.0 40.0",
+  "instruction": "Perform 10 repetitions twice daily to improve circulation."
+}}
+
+If the query is a greeting (hi, hello), respond with: "Hello! To help me generate a tailored recovery todo list for your doctor to review, please provide the following details: Condition, Patient, Severity, Recovery stage, Pain level, Medical history, Doctor notes, Rehabilitation goal." Keep `todoList` EMPTY.
 
 OUTPUT FORMAT (STRICT JSON)
 Return ONLY JSON. No explanations.
-{
-"content": "Your conversational response or introductory sentence.",
-"todoList": [
-  "task 1",
-  "task 2",
-  ...
-]
-}
-
-SAFETY RULES
-Do NOT prescribe medication
-Do NOT give diagnosis
-Keep tasks low-risk and physiotherapy-based
-Avoid high-intensity or risky movements
+{{
+"content": "Your conversational response...",
+"todoList": [] 
+}}
 """
 
+def clean_json_response(text):
+    """Extracts JSON from potential markdown wrappers."""
+    text = text.strip()
+    if text.startswith("```json"):
+        text = text[7:-3].strip()
+    elif text.startswith("```"):
+        text = text[3:-3].strip()
+    
+    # Find first '{' and last '}'
+    start = text.find('{')
+    end = text.rfind('}')
+    if start != -1 and end != -1:
+        text = text[start:end+1]
+    return text
+
 def generate_rehab_plan(patient_data):
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-3-flash-preview')
-    
-    prompt = f"INPUT (JSON FORMAT):\n{json.dumps(patient_data, indent=2)}\n\n{SYSTEM_PROMPT}"
-    
-    response = model.generate_content(prompt)
-    
-    # Try to extract JSON from the response
-    content = response.text.strip()
-    if content.startswith("```json"):
-        content = content[7:-3].strip()
-    elif content.startswith("```"):
-        content = content[3:-3].strip()
-        
     try:
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        prompt = f"INPUT (JSON FORMAT):\n{json.dumps(patient_data, indent=2)}\n\n{SYSTEM_PROMPT}"
+        response = model.generate_content(prompt)
+        
+        if not response.text:
+            return {"error": "AI returned an empty response"}
+            
+        content = clean_json_response(response.text)
         return json.loads(content)
-    except json.JSONDecodeError:
-        return {"error": "Failed to generate structured plan", "raw_content": content}
+    except Exception as e:
+        print(f"ERROR in generate_rehab_plan: {str(e)}")
+        return {"error": str(e)}
 
 def generate_chatbot_response(query):
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-3-flash-preview')
-    
-    prompt = f"USER QUERY: {query}\n\n{CHATBOT_PROMPT}"
-    
-    response = model.generate_content(prompt)
-    
-    content = response.text.strip()
-    if content.startswith("```json"):
-        content = content[7:-3].strip()
-    elif content.startswith("```"):
-        content = content[3:-3].strip()
-        
     try:
-        return json.loads(content)
-    except json.JSONDecodeError:
+        # Fetch current templates with full metadata
+        templates = ExerciseTemplate.objects.all().values('id', 'name', 'target_joint', 'min_angle', 'max_angle')
+        template_strings = []
+        for t in templates:
+            template_strings.append(f"ID:{t['id']} Name:{t['name']} Joint:{t['target_joint']} Min:{t['min_angle']} Max:{t['max_angle']}")
+        
+        exercise_list = "\n".join(template_strings) if template_strings else "No templates available yet."
+        
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        # Inject templates into prompt
+        full_prompt = CHATBOT_PROMPT_TEMPLATE.format(exercise_list=exercise_list)
+        
+        final_query = f"USER QUERY: {query}\n\n{full_prompt}"
+        response = model.generate_content(final_query)
+        
+        if not response.candidates or not response.candidates[0].content.parts:
+            return {
+                "content": "I apologize, but I cannot process this request due to safety guidelines.",
+                "todoList": []
+            }
+            
+        content = clean_json_response(response.text)
+        data = json.loads(content)
+        
+        # Ensure todoList items are objects as requested
+        if "todoList" in data and isinstance(data["todoList"], list):
+            sanitized = []
+            for item in data["todoList"]:
+                if isinstance(item, dict):
+                    sanitized.append(item)
+                else:
+                    # Fallback if AI sends a string
+                    sanitized.append({"name": "Exercise", "metadata": "", "instruction": str(item)})
+            data["todoList"] = sanitized
+            
+        return data
+    except Exception as e:
+        print(f"ERROR in generate_chatbot_response: {str(e)}")
         return {
-            "content": "I encountered an error processing your request.",
+            "content": "I encountered an error while processing your request. Please try again.",
             "todoList": []
         }

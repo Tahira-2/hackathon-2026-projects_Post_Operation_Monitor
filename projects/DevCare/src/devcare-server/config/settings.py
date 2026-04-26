@@ -1,9 +1,14 @@
+import os
 from datetime import timedelta
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-x3u^s2c@%^*i$hax09!#9npa7@p1fx!i3yunsk2#b96csn*q$s'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-x3u^s2c@%^*i$hax09!#9npa7@p1fx!i3yunsk2#b96csn*q$s')
 
 DEBUG = True
 
@@ -104,4 +109,4 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
 
-GEMINI_API_KEY = "AIzaSyAsbHpATfcOEst7uZmBzOk3MHox_9xPmkc"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")

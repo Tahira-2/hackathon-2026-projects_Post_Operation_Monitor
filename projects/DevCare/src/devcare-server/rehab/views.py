@@ -29,6 +29,20 @@ class ExerciseTemplateListView(APIView):
 		return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class ExerciseTemplateCreateView(APIView):
+	permission_classes = [IsAuthenticated]
+
+	def post(self, request):
+		profile = getattr(request.user, "profile", None)
+		if not profile or profile.role != UserProfile.ROLE_DOCTOR:
+			return Response({"detail": "Only doctors can create exercise templates."}, status=status.HTTP_403_FORBIDDEN)
+
+		serializer = ExerciseTemplateSerializer(data=request.data)
+		serializer.is_valid(raise_exception=True)
+		serializer.save()
+		return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
 class RehabPlanCreateView(APIView):
 	permission_classes = [IsAuthenticated]
 
