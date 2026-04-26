@@ -2,6 +2,9 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { AdminLayout } from "@/components/layouts/AdminLayout";
 import { AdminDashboard } from "@/pages/admin/Dashboard";
+import { Users } from "@/pages/admin/Users";
+import { Specializations } from "@/pages/admin/Specializations";
+import { Medicines } from "@/pages/admin/Medicines";
 import { Login } from "@/pages/auth/Login";
 
 export function AdminRoutes() {
@@ -13,6 +16,9 @@ export function AdminRoutes() {
       <Route element={<ProtectedRoute allowedRoles={["admin"]} redirectPath="/admin/login" />}>
         <Route element={<AdminLayout />}>
           <Route path="/" element={<AdminDashboard />} />
+          <Route path="/users" element={<Users />} />
+          <Route path="/specializations" element={<Specializations />} />
+          <Route path="/medicines" element={<Medicines />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
       </Route>

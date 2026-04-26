@@ -26,42 +26,24 @@ export function Sidebar({ role }: SidebarProps) {
   
   const navItems = {
     admin: [
-      { group: "ACCESS CONTROL", items: [
-        { name: "Roles", href: "/admin/roles", icon: Users },
-        { name: "Permissions", href: "/admin/permissions", icon: Settings },
-      ]},
-      { group: "MANAGEMENT", items: [
-        { name: "Users", href: "/admin", icon: Users },
-        { name: "Tenants", href: "/admin/tenants", icon: LayoutDashboard },
-        { name: "Requests", href: "/admin/requests", icon: FileStack },
-      ]},
-      { group: "SYSTEM", items: [
-        { name: "Rules", href: "/admin/rules", icon: FileText },
-        { name: "Wallets", href: "/admin/wallets", icon: Wallet },
-      ]},
+      { name: "Specializations", href: "/admin/specializations", icon: Stethoscope },
+      { name: "Medicines", href: "/admin/medicines", icon: FileStack },
+      { name: "Users", href: "/admin/users", icon: Users },
     ],
     physician: [
-      { group: "DASHBOARD", items: [
-        { name: "Overview", href: "/physician", icon: LayoutDashboard },
-      ]},
-      { group: "CLINICAL", items: [
-        { name: "Patients", href: "/physician/patients", icon: Users },
-        { name: "Appointments", href: "/physician/appointments", icon: CalendarHeart },
-        { name: "Treatment Plans", href: "/physician/plans", icon: Stethoscope },
-      ]}
+      { name: "Overview", href: "/physician", icon: LayoutDashboard },
+      { name: "Patients", href: "/physician/patients", icon: Users },
+      { name: "Appointments", href: "/physician/appointments", icon: CalendarHeart },
+      { name: "Treatment Plans", href: "/physician/plans", icon: Stethoscope },
     ],
     patient: [
-      { group: "DASHBOARD", items: [
-        { name: "Health Summary", href: "/patient", icon: LayoutDashboard },
-      ]},
-      { group: "MANAGEMENT", items: [
-        { name: "My Records", href: "/patient/records", icon: FileText },
-        { name: "Appointments", href: "/patient/appointments", icon: CalendarHeart },
-      ]}
+      { name: "Health Summary", href: "/patient", icon: LayoutDashboard },
+      { name: "My Records", href: "/patient/records", icon: FileText },
+      { name: "Appointments", href: "/patient/appointments", icon: CalendarHeart },
     ]
   }
 
-  const groups = navItems[role]
+  const items = navItems[role]
 
   return (
     <>
@@ -99,40 +81,30 @@ export function Sidebar({ role }: SidebarProps) {
 
         <div className="flex flex-col flex-1 py-4 pt-6 overflow-y-auto hide-scrollbars overflow-x-hidden">
           
-          {groups.map((group, idx) => (
-            <div key={idx} className={cn("mb-6", isCollapsed ? "px-2" : "px-4")}>
-              {(!isCollapsed || mobileOpen) && (
-                <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 select-none">
-                  {group.group}
-                </h4>
-              )}
+          <nav className={cn("grid gap-1 mb-6", isCollapsed ? "px-2" : "px-4")}>
+            {items.map((item) => {
+              const Icon = item.icon
+              const isActive = location.pathname === item.href || (item.href !== `/${role}` && location.pathname.startsWith(item.href + '/'))
               
-              <nav className="grid gap-1">
-                {group.items.map((item) => {
-                  const Icon = item.icon
-                  const isActive = location.pathname === item.href || (item.href !== `/${role}` && location.pathname.startsWith(item.href + '/'))
-                  
-                  return (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      title={isCollapsed && !mobileOpen ? item.name : undefined}
-                      className={cn(
-                        "flex items-center gap-3 rounded-lg py-2.5 transition-all outline-none cursor-pointer",
-                        isCollapsed && !mobileOpen ? "justify-center px-0" : "px-3",
-                        isActive 
-                          ? "bg-primary/10 text-primary" 
-                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                      )}
-                    >
-                      <Icon className={cn("shrink-0", isCollapsed && !mobileOpen ? "h-5 w-5" : "h-[18px] w-[18px]")} />
-                      {(!isCollapsed || mobileOpen) && <span className="text-sm font-medium">{item.name}</span>}
-                    </Link>
-                  )
-                })}
-              </nav>
-            </div>
-          ))}
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  title={isCollapsed && !mobileOpen ? item.name : undefined}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg py-2.5 transition-all outline-none cursor-pointer",
+                    isCollapsed && !mobileOpen ? "justify-center px-0" : "px-3",
+                    isActive 
+                      ? "bg-primary/10 text-primary" 
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  )}
+                >
+                  <Icon className={cn("shrink-0", isCollapsed && !mobileOpen ? "h-5 w-5" : "h-[18px] w-[18px]")} />
+                  {(!isCollapsed || mobileOpen) && <span className="text-sm font-medium">{item.name}</span>}
+                </Link>
+              )
+            })}
+          </nav>
         </div>
       </aside>
     </>

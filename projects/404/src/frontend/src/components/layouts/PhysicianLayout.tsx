@@ -4,7 +4,7 @@ import { Sidebar } from "../shared/Sidebar"
 
 export function PhysicianLayout() {
   return (
-    <div className="relative flex min-h-screen flex-col bg-background">
+    <div className="relative flex h-screen flex-col bg-background">
       <Header role="Physician Portal" />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar role="physician" />

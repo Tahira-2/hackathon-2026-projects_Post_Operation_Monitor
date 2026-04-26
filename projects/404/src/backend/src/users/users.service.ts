@@ -18,7 +18,13 @@ const userSelect = {
   role: true,
   createdAt: true,
   patient: { select: { id: true } },
-  doctor: { select: { id: true } },
+  doctor: { 
+    select: { 
+      id: true, 
+      specializationId: true,
+      specialization: { select: { id: true, name: true } } 
+    } 
+  },
 };
 
 @Injectable()
@@ -145,14 +151,48 @@ export class UsersService {
     return user;
   }
 
-  async update(id: string, data: UpdateUserDto) {
-    await this.findOne(id);
-    return this.prisma.user.update({ where: { id }, data, select: userSelect });
+  async update(id: string, payload: any) {
+    const user = await this.findOne(id);
+    const { specializationId, specializationName, specializationDescription, ...userData } = payload;
+
+    return this.prisma.$transaction(async (tx) => {
+      let finalSpecializationId = specializationId;
+
+      if (userData.role === 'DOCTOR' || user.role === 'DOCTOR') {
+        if (!finalSpecializationId && specializationName) {
+           const customSpec = await this.specializationsService.getOrCreateByName(specializationName, specializationDescription);
+           finalSpecializationId = customSpec.id;
+        }
+      }
+
+      const updatedUser = await tx.user.update({
+        where: { id },
+        data: userData,
+        select: userSelect,
+      });
+
+      if (updatedUser.role === 'DOCTOR' && finalSpecializationId) {
+        await tx.doctor.upsert({
+          where: { userId: id },
+          create: { userId: id, specializationId: finalSpecializationId },
+          update: { specializationId: finalSpecializationId },
+        });
+      }
+
+      return updatedUser;
+    });
   }
 
   async remove(id: string) {
-    await this.findOne(id);
-    return this.prisma.user.delete({ where: { id }, select: userSelect });
+    const user = await this.findOne(id);
+    return this.prisma.$transaction(async (tx) => {
+      if (user.role === 'DOCTOR') {
+        await tx.doctor.deleteMany({ where: { userId: id } });
+      } else if (user.role === 'PATIENT') {
+        await tx.patient.deleteMany({ where: { userId: id } });
+      }
+      return tx.user.delete({ where: { id }, select: userSelect });
+    });
   }
 
   private async resolveSpecializationId(data: CreateUserDto) {
