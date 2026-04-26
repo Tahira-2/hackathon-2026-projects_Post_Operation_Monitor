@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:medimeal/models/hydration_workflow.dart';
+import 'package:medimeal/models/meal_plan.dart';
 import 'package:medimeal/models/medications.dart';
 import 'package:medimeal/models/timing_workflow.dart';
 import 'package:medimeal/models/user_medication.dart';
@@ -9,6 +10,7 @@ import 'package:medimeal/screens/meals_tab.dart';
 import 'package:medimeal/services/hydration_workflow_service.dart';
 import 'package:medimeal/services/notification_service.dart';
 import 'package:medimeal/services/timing_workflow_service.dart';
+import 'package:medimeal/services/weekly_meal_impact_service.dart';
 import 'package:medimeal/services/weekly_tracking_workflow_service.dart';
 
 import '../models/active_workflow.dart';
@@ -43,22 +45,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   WorkflowSuggestion? latestSuggestion;
   CareState? latestCareState;
   List<ActiveWorkflow> activeWorkflows = [];
-
-  void startWeeklyTracking() {
-    if (latestMedication == null) return;
-
-    final workflow = WeeklyTrackingWorkflowService.create(
-      medicationName: latestMedication!.name,
-    );
-
-    setState(() {
-      activeWeeklyTrackingWorkflow = workflow;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Weekly tracking started')),
-    );
-  }
 
   @override
   void initState() {
@@ -138,6 +124,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     });
   }
 
+  void activateWorkflow() {
+    if (latestSuggestion == null) return;
+
+    final newWorkflow = ActiveWorkflow(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: latestSuggestion!.title,
+      description: latestSuggestion!.description,
+      status: 'Active',
+    );
+
+    setState(() {
+      activeWorkflows.add(newWorkflow);
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Workflow activated')),
+    );
+  }
+
   void startHydrationRoutine() {
     if (latestMedication == null) return;
 
@@ -175,22 +180,42 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-  void activateWorkflow() {
-    if (latestSuggestion == null) return;
+  void startWeeklyTracking() {
+    if (latestMedication == null) return;
 
-    final newWorkflow = ActiveWorkflow(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: latestSuggestion!.title,
-      description: latestSuggestion!.description,
-      status: 'Active',
+    final workflow = WeeklyTrackingWorkflowService.create(
+      medicationName: latestMedication!.name,
     );
 
     setState(() {
-      activeWorkflows.add(newWorkflow);
+      activeWeeklyTrackingWorkflow = workflow;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Workflow activated')),
+      const SnackBar(content: Text('Weekly tracking started')),
+    );
+  }
+
+  void logMealForWeeklyTracking(MealPlan mealPlan) {
+    if (activeWeeklyTrackingWorkflow == null) return;
+
+    print('ingredientsUsed: ${mealPlan.ingredientsUsed}');
+
+    final impact = WeeklyMealImpactService.evaluate(mealPlan.ingredientsUsed);
+    print('addedScore: ${impact.addedScore}');
+    print('trackedIngredients: ${impact.trackedIngredients}');
+
+    final updated = WeeklyTrackingWorkflowService.applyMealImpact(
+      activeWeeklyTrackingWorkflow!,
+      impact.addedScore,
+    );
+
+    setState(() {
+      activeWeeklyTrackingWorkflow = updated;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(impact.summary)),
     );
   }
 
@@ -205,9 +230,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         latestCareState: latestCareState,
         activeTimingWorkflow: activeTimingWorkflow,
         activeHydrationWorkflow: activeHydrationWorkflow,
+        activeWeeklyTrackingWorkflow: activeWeeklyTrackingWorkflow,
         onStartHydrationRoutine: startHydrationRoutine,
         onLogHydrationGlass: logHydrationGlass,
-        activeWeeklyTrackingWorkflow: activeWeeklyTrackingWorkflow,
         onStartWeeklyTracking: startWeeklyTracking,
       ),
       MedicationsTab(
@@ -224,6 +249,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         activeTimingWorkflow: activeTimingWorkflow,
         activeHydrationWorkflow: activeHydrationWorkflow,
         activeWeeklyTrackingWorkflow: activeWeeklyTrackingWorkflow,
+        onLogMealForWeeklyTracking: logMealForWeeklyTracking,
       ),
     ];
 
