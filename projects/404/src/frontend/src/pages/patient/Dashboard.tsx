@@ -186,7 +186,7 @@ export function PatientDashboard() {
               <Button className="bg-emerald-600 hover:bg-emerald-700 rounded-xl">
                 Start Chat
               </Button>
-              <Button variant="outline" className="border-white/20 hover:bg-white hover:text-slate-900 text-white rounded-xl transition-all duration-300">
+              <Button variant="outline" className="border-white/20 text-black hover:bg-white hover:text-emerald-600  rounded-xl transition-all duration-300">
                 Call Support
               </Button>
             </div>
