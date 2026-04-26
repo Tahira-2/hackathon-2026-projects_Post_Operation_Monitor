@@ -122,14 +122,16 @@ def create_app() -> Flask:
             """INSERT INTO patients
                (phone, phone_normalized, device_number, device_secret, device_salt,
                 full_name, prescription, envelope_csv, envelope_set_at, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               RETURNING id""",
             (phone, phone_norm, device_number, device_hash, device_salt,
              full_name, prescription, envelope_csv,
              int(time.time()) if envelope_csv else None, int(time.time())),
         )
+        new_id = cur.fetchone()["id"]
         db.commit()
-        token = issue_session("patient", cur.lastrowid)
-        return jsonify({"token": token, "patient_id": cur.lastrowid})
+        token = issue_session("patient", new_id)
+        return jsonify({"token": token, "patient_id": new_id})
 
     @app.post("/api/auth/patient/login")
     def patient_login():
@@ -175,14 +177,16 @@ def create_app() -> Flask:
             """INSERT INTO doctors
                (email, password_hash, password_salt, full_name, phone,
                 verified, created_at)
-               VALUES (?, ?, ?, ?, ?, 0, ?)""",
+               VALUES (?, ?, ?, ?, ?, 0, ?)
+               RETURNING id""",
             (email, pwd_hash, pwd_salt, full_name, phone, int(time.time())),
         )
+        new_id = cur.fetchone()["id"]
         db.commit()
-        token = issue_session("doctor", cur.lastrowid)
+        token = issue_session("doctor", new_id)
         return jsonify({
             "token": token,
-            "doctor_id": cur.lastrowid,
+            "doctor_id": new_id,
             "needs_verification": True,
         })
 
@@ -790,11 +794,12 @@ def create_app() -> Flask:
         cur = db.execute(
             """INSERT INTO doctors
                (email, password_hash, password_salt, full_name, phone, verified, created_at)
-               VALUES (?, ?, ?, ?, ?, 1, ?)""",
+               VALUES (?, ?, ?, ?, ?, 1, ?)
+               RETURNING id""",
             (doctor_email, d_pwd_hash, d_pwd_salt,
              "Doctor One", "+1-555-0100", int(time.time())),
         )
-        doctor_id = cur.lastrowid
+        doctor_id = cur.fetchone()["id"]
 
         # Patient with the proposal's sample prescription. Parse the note
         # immediately so the analysis pipeline has an envelope on first run.
@@ -811,13 +816,14 @@ def create_app() -> Flask:
                (phone, phone_normalized, device_number, device_secret, device_salt,
                 full_name, prescription, envelope_csv, envelope_set_by,
                 envelope_set_at, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               RETURNING id""",
             (patient_phone, _normalize_phone(patient_phone),
              patient_device, p_dev_hash, p_dev_salt,
              "Patient One", sample_prescription, sample_envelope_csv,
              doctor_id, now_ts, now_ts),
         )
-        patient_id = cur.lastrowid
+        patient_id = cur.fetchone()["id"]
 
         now = int(time.time())
         db.execute(

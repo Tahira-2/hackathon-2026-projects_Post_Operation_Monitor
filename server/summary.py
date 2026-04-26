@@ -200,7 +200,8 @@ def generate_summary_for_patient(patient_row: dict) -> GeneratedSummary | None:
                (patient_id, generated_at, sim_hour_start, sim_hour_end, status_overall,
                 hr_avg, hrv_avg, rr_avg, spo2_avg, temp_avg,
                 alert_count_warn, alert_count_critical, narrative)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               RETURNING id""",
             (
                 patient_id, int(time.time()), sim_start, sim_end, overall.value,
                 averages["heart_rate"], averages["hrv"], averages["respiratory_rate"],
@@ -208,7 +209,7 @@ def generate_summary_for_patient(patient_row: dict) -> GeneratedSummary | None:
                 warn, crit, narrative,
             ),
         )
-        summary_id = cur.lastrowid
+        summary_id = cur.fetchone()["id"]
         conn.commit()
     finally:
         conn.close()

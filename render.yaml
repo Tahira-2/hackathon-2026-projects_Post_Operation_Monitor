@@ -31,3 +31,11 @@ services:
         # cadence fires every ~3 wall-minutes. Reasonable for an online
         # demo. Bump to 4800 (1 wall-second = 80 sim-min) for a fast tour.
         value: "240"
+      - key: DATABASE_URL
+        # Postgres connection string. Paste your Neon pooled connection URL
+        # via Render's dashboard (the `sync: false` line below tells Render
+        # to prompt for it on first deploy and keep it secret thereafter).
+        # Without this var the app falls back to local SQLite at
+        # data/guardian.db, which is wiped on every Render free-tier
+        # spin-down — that's the bug this var fixes.
+        sync: false

@@ -152,8 +152,33 @@ Subsequent `git push origin main` triggers an auto-redeploy.
 
 ### Free-tier caveats
 * The service sleeps after ~15 min of inactivity and takes ~30 s to wake on the next request.
-* Render's free filesystem is **ephemeral on every redeploy** — the SQLite file at `data/guardian.db` is wiped each time you push. For a demo this is fine (re-seed and continue); for persistent data, attach Render's $1/mo persistent disk at `/opt/render/project/src/data` or migrate to hosted Postgres.
+* Render's free filesystem is **ephemeral on every redeploy and on cold start** — if `DATABASE_URL` is not set, the app falls back to a local SQLite file at `data/guardian.db` that gets wiped each time the container restarts. Wire up `DATABASE_URL` (Neon walkthrough below) to make accounts persist.
 * Single worker (`--workers 1` in `render.yaml`) — the auto-summary scheduler runs in-process and can't be safely sharded across workers without external coordination.
+
+---
+
+## Persistent storage with Neon (free Postgres)
+
+GuardianPost-Op auto-detects a Postgres connection string in the `DATABASE_URL` env var. With it set, all accounts, summaries, sessions, and live alerts survive Render's free-tier spin-downs and redeploys. Without it, the app falls back to SQLite (fine for local dev, lost on every Render restart).
+
+[Neon](https://neon.tech) gives you a free Postgres database with no credit card and no time-based expiry. Setup takes ~3 minutes:
+
+1. Sign up at https://neon.tech (use **Continue with GitHub** for the fastest path).
+2. On the dashboard, click **New Project**. Defaults are fine — pick the region closest to your Render region (Oregon if you used the default `render.yaml`).
+3. Once the project finishes creating, you'll land on a "Connection Details" panel. Switch the **Connection mode** dropdown to **Pooled connection** (Neon scales the pool down when idle, which keeps the free tier humming).
+4. Copy the full connection string — it looks like:
+   ```text
+   postgresql://USER:PASSWORD@ep-xxx-pooler.region.aws.neon.tech/neondb?sslmode=require
+   ```
+5. In your Render dashboard, open the `guardian-postop` service → **Environment** → **Add Environment Variable**. Set:
+   * **Key:** `DATABASE_URL`
+   * **Value:** (the Neon connection string from step 4)
+6. Click **Save Changes**. Render will trigger a redeploy automatically.
+7. After the redeploy finishes, open the public URL and click **Wipe DB & re-seed demo data** once. From now on every account you create persists across spin-downs and redeploys.
+
+To verify the migration worked: tail the Render deploy logs — you'll see `gunicorn server.app:app` boot, and the first authenticated request will succeed against Neon. If `DATABASE_URL` is set but unreachable, the deploy crashes on import, so any successful boot means Postgres is live.
+
+If you ever want to fall back to SQLite (e.g. for a quick local change), just unset `DATABASE_URL` in Render's Environment tab and redeploy.
 
 ---
 
