@@ -21,6 +21,7 @@ import PatientHomePage from "./pages/patient/PatientHomePage";
 import PatientAppointmentsPage from "./pages/patient/PatientAppointmentsPage";
 import PatientMedicationsPage from "./pages/patient/PatientMedicationsPage";
 import PatientTasksPage from "./pages/patient/PatientTasksPage";
+import ChatPage from "./pages/ChatPage";
 
 // Physician Pages
 import PhysicianHomePage from "./pages/physician/PhysicianHomePage";
@@ -62,6 +63,7 @@ function App() {
               />
               <Route path="medications" element={<PatientMedicationsPage />} />
               <Route path="tasks" element={<PatientTasksPage />} />
+              <Route path="messages" element={<ChatPage />} />
             </Route>
           </Route>
 
@@ -77,10 +79,8 @@ function App() {
             <Route path="/physician" element={<PhysicianLayout />}>
               <Route index element={<Navigate to="home" replace />} />
               <Route path="home" element={<PhysicianHomePage />} />
-              <Route
-                path="availability"
-                element={<PhysicianAvailabilityPage />}
-              />
+              <Route path="availability" element={<PhysicianAvailabilityPage />} />
+              <Route path="messages" element={<ChatPage />} />
               <Route
                 path="appointments"
                 element={
