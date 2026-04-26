@@ -36,7 +36,7 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    'user','visualisation', 'vaccine_tracker'
+    'user','visualisation', 'event', 'vaccine_tracker'
 ]
 
 DJANGO_APPS = [

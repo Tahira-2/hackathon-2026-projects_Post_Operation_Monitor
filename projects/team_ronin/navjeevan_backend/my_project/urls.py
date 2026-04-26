@@ -35,6 +35,6 @@ urlpatterns = [
     path('api/auth/', include('user.urls')),
     path('api/vaccines/', include('vaccine_tracker.urls')),
     path('', include("visualisation.urls")),
-
+    path ('', include('event.urls')),
     # Local Apps
 ]

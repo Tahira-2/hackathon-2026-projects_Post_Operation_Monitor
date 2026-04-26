@@ -51,7 +51,11 @@ class StandardPagination(PageNumberPagination):
 
 def _jwt_tokens(user) -> dict:
     refresh = RefreshToken.for_user(user)
-    return {'refresh': str(refresh), 'access': str(refresh.access_token)}
+    # Include user_type so authentication can resolve the correct user table.
+    refresh['user_type'] = user.user_type
+    access = refresh.access_token
+    access['user_type'] = user.user_type
+    return {'refresh': str(refresh), 'access': str(access)}
 
 
 def _profile_serializer(user):

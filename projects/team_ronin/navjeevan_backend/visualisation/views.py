@@ -105,6 +105,10 @@ class IndividualVaccinationViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        # During Swagger schema generation, drf_yasg calls this with AnonymousUser.
+        # Return an empty queryset to avoid casting errors.
+        if getattr(self, 'swagger_fake_view', False):
+            return IndividualVaccinationRecord.objects.none()
         return IndividualVaccinationRecord.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):

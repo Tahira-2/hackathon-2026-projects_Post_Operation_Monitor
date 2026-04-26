@@ -115,7 +115,7 @@ class BaseUser(AbstractUser):
     is_verified   = models.BooleanField(
                         default=False,
                         help_text="False until the user completes Step 2 activation.")
-    user_type     = models.CharField(max_length=10, choices=USER_TYPE_CHOICES)
+    user_type     = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='normal')
     last_login_at = models.DateTimeField(null=True, blank=True)
 
     # Suppress reverse-accessor clashes (Django E304) that arise when two
@@ -176,6 +176,11 @@ class NormalUser(BaseUser):
             models.Index(fields=['status']),
         ]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Ensure user_type is always 'normal' for NormalUser instances
+        self.user_type = 'normal'
+
     def save(self, *args, **kwargs):
         self.user_type = 'normal'
         super().save(*args, **kwargs)
@@ -203,6 +208,11 @@ class MedicalPersonnel(BaseUser):
             models.Index(fields=['login_id']),
             models.Index(fields=['status']),
         ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Ensure user_type is always 'medical' for MedicalPersonnel instances
+        self.user_type = 'medical'
 
     def save(self, *args, **kwargs):
         self.user_type = 'medical'

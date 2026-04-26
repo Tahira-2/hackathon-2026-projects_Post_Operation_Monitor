@@ -30,6 +30,22 @@ class DualUserJWTAuthentication(JWTAuthentication):
         except KeyError:
             raise InvalidToken("Token contained no recognizable user identification")
 
+        user_type = validated_token.get('user_type')
+
+        if user_type == 'medical':
+            try:
+                return MedicalPersonnel.objects.get(pk=user_id)
+            except MedicalPersonnel.DoesNotExist:
+                raise InvalidToken("Medical personnel user not found")
+
+        if user_type == 'normal':
+            try:
+                return NormalUser.objects.get(pk=user_id)
+            except NormalUser.DoesNotExist:
+                raise InvalidToken("Normal user not found")
+
+        # Backward compatibility for older tokens without user_type claim.
+        # This fallback can be ambiguous if IDs overlap across user tables.
         # Try NormalUser first
         try:
             user = NormalUser.objects.get(pk=user_id)
