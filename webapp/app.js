@@ -508,7 +508,7 @@
       <div class="banner ${cls}">
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
           <div>
-            <strong>${alerts.length} live alert${alerts.length === 1 ? '' : 's'} from your wearable</strong>
+            <strong>${alerts.length} hourly check${alerts.length === 1 ? '' : 's'} flagged your vitals</strong>
             ${critCount ? ` &middot; <strong>${critCount} CRITICAL</strong>` : ''}
             <div style="font-size:13px;margin-top:4px;">Most recent: <span class="kbd">${escapeHtml(top.message)}</span></div>
           </div>
@@ -858,19 +858,18 @@
         </p>
         <div id="patients-host"></div>
         <hr class="sep" />
-        <form id="add-form">
-          <label>Patient phone <span class="helper">required — they must have paired their device first</span>
+        <form id="add-form" style="flex-direction:row;align-items:end;flex-wrap:wrap;gap:10px;">
+          <label style="flex:1;min-width:240px;">Patient phone
+            <span class="helper">they must have paired their device first</span>
             <input name="phone" type="tel" required ${state.me.verified ? '' : 'disabled'} placeholder="+1-555-0299" />
           </label>
-          <label>Doctor's note <span class="helper">what to expect from this patient — the AI parses this into the safe-range envelope used for live monitoring and the 12-hour summaries</span>
-            <textarea name="doctors_note" rows="6" ${state.me.verified ? '' : 'disabled'}
-              placeholder="e.g. Post-CABG day 2, on metoprolol. Expect resting HR 60-78. Warn if HR sustained above 95, page critical above 110. SpO2 should stay above 94…"></textarea>
-          </label>
-          <div class="btn-row">
-            <button type="submit" ${state.me.verified ? '' : 'disabled'}>Add patient</button>
-            <span class="muted" style="font-size:12.5px;">You can edit the note any time after adding.</span>
-          </div>
+          <button type="submit" ${state.me.verified ? '' : 'disabled'}>Add patient</button>
         </form>
+        <p class="muted" style="font-size:12.5px;margin:8px 0 0 0;">
+          After adding, click the patient's name to open their page and write
+          your note there — the AI parses it into the safe-range envelope used
+          for live monitoring and the 12-hour summaries.
+        </p>
       </div>
 
       <div id="patient-detail-host"></div>
@@ -894,18 +893,14 @@
     document.getElementById('add-form').onsubmit = async (e) => {
       e.preventDefault();
       const phone = e.target.phone.value.trim();
-      const doctors_note = e.target.doctors_note.value.trim();
       try {
         const r = await api('/api/doctor/patients/add', {
-          method: 'POST', body: { phone, doctors_note },
+          method: 'POST', body: { phone },
         });
-        const noteSuffix = r.doctors_note_saved
-          ? ` Note saved (parsed via ${r.envelope_source || 'fallback'}).`
-          : ' No note attached — set one from the patient detail panel.';
-        toast(`Added ${r.full_name || r.patient_id}.${noteSuffix}`, 'ok');
+        toast(`Added ${r.full_name || r.patient_id}. Open their page to write the note.`, 'ok');
         e.target.reset();
         await refreshDoctorView();
-        // Auto-open the new patient so the doctor can see / edit the note + envelope.
+        // Auto-open the new patient so the doctor can write the note + see envelope.
         await selectPatient(r.patient_id);
       } catch (err) { toast(err.message, 'error'); }
     };
@@ -963,7 +958,7 @@
         ? `<span class="pill brand" style="margin-left:6px;">${p.unread_count} new</span>`
         : '';
       const alertBadge = p.open_alerts_count > 0
-        ? `<span class="pill crit" style="margin-left:6px;">${p.open_alerts_count} live alerts</span>`
+        ? `<span class="pill crit" style="margin-left:6px;">${p.open_alerts_count} hourly alerts</span>`
         : '';
       const lastTime = p.last_received_at
         ? `<div class="muted" style="font-size:11.5px;">${escapeHtml(fmtTimestamp(p.last_received_at))}</div>`
@@ -1089,22 +1084,21 @@
         </div>`).join('');
 
     const alertsBody = openAlerts.length === 0
-      ? `<div class="muted" style="font-size:13px;">No open live alerts.</div>`
+      ? `<div class="muted" style="font-size:13px;">No open hourly alerts.</div>`
       : `
         <div class="banner crit">
-          ${openAlerts.length} open live alert${openAlerts.length === 1 ? '' : 's'}.
+          ${openAlerts.length} open hourly alert${openAlerts.length === 1 ? '' : 's'}.
           <button id="ack-alerts-btn" class="ghost" style="float:right;color:white;background:transparent;border:1px solid white;">Mark all reviewed</button>
         </div>
-        <div style="max-height:200px;overflow:auto;font-size:12.5px;">
+        <div style="max-height:240px;overflow:auto;font-size:12.5px;">
           <table>
-            <thead><tr><th>Sim hr</th><th>Status</th><th>Vital</th><th>Reading</th><th>Note</th></tr></thead>
+            <thead><tr><th>Sim hr</th><th>Status</th><th>Cycles flagged</th><th>Detail</th></tr></thead>
             <tbody>
               ${openAlerts.slice(0, 30).map(a => `
                 <tr>
                   <td>${fmt(a.sim_hour, 2)}</td>
                   <td><span class="pill ${a.status === 'CRITICAL' ? 'crit' : 'warn'}">${escapeHtml(a.status)}</span></td>
-                  <td>${escapeHtml(a.vital)}</td>
-                  <td>${fmt(a.value, 2)}</td>
+                  <td>${a.vital === 'hourly_review' ? Math.round(a.value) : '—'}</td>
                   <td class="muted">${escapeHtml(a.message)}</td>
                 </tr>`).join('')}
             </tbody>
@@ -1140,7 +1134,12 @@
         </div>
 
         <hr class="sep" />
-        <h3 style="margin:0 0 6px 0;font-size:14px;">Live alerts (per 3-min sample)</h3>
+        <h3 style="margin:0 0 6px 0;font-size:14px;">Hourly check alerts</h3>
+        <div class="muted" style="font-size:12px;margin-bottom:6px;">
+          The AI compares the patient's vitals to the envelope every 30 simulated
+          minutes; if any check in the past simulated hour was non-normal, it's
+          summarized as one alert here.
+        </div>
         ${alertsBody}
 
         <hr class="sep" />
