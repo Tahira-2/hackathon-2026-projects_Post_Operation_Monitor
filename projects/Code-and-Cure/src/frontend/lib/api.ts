@@ -61,6 +61,9 @@ export interface Doctor {
   location: string;
   rating: number;
   review_count: number;
+  lat?: number | null;
+  lng?: number | null;
+  distance_miles?: number | null;
 }
 
 export interface AppointmentSlot {
@@ -197,6 +200,17 @@ export interface IntakeForm {
   patient_id?: string;
 }
 
+export interface Prescription {
+  id: string;
+  appointment_id: string;
+  patient_id: string;
+  doctor_id: string;
+  requested_medication: string;
+  approval_status: string;
+  block_reason?: string | null;
+  created_at?: string;
+}
+
 // ---- API surface ----
 export const api = {
   auth: {
@@ -222,10 +236,26 @@ export const api = {
   },
 
   doctors: {
-    list: (specialty?: string) =>
-      apiFetch<Doctor[]>(
-        `/api/v1/doctors/${specialty ? `?specialty=${encodeURIComponent(specialty)}` : ""}`
-      ),
+    list: (params?: {
+      specialty?: string;
+      q?: string;
+      location?: string;
+      latitude?: number;
+      longitude?: number;
+      radius?: number;
+      source?: "auto" | "db" | "live";
+    }) => {
+      const qs = new URLSearchParams();
+      if (params?.specialty) qs.set("specialty", params.specialty);
+      if (params?.q) qs.set("q", params.q);
+      if (params?.location) qs.set("location", params.location);
+      if (params?.latitude !== undefined) qs.set("latitude", String(params.latitude));
+      if (params?.longitude !== undefined) qs.set("longitude", String(params.longitude));
+      if (params?.radius !== undefined) qs.set("radius", String(params.radius));
+      if (params?.source) qs.set("source", params.source);
+      const queryString = qs.toString();
+      return apiFetch<Doctor[]>(`/api/v1/doctors/${queryString ? `?${queryString}` : ""}`);
+    },
     slots: (doctorId: string) =>
       apiFetch<AppointmentSlot[]>(`/api/v1/doctors/${doctorId}/slots`),
   },
@@ -240,6 +270,19 @@ export const api = {
         }
       ),
     list: () => apiFetch<Appointment[]>("/api/v1/appointments/"),
+    cancel: (appointment_id: string) =>
+      apiFetch<{ appointment_id: string; status: string; message: string }>(
+        `/api/v1/appointments/${appointment_id}/cancel`,
+        { method: "PATCH" }
+      ),
+    reschedule: (appointment_id: string, new_scheduled_at: string) =>
+      apiFetch<{ appointment_id: string; scheduled_at: string; status: string; message: string }>(
+        `/api/v1/appointments/${appointment_id}/reschedule`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ new_scheduled_at }),
+        }
+      ),
   },
 
   intake: {
@@ -273,6 +316,38 @@ export const api = {
       formData.append("file", file);
       return apiUpload<TranscribeUploadResponse>("/api/v1/soap/transcribe-upload", formData);
     },
+    generate: (transcript: string) =>
+      apiFetch<SOAPNote>("/api/v1/soap/generate", {
+        method: "POST",
+        body: JSON.stringify({ transcript }),
+      }),
+    downloadDocument: async (appointmentId: string) => {
+      const token = getStoredToken();
+      const res = await fetch(`${BASE}/api/v1/soap/${appointmentId}/document/download`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(err.detail || "Failed to download SOAP document");
+      }
+      return res.blob();
+    },
+    reuploadDocument: (appointmentId: string, file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return apiUpload<{ status: string; message: string }>(
+        `/api/v1/soap/${appointmentId}/document/reupload`,
+        formData
+      );
+    },
+    emailDocument: (appointmentId: string, targetEmail: string) => {
+      const formData = new FormData();
+      formData.append("target_email", targetEmail);
+      return apiUpload<{ status: string; message: string; target_email: string }>(
+        `/api/v1/soap/${appointmentId}/document/email`,
+        formData
+      );
+    },
   },
 
   fhir: {
@@ -300,6 +375,14 @@ export const api = {
     finalize: (session_id: string) =>
       apiFetch<SessionFinalizeResponse>(`/api/v1/soap/session/${session_id}/finalize`, {
         method: "POST",
+      }),
+  },
+  prescriptions: {
+    list: () => apiFetch<Prescription[]>("/api/v1/prescriptions/"),
+    create: (appointment_id: string, medication_name: string) =>
+      apiFetch<Prescription>("/api/v1/prescriptions/", {
+        method: "POST",
+        body: JSON.stringify({ appointment_id, medication_name }),
       }),
   },
 };
