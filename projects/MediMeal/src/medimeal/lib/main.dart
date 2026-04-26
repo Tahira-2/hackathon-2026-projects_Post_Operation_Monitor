@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:medimeal/services/notification_service.dart';
+import 'package:medimeal/theme/app_theme.dart';
 import 'screens/main_navigation_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
-  await NotificationService.init();
+  await NotificationService.initialize();
 
   runApp(const MediMealApp());
 }
@@ -25,54 +26,7 @@ class MediMealApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'MediMeal',
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: backgroundColor,
-        cardColor: cardColor,
-        colorScheme: const ColorScheme.dark(
-          primary: accentColor,
-          secondary: accentColor,
-          surface: cardColor,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: backgroundColor,
-          elevation: 0,
-          titleTextStyle: TextStyle(
-            color: textColor,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: textColor),
-          bodyMedium: TextStyle(color: subTextColor),
-          titleLarge: TextStyle(
-            color: textColor,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        cardTheme: CardThemeData(
-          color: cardColor,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: accentColor,
-            foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(50),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
+      theme: AppTheme.darkTheme(),
       home: const MainNavigationScreen(),
     );
   }
