@@ -235,6 +235,7 @@ model CallSession {
 
   appointment Appointment       @relation(fields: [appointmentId], references: [id])
   transcripts TranscriptChunk[]
+  summary     ConsultationSummary?
 
   @@index([doctorId])
   @@index([patientId])
@@ -255,6 +256,22 @@ model TranscriptChunk {
   @@map("transcript_chunks")
   @@schema("communication")
 }
+
+model ConsultationSummary {
+  id            String   @id @default(uuid())
+  callSessionId String   @unique
+  summary       String
+  diagnoses     String[]
+  medications   String[]
+  followUp      String?
+  createdAt     DateTime @default(now())
+
+  callSession CallSession @relation(fields: [callSessionId], references: [id])
+
+  @@map("consultation_summaries")
+  @@schema("communication")
+}
+
 
 model Conversation {
   id        String   @id @default(uuid())

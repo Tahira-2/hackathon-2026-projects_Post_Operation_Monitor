@@ -26,7 +26,9 @@
     "seed": "ts-node --transpile-only prisma/seed.ts"
   },
   "dependencies": {
+    "@google-cloud/speech": "^7.3.0",
     "@google/genai": "^1.16.0",
+    "@google/generative-ai": "^0.24.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.2",

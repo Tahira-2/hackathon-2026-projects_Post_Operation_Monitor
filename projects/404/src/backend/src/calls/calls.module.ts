@@ -16,5 +16,6 @@ import { CallsService } from './calls.service';
   ],
   controllers: [CallsController],
   providers: [CallsGateway, CallsService, PrismaService],
+  exports: [CallsGateway],
 })
 export class CallsModule {}

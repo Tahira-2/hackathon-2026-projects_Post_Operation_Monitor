@@ -36,7 +36,7 @@ interface ConsultationRoomProps {
   onReconnect: () => void;
   onToggleFullscreen: () => void;
   onToggleSidePanel: () => void;
-  onSetActiveTab: (tab: "notes" | "info" | "chat") => void;
+  onSetActiveTab: (tab: "notes" | "info" | "chat" | "summary") => void;
   onSetNotes: (notes: string) => void;
   formatDuration: (s: number) => string;
   providerName?: string;
@@ -83,6 +83,15 @@ export function ConsultationRoom({
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [captionVisible, setCaptionVisible] = useState(false);
+  useEffect(() => {
+    if (state.liveCaption) {
+      setCaptionVisible(true);
+      const timer = setTimeout(() => setCaptionVisible(false), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [state.liveCaption]);
 
   const isReconnecting = state.phase === "reconnecting";
 
@@ -198,6 +207,18 @@ export function ConsultationRoom({
         )}
       </div>
 
+      {/* Live Captions Overlay */}
+      <div className={`absolute bottom-28 left-0 right-0 flex justify-center pointer-events-none px-4 z-10 transition-opacity duration-500 ${captionVisible ? "opacity-100" : "opacity-0"}`}>
+        <div className="bg-black/60 backdrop-blur-md px-5 py-2.5 rounded-xl border border-white/10 shadow-2xl max-w-2xl text-center">
+          <span className="text-cyan-400 font-semibold text-xs tracking-wider uppercase mr-3">
+            {state.liveCaption?.speaker}
+          </span>
+          <span className="text-white text-[15px] tracking-wide drop-shadow-md">
+            {state.liveCaption?.text}
+          </span>
+        </div>
+      </div>
+
       {/* Bottom controls */}
       <div className={`consultation-controls transition-opacity duration-300 ${controlsVisible ? "opacity-100" : "opacity-0"}`}>
         <div className="consultation-controls-inner">
@@ -267,6 +288,7 @@ export function ConsultationRoom({
           providerRole={providerRole}
           callDuration={state.callDuration}
           formatDuration={formatDuration}
+          callSessionId={state.callSessionId}
         />
       )}
     </div>
@@ -345,14 +367,15 @@ function ReconnectOverlay({ onReconnect }: { onReconnect: () => void }) {
 }
 
 interface ClinicalSidePanelProps {
-  activeTab: "notes" | "info" | "chat";
+  activeTab: "notes" | "info" | "chat" | "summary";
   notes: string;
-  onSetActiveTab: (tab: "notes" | "info" | "chat") => void;
+  onSetActiveTab: (tab: "notes" | "info" | "chat" | "summary") => void;
   onSetNotes: (notes: string) => void;
   providerName: string;
   providerRole: string;
   callDuration: number;
   formatDuration: (s: number) => string;
+  callSessionId: string | null;
 }
 
 function ClinicalSidePanel({
@@ -364,11 +387,13 @@ function ClinicalSidePanel({
   providerRole,
   callDuration,
   formatDuration,
+  callSessionId,
 }: ClinicalSidePanelProps) {
   const tabs = [
     { id: "info" as const, label: "Info", icon: <User className="w-3.5 h-3.5" /> },
     { id: "notes" as const, label: "Notes", icon: <FileText className="w-3.5 h-3.5" /> },
     { id: "chat" as const, label: "Chat", icon: <MessageSquare className="w-3.5 h-3.5" /> },
+    { id: "summary" as const, label: "Summary", icon: <Activity className="w-3.5 h-3.5" /> },
   ];
 
   return (
@@ -412,6 +437,7 @@ function ClinicalSidePanel({
           <NotesTab notes={notes} onChange={onSetNotes} />
         )}
         {activeTab === "chat" && <ChatTab />}
+        {activeTab === "summary" && <SummaryTab callSessionId={callSessionId} />}
       </div>
     </aside>
   );
@@ -569,6 +595,105 @@ function ChatTab() {
           Send
         </button>
       </div>
+    </div>
+  );
+}
+
+function SummaryTab({ callSessionId }: { callSessionId: string | null }) {
+  const [summaryData, setSummaryData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const fetchSummary = async (generate = false) => {
+    if (!callSessionId) return;
+    setLoading(true);
+    setError("");
+    const baseApiUrl = (import.meta.env.VITE_API_URL as string) || "http://localhost:3000/api";
+    const token = localStorage.getItem("token");
+
+    try {
+      const endpoint = `${baseApiUrl}/transcript/${callSessionId}/summary`;
+      const res = await fetch(endpoint, {
+        method: generate ? "POST" : "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data) setSummaryData(data);
+      } else if (generate) {
+        setError("Failed to generate summary.");
+      }
+    } catch {
+      if (generate) setError("Failed to generate summary.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSummary(false);
+  }, [callSessionId]);
+
+  if (!callSessionId) {
+    return <div className="text-slate-500 text-xs text-center py-6">Connecting session...</div>;
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium text-white">Clinical Summary</h3>
+        <button
+          onClick={() => fetchSummary(true)}
+          disabled={loading}
+          className="consultation-btn-primary px-3 py-1.5 rounded-lg text-xs disable:opacity-50"
+        >
+          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Generate"}
+        </button>
+      </div>
+      {error && <p className="text-xs text-rose-400">{error}</p>}
+
+      {!summaryData && !loading && (
+        <div className="text-center py-8">
+          <p className="text-slate-500 text-xs">No summary generated yet.</p>
+        </div>
+      )}
+
+      {summaryData && (
+        <div className="space-y-4 text-xs text-slate-300">
+          <div className="bg-slate-800/50 p-3 rounded-xl">
+            <h4 className="text-slate-400 uppercase tracking-wider text-[10px] mb-2 font-semibold">SOAP Note</h4>
+            <p className="leading-relaxed">{summaryData.summary}</p>
+          </div>
+          
+          {summaryData.diagnoses?.length > 0 && (
+            <div className="bg-slate-800/50 p-3 rounded-xl">
+              <h4 className="text-slate-400 uppercase tracking-wider text-[10px] mb-2 font-semibold">Diagnoses</h4>
+              <ul className="list-disc pl-4 space-y-1">
+                {summaryData.diagnoses.map((d: string, i: number) => <li key={i}>{d}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {summaryData.medications?.length > 0 && (
+            <div className="bg-slate-800/50 p-3 rounded-xl">
+              <h4 className="text-slate-400 uppercase tracking-wider text-[10px] mb-2 font-semibold">Medications</h4>
+              <ul className="list-disc pl-4 space-y-1">
+                {summaryData.medications.map((m: string, i: number) => <li key={i}>{m}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {summaryData.followUp && (
+            <div className="bg-slate-800/50 p-3 rounded-xl">
+              <h4 className="text-slate-400 uppercase tracking-wider text-[10px] mb-2 font-semibold">Follow Up</h4>
+              <p>{summaryData.followUp}</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

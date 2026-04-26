@@ -1,19 +1,7 @@
-/**
- * useVideoConsultation
- * --------------------
- * Real WebRTC hook wired to the backend CallsGateway via Socket.io.
- *
- * Flow:
- *   1. Both physician and patient navigate to /consultation/:appointmentId.
- *   2. Both emit `call:initiate` (backend allows re-joining INITIATED sessions).
- *   3. First to join: socket enters room alone, receives own session ack.
- *   4. Second to join: backend emits `call:ready` to the room.
- *   5. The FIRST participant (isAlone === true) creates and sends the WebRTC offer.
- *   6. The second receives the offer, creates and sends an answer.
- *   7. Both exchange ICE candidates until the peer connection is established.
- */
 import { useState, useRef, useCallback, useEffect } from "react";
 import { io, Socket } from "socket.io-client";
+import { useAuth } from "./useAuth";
+import { useAudioTranscript } from "./useAudioTranscript";
 
 const SOCKET_URL = (
   (import.meta.env.VITE_API_URL as string) || "http://localhost:3000/api"
@@ -53,12 +41,15 @@ export interface ConsultationState {
   selectedMic: string;
   selectedSpeaker: string;
   isSidePanelOpen: boolean;
-  activeTab: "notes" | "info" | "chat";
+  activeTab: "notes" | "info" | "chat" | "summary";
   notes: string;
   connectionQuality: "excellent" | "good" | "poor" | "unknown";
+  callSessionId: string | null;
+  liveCaption: { speaker: string; text: string; timestamp: number } | null;
 }
 
 export function useVideoConsultation(appointmentId?: string) {
+  const { user } = useAuth();
   const [state, setState] = useState<ConsultationState>({
     phase: "checking-permissions",
     cameraPermission: "pending",
@@ -79,6 +70,8 @@ export function useVideoConsultation(appointmentId?: string) {
     activeTab: "info",
     notes: "",
     connectionQuality: "unknown",
+    callSessionId: null,
+    liveCaption: null,
   });
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -90,8 +83,15 @@ export function useVideoConsultation(appointmentId?: string) {
   const socketRef = useRef<Socket | null>(null);
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const callSessionIdRef = useRef<string | null>(null);
-  /** true if this client was the first one into the call room */
   const isAloneRef = useRef(false);
+
+  // Hook STT transcript stream to the current call session
+  useAudioTranscript(
+    state.phase === "in-call" ? callSessionIdRef.current : null,
+    state.localStream,
+    remoteStreamRef.current,
+    user?.role === "DOCTOR" ? "Doctor" : "Patient",
+  );
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -113,7 +113,9 @@ export function useVideoConsultation(appointmentId?: string) {
       peerRef.current = pc;
 
       // Add local tracks
-      streamRef.current?.getTracks().forEach((t) => pc.addTrack(t, streamRef.current!));
+      streamRef.current
+        ?.getTracks()
+        .forEach((t) => pc.addTrack(t, streamRef.current!));
 
       // ICE candidates → relay to peer via socket
       pc.onicecandidate = (e) => {
@@ -155,7 +157,7 @@ export function useVideoConsultation(appointmentId?: string) {
 
       return pc;
     },
-    [startTimer]
+    [startTimer],
   );
 
   // ─── ICE Servers ──────────────────────────────────────────────────────────
@@ -173,7 +175,9 @@ export function useVideoConsultation(appointmentId?: string) {
       // fall through to default
     }
     return [
-      { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
+      {
+        urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"],
+      },
     ];
   }, []);
 
@@ -184,13 +188,22 @@ export function useVideoConsultation(appointmentId?: string) {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const cameras = devices
         .filter((d) => d.kind === "videoinput")
-        .map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Camera ${i + 1}` }));
+        .map((d, i) => ({
+          deviceId: d.deviceId,
+          label: d.label || `Camera ${i + 1}`,
+        }));
       const microphones = devices
         .filter((d) => d.kind === "audioinput")
-        .map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Microphone ${i + 1}` }));
+        .map((d, i) => ({
+          deviceId: d.deviceId,
+          label: d.label || `Microphone ${i + 1}`,
+        }));
       const speakers = devices
         .filter((d) => d.kind === "audiooutput")
-        .map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Speaker ${i + 1}` }));
+        .map((d, i) => ({
+          deviceId: d.deviceId,
+          label: d.label || `Speaker ${i + 1}`,
+        }));
       setState((prev) => ({
         ...prev,
         cameras,
@@ -227,7 +240,8 @@ export function useVideoConsultation(appointmentId?: string) {
     } catch (err: unknown) {
       const error = err as DOMException;
       const isDenied =
-        error.name === "NotAllowedError" || error.name === "PermissionDeniedError";
+        error.name === "NotAllowedError" ||
+        error.name === "PermissionDeniedError";
       setState((prev) => ({
         ...prev,
         cameraPermission: isDenied ? "denied" : "unavailable",
@@ -259,7 +273,8 @@ export function useVideoConsultation(appointmentId?: string) {
               ? { deviceId: { exact: deviceId } }
               : !!streamRef.current?.getAudioTracks().length,
         };
-        const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+        const newStream =
+          await navigator.mediaDevices.getUserMedia(constraints);
         if (streamRef.current) {
           const oldTracks =
             type === "camera"
@@ -274,7 +289,7 @@ export function useVideoConsultation(appointmentId?: string) {
         // ignore
       }
     },
-    []
+    [],
   );
 
   const proceedToWaitingRoom = useCallback(() => {
@@ -287,7 +302,11 @@ export function useVideoConsultation(appointmentId?: string) {
     if (!appointmentId) {
       setState((prev) => ({ ...prev, phase: "connecting" }));
       setTimeout(() => {
-        setState((prev) => ({ ...prev, phase: "in-call", connectionQuality: "excellent" }));
+        setState((prev) => ({
+          ...prev,
+          phase: "in-call",
+          connectionQuality: "excellent",
+        }));
         startTimer();
       }, 2000);
       return;
@@ -315,9 +334,17 @@ export function useVideoConsultation(appointmentId?: string) {
             return;
           }
           callSessionIdRef.current = response.session.id;
+          setState((prev) => ({ ...prev, callSessionId: response.session.id }));
           console.log("[call:initiate] session:", response.session.id);
-        }
+        },
       );
+    });
+
+    socket.on("transcript:caption", ({ speaker, text }: { speaker: string; text: string }) => {
+      setState((prev) => ({
+        ...prev,
+        liveCaption: { speaker, text, timestamp: Date.now() },
+      }));
     });
 
     /**
@@ -335,6 +362,7 @@ export function useVideoConsultation(appointmentId?: string) {
         shouldOffer: boolean;
       }) => {
         callSessionIdRef.current = session.id;
+        setState((prev) => ({ ...prev, callSessionId: session.id }));
         console.log("[call:ready] shouldOffer:", shouldOffer);
 
         if (shouldOffer) {
@@ -342,17 +370,25 @@ export function useVideoConsultation(appointmentId?: string) {
           const pc = createPeerConnection(iceServers);
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
-          socket.emit("webrtc:offer", { callSessionId: session.id, payload: offer });
+          socket.emit("webrtc:offer", {
+            callSessionId: session.id,
+            payload: offer,
+          });
           console.log("[webrtc] offer sent");
         }
         // If !shouldOffer: wait — the other peer will send the offer via webrtc:offer
-      }
+      },
     );
 
     /** Received by the peer with shouldOffer=false → answer */
     socket.on(
       "webrtc:offer",
-      async ({ payload }: { from: string; payload: RTCSessionDescriptionInit }) => {
+      async ({
+        payload,
+      }: {
+        from: string;
+        payload: RTCSessionDescriptionInit;
+      }) => {
         console.log("[webrtc] offer received");
         const iceServers = await fetchIceServers();
         const pc = createPeerConnection(iceServers);
@@ -364,16 +400,23 @@ export function useVideoConsultation(appointmentId?: string) {
           payload: answer,
         });
         console.log("[webrtc] answer sent");
-      }
+      },
     );
 
     /** Received by the peer with shouldOffer=true → set remote description */
     socket.on(
       "webrtc:answer",
-      async ({ payload }: { from: string; payload: RTCSessionDescriptionInit }) => {
+      async ({
+        payload,
+      }: {
+        from: string;
+        payload: RTCSessionDescriptionInit;
+      }) => {
         console.log("[webrtc] answer received");
-        await peerRef.current?.setRemoteDescription(new RTCSessionDescription(payload));
-      }
+        await peerRef.current?.setRemoteDescription(
+          new RTCSessionDescription(payload),
+        );
+      },
     );
 
     /** Both sides: trickle ICE candidates */
@@ -385,7 +428,7 @@ export function useVideoConsultation(appointmentId?: string) {
         } catch {
           // stale candidate — ignore
         }
-      }
+      },
     );
 
     /** Peer ended the call */
@@ -399,23 +442,22 @@ export function useVideoConsultation(appointmentId?: string) {
     });
   }, [appointmentId, createPeerConnection, fetchIceServers, startTimer]); // eslint-disable-line react-hooks/exhaustive-deps
 
-
   // ─── Controls ────────────────────────────────────────────────────────────
 
   const toggleMute = useCallback(() => {
     if (streamRef.current) {
-      streamRef.current
-        .getAudioTracks()
-        .forEach((t) => { t.enabled = !t.enabled; });
+      streamRef.current.getAudioTracks().forEach((t) => {
+        t.enabled = !t.enabled;
+      });
     }
     setState((prev) => ({ ...prev, isMuted: !prev.isMuted }));
   }, []);
 
   const toggleCamera = useCallback(() => {
     if (streamRef.current) {
-      streamRef.current
-        .getVideoTracks()
-        .forEach((t) => { t.enabled = !t.enabled; });
+      streamRef.current.getVideoTracks().forEach((t) => {
+        t.enabled = !t.enabled;
+      });
     }
     setState((prev) => ({ ...prev, isCameraOff: !prev.isCameraOff }));
   }, []);
@@ -451,7 +493,11 @@ export function useVideoConsultation(appointmentId?: string) {
   const reconnect = useCallback(() => {
     setState((prev) => ({ ...prev, phase: "reconnecting" }));
     setTimeout(() => {
-      setState((prev) => ({ ...prev, phase: "in-call", connectionQuality: "good" }));
+      setState((prev) => ({
+        ...prev,
+        phase: "in-call",
+        connectionQuality: "good",
+      }));
     }, 3000);
   }, []);
 
@@ -485,11 +531,14 @@ export function useVideoConsultation(appointmentId?: string) {
    * stream (which may have arrived via ontrack while WaitingRoom was showing).
    */
   useEffect(() => {
-    if (state.phase === "in-call" && remoteVideoRef.current && remoteStreamRef.current) {
+    if (
+      state.phase === "in-call" &&
+      remoteVideoRef.current &&
+      remoteStreamRef.current
+    ) {
       remoteVideoRef.current.srcObject = remoteStreamRef.current;
     }
   }, [state.phase]);
-
 
   useEffect(() => {
     return () => {

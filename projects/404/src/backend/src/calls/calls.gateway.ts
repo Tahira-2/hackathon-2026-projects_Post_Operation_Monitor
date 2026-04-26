@@ -248,6 +248,13 @@ export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
 
+  // ─── Captions ─────────────────────────────────────────────────────────────
+
+  broadcastCaption(callSessionId: string, speaker: string, text: string) {
+    const room = this.roomName(callSessionId);
+    this.server.to(room).emit('transcript:caption', { speaker, text });
+  }
+
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
   private extractToken(client: Socket): string | undefined {
