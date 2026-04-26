@@ -4,6 +4,7 @@ import { PatientLayout } from "@/components/layouts/PatientLayout";
 import { PatientDashboard } from "@/pages/patient/Dashboard";
 import { Login } from "@/pages/auth/Login";
 import { Signup } from "@/pages/auth/Signup";
+import { Profile } from "@/pages/shared/Profile";
 
 export function PatientRoutes() {
   return (
@@ -15,6 +16,7 @@ export function PatientRoutes() {
       <Route element={<ProtectedRoute allowedRoles={["patient"]} redirectPath="/patient/login" />}>
         <Route element={<PatientLayout />}>
           <Route path="/" element={<PatientDashboard />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="/patient" replace />} />
         </Route>
       </Route>

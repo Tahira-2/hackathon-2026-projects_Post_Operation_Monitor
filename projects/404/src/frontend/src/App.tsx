@@ -3,6 +3,7 @@ import { AdminRoutes } from "@/routes/AdminRoutes"
 import { PhysicianRoutes } from "@/routes/PhysicianRoutes"
 import { PatientRoutes } from "@/routes/PatientRoutes"
 import { PublicRoutes } from "@/routes/PublicRoutes"
+import { Toaster } from "sonner"
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/patient/*" element={<PatientRoutes />} />
         <Route path="/*" element={<PublicRoutes />} />
       </Routes>
+      <Toaster position="top-right" richColors />
     </Router>
   )
 }

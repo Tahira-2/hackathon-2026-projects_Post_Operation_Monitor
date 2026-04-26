@@ -115,9 +115,11 @@ export function Header({ role }: { role?: string }) {
                 <DropdownMenuContent align="end" className="w-56 mt-2">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="gap-2 cursor-pointer">
-                    <User className="h-4 w-4" />
-                    Profile
+                  <DropdownMenuItem asChild className="gap-2 cursor-pointer">
+                    <Link to={`/${user.role?.toLowerCase() === 'doctor' ? 'physician' : (user.role?.toLowerCase() || 'patient')}/profile`}>
+                      <User className="h-4 w-4" />
+                      Profile
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive gap-2 cursor-pointer focus:bg-destructive/10 focus:text-destructive">
