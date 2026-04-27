@@ -11,8 +11,8 @@
 [![MediaPipe](https://img.shields.io/badge/MediaPipe-Pose-4285F4?logo=google&logoColor=white)](https://mediapipe.dev)
 [![Gemini](https://img.shields.io/badge/Gemini-2.5_Flash-8E75B2?logo=googlegemini&logoColor=white)](https://ai.google.dev)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
-</div>
+demo : https://youtu.be/J2I6hjUJrFY?si=XvjDqZvL9-jpVbbL
+</div> 
 
 ---
 
