@@ -16,18 +16,6 @@ interface ReferralRow {
   patients: { full_name: string } | Array<{ full_name: string }> | null;
 }
 
-async function getDoctorsByIds(doctorIds: string[]) {
-  if (!doctorIds.length) return new Map<string, { full_name: string }>();
-
-  const { data, error } = await supabase
-    .from("doctors")
-    .select("id, full_name")
-    .in("id", doctorIds);
-
-  if (error) throw new Error(error.message);
-
-  return new Map((data ?? []).map((doctor) => [doctor.id, { full_name: doctor.full_name }]));
-}
 
 function toReferralStatus(status: ReferralStatus) {
   return status.toUpperCase();
@@ -69,9 +57,6 @@ export async function getDashboardSummary(doctorId: string, type: ReferralViewTy
   if (error) throw new Error(error.message);
 
   const referrals = (data ?? []) as ReferralRow[];
-  const doctorMap = await getDoctorsByIds(
-    [...new Set(referrals.map((referral) => referral.doctor_id).filter(Boolean))],
-  );
   const totalReferrals = referrals.length;
   const pendingReferrals = referrals.filter((referral) => referral.status === "pending").length;
   const completedReferrals = referrals.filter((referral) => referral.status === "completed").length;
@@ -134,14 +119,12 @@ export async function getDashboardSummary(doctorId: string, type: ReferralViewTy
 
   const recentReferrals = referrals.slice(0, 5).map((referral) => {
     const patient = Array.isArray(referral.patients) ? referral.patients[0] : referral.patients;
-    const relatedDoctor = doctorMap.get(referral.doctor_id);
-
     return {
       id: referral.id,
       patient: patient?.full_name ?? "Unknown Patient",
       diagnosis: referral.diagnosis ?? "Unspecified diagnosis",
       specialty: referral.required_specialty ?? "General",
-      specialist: relatedDoctor?.full_name ?? "Unassigned",
+      specialist: "Unassigned",
       urgency: toReferralUrgency(referral.urgency),
       status: toReferralStatus(referral.status),
       date: new Date(referral.created_at).toLocaleDateString("en-US", {
