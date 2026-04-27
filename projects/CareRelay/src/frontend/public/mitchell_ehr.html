@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>James R. Mitchell · EHR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy-950: #F8FAFC;
+    --navy-900: #FFFFFF;
+    --navy-800: #F1F5F9;
+    --navy-700: #E2E8F0;
+    --navy-600: #CBD5E1;
+    --navy-500: #94A3B8;
+    --border: rgba(15, 23, 42, 0.1);
+    --border-bright: rgba(15, 23, 42, 0.18);
+    --text-primary: #0F172A;
+    --text-secondary: #334155;
+    --text-tertiary: #64748B;
+    --blue: #2563EB;
+    --blue-dim: rgba(37, 99, 235, 0.15);
+    --green: #22C55E;
+    --green-dim: rgba(34, 197, 94, 0.12);
+    --orange: #f0922a;
+    --orange-dim: rgba(240,146,42,0.12);
+    --red: #e05656;
+    --red-dim: rgba(224,86,86,0.12);
+    --purple: #9b7de8;
+    --purple-dim: rgba(155,125,232,0.12);
+    --pink: #e26c9a;
+    --pink-dim: rgba(226,108,154,0.12);
+    --gray: #94A3B8;
+
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 18px;
+  }
+
+  html { font-size: 14px; }
+
+  body {
+    background: var(--navy-950);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    padding: 20px;
+    line-height: 1.5;
+  }
+
+  /* ─── PATIENT HEADER ─────────────────────────────────── */
+  .ehr-header {
+    background: var(--navy-900);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 20px 24px;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ehr-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--blue) 0%, var(--green) 50%, transparent 100%);
+  }
+
+  .ehr-id-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+  .patient-identity { display: flex; align-items: center; gap: 14px; }
+
+  .patient-avatar {
+    width: 46px; height: 46px;
+    background: var(--navy-700);
+    border: 1px solid var(--border-bright);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 16px; font-weight: 600;
+    color: var(--blue);
+    flex-shrink: 0;
+  }
+
+  .patient-name-block {}
+  .ehr-name {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+  .ehr-name .demo {
+    font-weight: 400;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-left: 4px;
+  }
+  .ehr-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex; flex-wrap: wrap; gap: 10px;
+  }
+  .ehr-meta-item { display: flex; align-items: center; gap: 4px; }
+  .ehr-meta-item::before { content: '·'; opacity: 0.3; }
+  .ehr-meta-item:first-child::before { display: none; }
+
+  .allergy-block { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .allergy-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--red);
+    background: var(--red-dim);
+    padding: 3px 7px;
+    border-radius: 4px;
+    border: 1px solid rgba(224,86,86,0.25);
+  }
+  .allergy-pill {
+    background: rgba(224,86,86,0.08);
+    border: 1px solid rgba(224,86,86,0.2);
+    color: #f08080;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+  }
+
+  /* Vitals strip */
+  .vitals-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .vital-item {
+    background: var(--navy-800);
+    padding: 10px 12px;
+    text-align: center;
+  }
+  .vital-value {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+  .vital-value.good { color: var(--green); }
+  .vital-value.warn { color: var(--orange); }
+  .vital-label { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.6px; }
+
+  /* Clinical summary */
+  .ehr-summary {
+    background: var(--navy-800);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+  }
+  .summary-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 7px;
+  }
+  .summary-label {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.7px; color: var(--text-tertiary);
+  }
+  .status-badge {
+    font-size: 10px; font-weight: 600;
+    background: var(--green-dim); color: var(--green);
+    border: 1px solid rgba(34,196,138,0.25);
+    padding: 2px 8px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .problem-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px; }
+  .chip {
+    font-size: 11px; font-weight: 500;
+    padding: 3px 9px; border-radius: 999px;
+    font-family: var(--font-mono);
+    border: 1px solid transparent;
+  }
+  .chip-active { background: var(--blue-dim); color: var(--blue); border-color: rgba(61,142,240,0.25); }
+  .chip-stable { background: rgba(15, 23, 42, 0.04); color: var(--text-secondary); border-color: var(--border); }
+
+  /* ─── SPECIALTY BAR ──────────────────────────────────── */
+  .specialty-bar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .spec-btn {
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--font-body);
+    padding: 7px 14px;
+    border: 1px solid var(--border);
+    background: var(--navy-900);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+    letter-spacing: 0.1px;
+  }
+  .spec-btn:hover { border-color: var(--border-bright); color: var(--text-primary); background: var(--navy-800); }
+  .spec-btn.active {
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
+    box-shadow: 0 0 16px rgba(61,142,240,0.3);
+  }
+
+  /* ─── TIMELINE CARD ──────────────────────────────────── */
+  .timeline-card {
+    background: var(--navy-900);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 20px 22px;
+    margin-bottom: 14px;
+  }
+  .tl-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 16px;
+  }
+  .tl-title-text {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    color: var(--text-primary);
+  }
+  .tl-hint {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-style: italic;
+  }
+
+  .tl-svg-wrap { position: relative; width: 100%; }
+
+  /* Tooltip */
+  .tl-tooltip {
+    position: absolute;
+    background: var(--navy-800);
+    border: 1px solid var(--border-bright);
+    color: var(--text-primary);
+    font-size: 11.5px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s;
+    max-width: 260px;
+    line-height: 1.55;
+    z-index: 10;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .tl-tooltip strong { font-weight: 600; color: var(--text-primary); }
+  .tl-tooltip-date {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--blue);
+    margin-bottom: 7px;
+    display: block;
+  }
+  .tl-tooltip-section {
+    margin-top: 7px;
+    padding-top: 7px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+  .tl-tooltip-section strong { color: var(--text-primary); }
+  .tl-tooltip-lab-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 2px; }
+  .tl-tooltip-lab-row .lval { font-family: var(--font-mono); font-weight: 500; color: var(--text-primary); }
+  .tl-tooltip-lab-row .ldate { font-size: 10px; color: var(--text-tertiary); }
+
+  /* Lab toggles */
+  .lab-toggles {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    align-items: center;
+  }
+  .lab-toggles-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-tertiary);
+    margin-right: 2px;
+  }
+  .lab-toggle {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 11px;
+    border-radius: 999px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-tertiary);
+    font-family: var(--font-mono);
+    transition: all 0.12s;
+  }
+  .lab-toggle:hover { border-color: var(--border-bright); color: var(--text-secondary); }
+  .lab-toggle.on { color: #fff; border-color: transparent; }
+
+  /* Scrub line */
+  .scrub-line { stroke: rgba(15, 23, 42, 0.4); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; pointer-events: none; }
+
+  /* ─── PANELS ─────────────────────────────────────────── */
+  .panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 680px) { .panels { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--navy-900);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 18px 20px;
+  }
+  .panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .panel h3 {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.1px;
+    color: var(--text-primary);
+  }
+  .panel-count {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-tertiary);
+    background: var(--navy-800);
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+  }
+
+  /* Insight cards */
+  .insight {
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 9px 12px;
+    border-radius: var(--radius-md);
+    margin-bottom: 6px;
+    border: 1px solid transparent;
+    background: var(--navy-800);
+    position: relative;
+    overflow: hidden;
+  }
+  .insight::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+  }
+  .insight.good { border-color: rgba(34,196,138,0.15); }
+  .insight.good::before { background: var(--green); }
+  .insight.warn { border-color: rgba(240,146,42,0.15); }
+  .insight.warn::before { background: var(--orange); }
+  .insight.normal { border-color: rgba(61,142,240,0.12); }
+  .insight.normal::before { background: var(--blue); }
+
+  .insight-tag {
+    display: inline-block;
+    font-size: 9.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    margin-bottom: 3px;
+  }
+  .insight.good .insight-tag { color: var(--green); }
+  .insight.warn .insight-tag { color: var(--orange); }
+  .insight.normal .insight-tag { color: var(--blue); }
+  .insight-text { color: var(--text-secondary); }
+
+  /* Encounters */
+  .enc-window-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+    font-style: italic;
+  }
+  .encounters-list { max-height: 260px; overflow-y: auto; }
+  .encounters-list::-webkit-scrollbar { width: 4px; }
+  .encounters-list::-webkit-scrollbar-track { background: transparent; }
+  .encounters-list::-webkit-scrollbar-thumb { background: var(--navy-600); border-radius: 4px; }
+
+  .encounter-row {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    align-items: flex-start;
+    transition: background 0.1s;
+  }
+  .encounter-row:last-child { border-bottom: none; }
+  .enc-date {
+    color: var(--text-tertiary);
+    min-width: 68px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding-top: 1px;
+    white-space: nowrap;
+  }
+  .enc-spec-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+    height: fit-content;
+    margin-top: 1px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .enc-spec-badge.pcp     { background: rgba(61,142,240,0.12); color: #7ab8f7; border: 1px solid rgba(61,142,240,0.2); }
+  .enc-spec-badge.endo    { background: rgba(34,196,138,0.1);  color: #5dd8a8; border: 1px solid rgba(34,196,138,0.2); }
+  .enc-spec-badge.cardio  { background: rgba(226,108,154,0.1); color: #e8879c; border: 1px solid rgba(226,108,154,0.2); }
+  .enc-spec-badge.nephro  { background: rgba(216,90,48,0.1);   color: #e08868; border: 1px solid rgba(216,90,48,0.2); }
+  .enc-spec-badge.ortho   { background: rgba(15, 23, 42, 0.05); color: var(--text-secondary); border: 1px solid var(--border); }
+  .enc-text { flex: 1; color: var(--text-secondary); line-height: 1.5; }
+
+  /* ─── SECTION FADE-IN ──────────────────────────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .ehr-header  { animation: fadeUp 0.3s ease both; animation-delay: 0.05s; }
+  .specialty-bar { animation: fadeUp 0.3s ease both; animation-delay: 0.1s; }
+  .timeline-card { animation: fadeUp 0.3s ease both; animation-delay: 0.15s; }
+  .panels { animation: fadeUp 0.3s ease both; animation-delay: 0.2s; }
+</style>
+</head>
+<body>
+
+<!-- ─── PATIENT HEADER ──────────────────────────────────── -->
+<div class="ehr-header">
+  <div class="ehr-id-row">
+    <div class="patient-identity">
+      <div class="patient-avatar">JM</div>
+      <div class="patient-name-block">
+        <div class="ehr-name">James R. Mitchell <span class="demo">· M · 59 · MRN 004-72-8831</span></div>
+        <div class="ehr-meta">
+          <span class="ehr-meta-item">PCP: Dr. P. Hayes</span>
+          <span class="ehr-meta-item">Last visit: 30 Oct 2025</span>
+          <span class="ehr-meta-item">Full code</span>
+          <span class="ehr-meta-item">Proxy: S. Mitchell</span>
+        </div>
+      </div>
+    </div>
+    <div class="allergy-block">
+      <span class="allergy-label">⚠ Allergies</span>
+      <span class="allergy-pill">Penicillin</span>
+      <span class="allergy-pill">Sulfa</span>
+      <span class="allergy-pill">NSAIDs</span>
+      <span class="allergy-pill">Contrast</span>
+      <span class="allergy-pill">Latex</span>
+    </div>
+  </div>
+
+  <!-- Vitals strip -->
+  <div class="vitals-strip">
+    <div class="vital-item">
+      <div class="vital-value good">6.1%</div>
+      <div class="vital-label">HbA1c</div>
+    </div>
+    <div class="vital-item">
+      <div class="vital-value good">124/76</div>
+      <div class="vital-label">BP</div>
+    </div>
+    <div class="vital-item">
+      <div class="vital-value good">58</div>
+      <div class="vital-label">LDL mg/dL</div>
+    </div>
+    <div class="vital-item">
+      <div class="vital-value good">68</div>
+      <div class="vital-label">eGFR</div>
+    </div>
+    <div class="vital-item">
+      <div class="vital-value good">60%</div>
+      <div class="vital-label">EF</div>
+    </div>
+    <div class="vital-item">
+      <div class="vital-value">212 lbs</div>
+      <div class="vital-label">Weight</div>
+    </div>
+    <div class="vital-item">
+      <div class="vital-value">19 yr</div>
+      <div class="vital-label">Care duration</div>
+    </div>
+  </div>
+
+  <!-- Clinical summary -->
+  <div class="ehr-summary">
+    <div class="summary-header">
+      <div class="summary-label">Clinical state at a glance</div>
+      <span class="status-badge">✓ Stable</span>
+    </div>
+    Stable, well-controlled across all chronic conditions. 19 years of multidisciplinary care. HbA1c 6.1%, BP 124/76, LDL 58, eGFR 68 — all at or near target. Last hospitalization: pneumonia (Jan 2021). Last cardiac event: NSTEMI (Sep 2019, medically managed). No acute concerns.
+    <div class="problem-chips">
+      <span class="chip chip-active">T2DM</span>
+      <span class="chip chip-active">HTN</span>
+      <span class="chip chip-active">CAD 2-vessel</span>
+      <span class="chip chip-active">CKD 3a</span>
+      <span class="chip chip-active">OSA</span>
+      <span class="chip chip-stable">Hyperlipidemia (controlled)</span>
+      <span class="chip chip-stable">Neuropathy</span>
+      <span class="chip chip-stable">GERD</span>
+      <span class="chip chip-stable">BPH</span>
+      <span class="chip chip-stable">GAD</span>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SPECIALTY BAR ───────────────────────────────────── -->
+<div class="specialty-bar" id="spec-bar">
+  <button class="spec-btn active" data-spec="all">All specialties</button>
+  <button class="spec-btn" data-spec="cardio">Cardiology</button>
+  <button class="spec-btn" data-spec="endo">Endocrinology</button>
+  <button class="spec-btn" data-spec="nephro">Nephrology</button>
+  <button class="spec-btn" data-spec="hepato">Hepatology</button>
+</div>
+
+<!-- ─── TIMELINE ────────────────────────────────────────── -->
+<div class="timeline-card">
+  <div class="tl-header">
+    <div class="tl-title-text" id="tl-heading">Patient timeline · 2006 – 2025</div>
+    <span class="tl-hint">Hover to scrub · panels below sync to cursor</span>
+  </div>
+  <div class="tl-svg-wrap">
+    <svg id="tl-svg" viewBox="0 0 700 340" width="100%" style="display:block;">
+      <g id="tl-grid"></g>
+      <g id="tl-events"></g>
+      <g id="tl-diagnoses"></g>
+      <g id="tl-meds"></g>
+      <g id="tl-labs"></g>
+      <line id="scrub" class="scrub-line" x1="0" y1="18" x2="0" y2="322"></line>
+    </svg>
+    <div class="tl-tooltip" id="tooltip"></div>
+  </div>
+  <div class="lab-toggles" id="lab-toggles">
+    <span class="lab-toggles-label">Labs</span>
+  </div>
+</div>
+
+<!-- ─── PANELS ──────────────────────────────────────────── -->
+<div class="panels">
+  <div class="panel">
+    <div class="panel-header">
+      <h3>Pattern detection</h3>
+      <span class="panel-count" id="insight-count">—</span>
+    </div>
+    <div id="insights"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <h3>Encounters at cursor</h3>
+      <span class="panel-count" id="enc-count">—</span>
+    </div>
+    <div class="enc-window-label" id="enc-window">Showing all encounters · hover timeline to filter</div>
+    <div class="encounters-list" id="encounters"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ─── Timeline geometry ──────────────────────────────────
+  const TL = { x0: 58, x1: 688, y0: 18, y1: 322, year0: 2006, year1: 2026 };
+  function dx(yr){ return TL.x0 + (yr - TL.year0)/(TL.year1 - TL.year0) * (TL.x1 - TL.x0); }
+  function xToYear(px){ return TL.year0 + (px - TL.x0)/(TL.x1 - TL.x0) * (TL.year1 - TL.year0); }
+
+  // ─── Data ───────────────────────────────────────────────
+  const diagnoses = [
+    { name: 'Hypertension',      start: 2006.2, end: 2026, color: '#3d8ef0', specs: ['cardio'] },
+    { name: 'Hyperlipidemia',    start: 2006.2, end: 2026, color: '#9b7de8', specs: ['cardio','hepato'] },
+    { name: 'Type 2 diabetes',   start: 2007.0, end: 2026, color: '#22c48a', specs: ['endo'] },
+    { name: 'OSA',               start: 2014.1, end: 2026, color: '#6b7a90', specs: [] },
+    { name: 'Diabetic neuropathy', start: 2016.5, end: 2026, color: '#22c48a', specs: ['endo'] },
+    { name: 'CKD 3a',            start: 2018.6, end: 2026, color: '#d85a30', specs: ['nephro'] },
+    { name: 'CAD 2-vessel',      start: 2019.7, end: 2026, color: '#e26c9a', specs: ['cardio'] },
+    { name: 'BPH',               start: 2020.0, end: 2026, color: '#6b7a90', specs: [] }
+  ];
+
+  const meds = [
+    { name: 'Lisinopril',       start: 2006.2, end: 2026, color: '#3d8ef0', specs: ['cardio','nephro'] },
+    { name: 'Atorvastatin 40',  start: 2006.3, end: 2026, color: '#9b7de8', specs: ['cardio','hepato'] },
+    { name: 'Metformin',        start: 2007.0, end: 2026, color: '#22c48a', specs: ['endo'] },
+    { name: 'Amlodipine',       start: 2010.5, end: 2026, color: '#3d8ef0', specs: ['cardio'] },
+    { name: 'Sertraline',       start: 2011.4, end: 2026, color: '#6b7a90', specs: [] },
+    { name: 'Pantoprazole',     start: 2009.9, end: 2026, color: '#6b7a90', specs: [] },
+    { name: 'Gabapentin',       start: 2016.5, end: 2026, color: '#22c48a', specs: ['endo'] },
+    { name: 'Linagliptin',      start: 2018.2, end: 2022.2, color: '#22c48a', specs: ['endo'], discontinued: true },
+    { name: 'Carvedilol',       start: 2019.7, end: 2026, color: '#e26c9a', specs: ['cardio'] },
+    { name: 'Aspirin 81',       start: 2019.7, end: 2026, color: '#e26c9a', specs: ['cardio'] },
+    { name: 'Empagliflozin',    start: 2019.7, end: 2026, color: '#d85a30', specs: ['cardio','nephro','endo'] },
+    { name: 'Tamsulosin',       start: 2020.0, end: 2026, color: '#6b7a90', specs: [] },
+    { name: 'Semaglutide',      start: 2022.2, end: 2026, color: '#22c48a', specs: ['endo'] }
+  ];
+
+  const labs = {
+    hba1c:  { name: 'HbA1c %',      color: '#22c48a', range:[5.5,8.5],  specs:['endo','all'],          data: [[2007,7.8],[2007.5,7.4],[2008,7.1],[2008.5,6.9],[2009,7.0],[2009.5,6.8],[2010,6.9],[2010.5,7.1],[2011,7.0],[2012,6.9],[2013,7.0],[2014,7.2],[2015,7.0],[2016,7.1],[2017,6.8],[2018,7.0],[2018.5,7.3],[2019,7.1],[2019.7,8.2],[2020.2,7.6],[2021,7.2],[2021.5,6.9],[2022.2,6.7],[2022.7,6.4],[2023.2,6.3],[2023.7,6.2],[2024.2,6.3],[2024.7,6.1],[2025.2,6.0],[2025.8,6.1]] },
+    ldl:    { name: 'LDL mg/dL',     color: '#9b7de8', range:[50,170],   specs:['cardio','hepato','all'],data: [[2006.2,162],[2007.2,138],[2008.2,126],[2009.2,118],[2010.2,112],[2011.2,106],[2012.2,98],[2013.2,92],[2014.2,88],[2015.2,84],[2016.2,80],[2017.2,78],[2019.7,108],[2020.2,82],[2020.7,74],[2021.2,70],[2022.2,66],[2023.2,62],[2024.2,60],[2025.8,58]] },
+    egfr:   { name: 'eGFR',          color: '#d85a30', range:[50,90],    specs:['nephro','all'],         data: [[2006.2,88],[2007.2,84],[2008.2,82],[2009.2,80],[2010.2,78],[2011.2,76],[2012.2,74],[2013.2,72],[2014.2,70],[2015.2,68],[2016.2,66],[2017.2,64],[2018.5,61],[2018.9,58],[2019.5,57],[2019.7,56],[2020.2,58],[2020.7,60],[2021.2,61],[2021.7,62],[2022.2,63],[2023.2,64],[2024.2,66],[2025.8,68]] },
+    sbp:    { name: 'Systolic BP',   color: '#e26c9a', range:[110,170],  specs:['cardio','all'],         data: [[2006.2,158],[2007.2,146],[2008.1,142],[2009.2,138],[2010.3,134],[2011.4,136],[2012.5,132],[2013.5,132],[2014.2,134],[2015.2,134],[2016.3,134],[2017.4,138],[2018.4,138],[2019.7,162],[2020.2,148],[2021.5,138],[2022.6,138],[2023.1,134],[2024.1,130],[2024.6,128],[2025.1,126],[2025.8,124]] },
+    weight: { name: 'Weight lbs',    color: '#6b7a90', range:[200,250],  specs:['endo','all'],           data: [[2006.2,224],[2008.1,226],[2010.3,218],[2012.5,221],[2014.2,226],[2016.3,226],[2018.4,234],[2019.7,242],[2020.2,238],[2021.5,228],[2022.6,226],[2023.1,222],[2024.1,218],[2025.1,214],[2025.8,212]] },
+    alt:    { name: 'ALT',           color: '#f0922a', range:[15,50],    specs:['hepato','all'],         data: [[2006.2,28],[2007.2,30],[2008.2,32],[2009.2,29],[2010.2,31],[2011.2,34],[2012.2,36],[2013.2,33],[2014.2,30],[2015.2,32],[2016.2,34],[2017.2,36],[2018.5,38],[2018.9,40],[2019.5,42],[2019.7,44],[2020.2,38],[2020.7,34],[2021.2,32],[2021.7,30],[2022.2,28],[2023.2,26],[2024.2,24],[2025.8,22]] }
+  };
+
+  const events = [
+    { year: 2019.7,  label: 'NSTEMI',      color: '#e05656', detail: 'Acute admission · 2-vessel CAD found · medically managed · 4-day stay' },
+    { year: 2021.07, label: 'Pneumonia',   color: '#f0922a', detail: 'CAP, RLL · S. pneumoniae · 5-day admission · ceftriaxone + azithro' },
+    { year: 2022.7,  label: 'Knee Surg.',  color: '#6b7a90', detail: 'L knee arthroscopic partial medial meniscectomy · uncomplicated' },
+    { year: 2025.6,  label: 'Cataract OD', color: '#6b7a90', detail: 'R eye phaco + IOL · 20/20 at 1 month' }
+  ];
+
+  const encounters = [
+    { date: '14 Mar 2006', year: 2006.2,  spec: 'PCP',    text: 'New patient comprehensive exam · HTN/HLD diagnosed · DM workup ordered' },
+    { date: '15 Jan 2007', year: 2007.0,  spec: 'Endo',   text: 'New T2DM confirmed (A1c 7.8%) · Metformin 500 BID started · DSME referral' },
+    { date: '11 Oct 2009', year: 2009.8,  spec: 'PCP',    text: 'A1c 6.8% at goal · GERD onset · sleep apnea suspected → PSG referral' },
+    { date: '17 May 2011', year: 2011.4,  spec: 'PCP',    text: 'GAD-7 14 · Sertraline 25→50mg started · CBT referral · sleep hygiene' },
+    { date: '28 Feb 2014', year: 2014.2,  spec: 'PCP',    text: 'Diabetic neuropathy onset · Gabapentin started · CPAP compliant' },
+    { date: '03 Dec 2018', year: 2018.9,  spec: 'Nephro', text: 'CKD 3a confirmed · UACR 188 · BP target <130/80 · protein restriction' },
+    { date: '12 Sep 2019', year: 2019.7,  spec: 'Cardio', text: 'NSTEMI admission · LAD 40%/RCA 70% · medical mgmt · carvedilol + empa + ASA + ISMN started' },
+    { date: '22 Jan 2021', year: 2021.07, spec: 'PCP',    text: 'CAP admission · S. pneumo · 5d ceftriaxone/azithro · met held' },
+    { date: '15 Aug 2022', year: 2022.6,  spec: 'Ortho',  text: 'L knee meniscus tear · arthroscopy 09/2022 uncomplicated' },
+    { date: '16 Jan 2023', year: 2023.04, spec: 'Endo',   text: 'A1c 6.3% · Libre 3 TIR 76% · semaglutide excellent response' },
+    { date: '22 Jul 2024', year: 2024.55, spec: 'Cardio', text: 'EF recovered to 60% · 12.4 METs · LDL 60 at goal · holter benign' },
+    { date: '30 Oct 2025', year: 2025.8,  spec: 'PCP',    text: 'Annual wellness · A1c 6.1%, BP 124/76 · "best in 20 years" · all meds continued' }
+  ];
+
+  const insights = [
+    { tag: 'outcome', kind: 'good',   text: 'Semaglutide started Mar 2022 · HbA1c dropped 6.7 → 6.0 over 36 months. GLP-1 response sustained.', specs: ['endo','all'] },
+    { tag: 'outcome', kind: 'good',   text: 'Empagliflozin added Sep 2019 · eGFR reversed from 56 → 68 nadir-to-current. UACR fell 212 → 44.', specs: ['nephro','all'] },
+    { tag: 'outcome', kind: 'good',   text: 'Atorvastatin uptitrated 20 → 40mg post-NSTEMI · LDL fell 108 → 58 over 6 years. ALT trending down (44 → 22).', specs: ['cardio','hepato','all'] },
+    { tag: 'safety',  kind: 'warn',   text: 'Contrast allergy on file · pre-medication protocol used Sep 2019. Steroids + diphenhydramine before any iodinated study.', specs: ['cardio','nephro','all'] },
+    { tag: 'safety',  kind: 'warn',   text: 'NSAID intolerance + CKD 3a · avoid systemic NSAIDs. Topical diclofenac documented as alternative for OA pain.', specs: ['nephro','all'] },
+    { tag: 'maintenance', kind: 'normal', text: 'Last colonoscopy Apr 2023 (benign) · next due 2028. AAA US 2024 normal. No outstanding maintenance.', specs: ['all'] },
+    { tag: 'caution', kind: 'warn',   text: 'Cardiac recovery excellent · before deintensifying any DM/cardiac med, consider that current regimen produced this state.', specs: ['cardio','endo','all'] }
+  ];
+
+  // ─── State ──────────────────────────────────────────────
+  let active = 'all';
+  let hoverYear = null;
+  let visibleLabs = ['hba1c'];
+
+  const svg   = document.getElementById('tl-svg');
+  const tooltip = document.getElementById('tooltip');
+  const scrub = document.getElementById('scrub');
+
+  // ─── SVG helper ─────────────────────────────────────────
+  function el(tag, attrs){
+    const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  // ─── Draw grid ──────────────────────────────────────────
+  function drawGrid(){
+    const g = document.getElementById('tl-grid');
+    g.innerHTML = '';
+
+    // Zebra background bands
+    for (let y = 2006; y < 2026; y += 2){
+      const x1 = dx(y), x2 = dx(y+2);
+      g.appendChild(el('rect', { x:x1, y:TL.y0, width:x2-x1, height:TL.y1-TL.y0, fill:'rgba(15, 23, 42, 0.012)' }));
+    }
+
+    // Year ticks
+    for (let y = 2006; y <= 2026; y += 2){
+      const x = dx(y);
+      g.appendChild(el('line', { x1:x, y1:TL.y0, x2:x, y2:TL.y1, stroke:'rgba(15, 23, 42, 0.06)', 'stroke-width':'1' }));
+      const txt = el('text', { x, y:338, 'text-anchor':'middle', 'font-size':'10', fill:'rgba(15, 23, 42, 0.3)', 'font-family':'IBM Plex Mono, monospace' });
+      txt.textContent = y;
+      g.appendChild(txt);
+    }
+
+    // Lane labels with subtle dividers
+    const lanes = [
+      ['Events',30], ['Diagnoses',78], ['Medications',170], ['Labs',245]
+    ];
+    lanes.forEach(([label, y], i) => {
+      if (i > 0){
+        g.appendChild(el('line', { x1:TL.x0, y1:y-8, x2:TL.x1, y2:y-8, stroke:'rgba(15, 23, 42, 0.05)', 'stroke-width':'0.8', 'stroke-dasharray':'3 4' }));
+      }
+      const t = el('text', { x:4, y, 'font-size':'9.5', fill:'rgba(15, 23, 42, 0.25)', 'font-family':'Syne, sans-serif', 'font-weight':'600', 'text-transform':'uppercase' });
+      t.textContent = label;
+      g.appendChild(t);
+    });
+  }
+
+  // ─── Draw events ────────────────────────────────────────
+  function drawEvents(){
+    const g = document.getElementById('tl-events');
+    g.innerHTML = '';
+    events.forEach(e => {
+      const x = dx(e.year);
+      // Glow ring
+      g.appendChild(el('circle', { cx:x, cy:30, r:8, fill:e.color, opacity:0.12 }));
+      // Main dot
+      const c = el('circle', { cx:x, cy:30, r:5, fill:e.color, style:'cursor:pointer' });
+      c.addEventListener('mouseenter', ev => showEventTip(ev, e));
+      c.addEventListener('mouseleave', hideTip);
+      g.appendChild(c);
+      // Label
+      const t = el('text', { x, y:48, 'text-anchor':'middle', 'font-size':'8.5', fill:e.color, 'font-family':'DM Sans, sans-serif', 'font-weight':'500', opacity:'0.9' });
+      t.textContent = e.label;
+      g.appendChild(t);
+    });
+  }
+
+  // ─── Draw diagnoses ──────────────────────────────────────
+  function drawDiagnoses(){
+    const g = document.getElementById('tl-diagnoses');
+    g.innerHTML = '';
+    const filt = active === 'all' ? diagnoses : diagnoses.filter(d => d.specs.includes(active));
+    const visible = filt.length ? filt : diagnoses;
+    visible.forEach((d, i) => {
+      const x = dx(d.start);
+      const w = dx(d.end) - x;
+      const y = 65 + i * 10;
+      // Track bg
+      g.appendChild(el('rect', { x:TL.x0, y:y, width:TL.x1-TL.x0, height:7, fill:'rgba(15, 23, 42, 0.02)', rx:3 }));
+      // Active bar
+      g.appendChild(el('rect', { x, y, width:w, height:7, fill:d.color, opacity:0.8, rx:3 }));
+      // Label
+      const t = el('text', { x:x+5, y:y+5.5, 'font-size':'7.5', fill:'rgba(15, 23, 42, 0.92)', 'font-family':'DM Sans, sans-serif', 'font-weight':'500' });
+      t.textContent = d.name;
+      g.appendChild(t);
+    });
+  }
+
+  // ─── Draw meds ──────────────────────────────────────────
+  function drawMeds(){
+    const g = document.getElementById('tl-meds');
+    g.innerHTML = '';
+    const filt = active === 'all' ? meds : meds.filter(m => m.specs.includes(active));
+    const visible = filt.length ? filt : meds;
+    visible.forEach((m, i) => {
+      const x = dx(m.start);
+      const w = dx(m.end) - x;
+      const y = 158 + i * 8;
+      const opacity = m.discontinued ? 0.28 : 0.75;
+      g.appendChild(el('rect', { x, y, width:w, height:6, fill:m.color, opacity, rx:2 }));
+      const t = el('text', { x:x+4, y:y+4.5, 'font-size':'7', fill:'rgba(15, 23, 42, 0.88)', 'font-family':'DM Sans, sans-serif', 'font-weight':'500' });
+      t.textContent = m.name + (m.discontinued ? ' (d/c)' : '');
+      g.appendChild(t);
+    });
+  }
+
+  // ─── Draw labs ──────────────────────────────────────────
+  function drawLabs(){
+    const g = document.getElementById('tl-labs');
+    g.innerHTML = '';
+    const yTop = 240, yBot = 318;
+
+    // Lab area background
+    g.appendChild(el('rect', { x:TL.x0, y:yTop-4, width:TL.x1-TL.x0, height:yBot-yTop+8, fill:'rgba(15, 23, 42, 0.015)', rx:3 }));
+
+    visibleLabs.forEach(key => {
+      const lab = labs[key];
+      if (!lab) return;
+      const [lo, hi] = lab.range;
+      const norm = v => yBot - (v - lo)/(hi - lo) * (yBot - yTop);
+
+      // Gradient area fill
+      const pts_below = lab.data.map(([yr,v]) => `${dx(yr)},${norm(v)}`).join(' ');
+      const first_x = dx(lab.data[0][0]);
+      const last_x  = dx(lab.data[lab.data.length-1][0]);
+      const areaPoints = `${first_x},${yBot} ${pts_below} ${last_x},${yBot}`;
+      g.appendChild(el('polygon', { points:areaPoints, fill:lab.color, opacity:0.06 }));
+
+      // Line
+      g.appendChild(el('polyline', { points:pts_below, fill:'none', stroke:lab.color, 'stroke-width':1.8, opacity:0.95, 'stroke-linejoin':'round', 'stroke-linecap':'round' }));
+
+      // Dots
+      lab.data.forEach(([yr, v]) => {
+        g.appendChild(el('circle', { cx:dx(yr), cy:norm(v), r:2.2, fill:lab.color }));
+      });
+
+      // Last value label
+      const last = lab.data[lab.data.length-1];
+      const lt = el('text', { x:dx(last[0])+5, y:norm(last[1])+3.5, 'font-size':'9', fill:lab.color, 'font-family':'IBM Plex Mono, monospace', 'font-weight':'500' });
+      lt.textContent = `${lab.name} ${last[1]}`;
+      g.appendChild(lt);
+    });
+  }
+
+  // ─── Utilities ──────────────────────────────────────────
+  function activeMedsAt(year){ return meds.filter(m => year >= m.start && year <= m.end); }
+  function activeDxAt(year)  { return diagnoses.filter(d => year >= d.start && year <= d.end); }
+  function labValueAt(key, year){
+    const data = labs[key].data;
+    let best = null, bestDiff = Infinity;
+    data.forEach(([yr,v]) => { const diff = Math.abs(yr - year); if (diff < bestDiff){ bestDiff = diff; best = [yr, v]; } });
+    return best;
+  }
+  function yearToLabel(y){
+    const yr = Math.floor(y);
+    const mo = Math.round((y - yr) * 12);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return months[Math.min(11, Math.max(0, mo))] + ' ' + yr;
+  }
+
+  // ─── Tooltip ────────────────────────────────────────────
+  function showScrubTip(year, clientX){
+    const am = activeMedsAt(year).map(m => m.name).join(', ') || '—';
+    const ad = activeDxAt(year).map(d => d.name).join(', ') || '—';
+    let labHtml = '';
+    visibleLabs.forEach(k => {
+      const v = labValueAt(k, year);
+      if (v) labHtml += `<div class="tl-tooltip-lab-row"><span style="color:${labs[k].color};font-size:10px;">●</span> <strong>${labs[k].name}</strong> <span class="lval">${v[1]}</span><span class="ldate">(${yearToLabel(v[0])})</span></div>`;
+    });
+    tooltip.innerHTML = `
+      <span class="tl-tooltip-date">${yearToLabel(year)}</span>
+      ${labHtml ? `<div class="tl-tooltip-section">${labHtml}</div>` : ''}
+      <div class="tl-tooltip-section"><strong>Active Dx:</strong><br><span style="color:var(--text-secondary)">${ad}</span></div>
+      <div class="tl-tooltip-section"><strong>On meds:</strong><br><span style="color:var(--text-secondary)">${am}</span></div>`;
+    const rect = svg.getBoundingClientRect();
+    const left = Math.min(clientX - rect.left + 14, rect.width - 270);
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = '8px';
+    tooltip.style.opacity = '1';
+  }
+
+  function showEventTip(ev, e){
+    tooltip.innerHTML = `<span class="tl-tooltip-date">${yearToLabel(e.year)}</span><strong>${e.label}</strong><div class="tl-tooltip-section" style="color:var(--text-secondary)">${e.detail}</div>`;
+    const rect = svg.getBoundingClientRect();
+    tooltip.style.left = Math.min(ev.clientX - rect.left + 14, rect.width - 270) + 'px';
+    tooltip.style.top = '8px';
+    tooltip.style.opacity = '1';
+  }
+
+  function hideTip(){ tooltip.style.opacity = '0'; scrub.setAttribute('opacity', 0); hoverYear = null; renderEncounters(); }
+
+  // ─── Scrub interaction ───────────────────────────────────
+  svg.addEventListener('mousemove', ev => {
+    const rect = svg.getBoundingClientRect();
+    const px = (ev.clientX - rect.left) * (700 / rect.width);
+    if (px < TL.x0 || px > TL.x1) return;
+    hoverYear = xToYear(px);
+    scrub.setAttribute('x1', px); scrub.setAttribute('x2', px);
+    scrub.setAttribute('opacity', 1);
+    showScrubTip(hoverYear, ev.clientX);
+    renderEncounters();
+  });
+  svg.addEventListener('mouseleave', hideTip);
+
+  // ─── Insights ────────────────────────────────────────────
+  function renderInsights(){
+    const wrap = document.getElementById('insights');
+    const filt = active === 'all' ? insights : insights.filter(i => i.specs.includes(active) || i.specs.includes('all'));
+    wrap.innerHTML = '';
+    filt.forEach(i => {
+      const div = document.createElement('div');
+      div.className = 'insight ' + (i.kind === 'good' ? 'good' : i.kind === 'warn' ? 'warn' : 'normal');
+      div.innerHTML = `<span class="insight-tag">${i.tag}</span><div class="insight-text">${i.text}</div>`;
+      wrap.appendChild(div);
+    });
+    document.getElementById('insight-count').textContent = filt.length + ' notes';
+  }
+
+  // ─── Encounters ──────────────────────────────────────────
+  function renderEncounters(){
+    const wrap = document.getElementById('encounters');
+    const lbl  = document.getElementById('enc-window');
+    let list = encounters;
+    if (hoverYear !== null){
+      list = encounters.filter(e => Math.abs(e.year - hoverYear) <= 0.6);
+      lbl.textContent = list.length
+        ? `Within ±7 mo of ${yearToLabel(hoverYear)}`
+        : `No encounters within ±7 mo of ${yearToLabel(hoverYear)}`;
+    } else {
+      lbl.textContent = 'Showing all encounters · hover timeline to filter';
+    }
+    document.getElementById('enc-count').textContent = list.length + ' records';
+    wrap.innerHTML = '';
+    list.slice().reverse().forEach(e => {
+      const specClass = { PCP:'pcp', Endo:'endo', Cardio:'cardio', Nephro:'nephro', Ortho:'ortho' }[e.spec] || 'pcp';
+      const row = document.createElement('div');
+      row.className = 'encounter-row';
+      row.innerHTML = `<span class="enc-date">${e.date}</span><span class="enc-spec-badge ${specClass}">${e.spec}</span><span class="enc-text">${e.text}</span>`;
+      wrap.appendChild(row);
+    });
+  }
+
+  // ─── Lab toggles ─────────────────────────────────────────
+  function renderLabToggles(){
+    const wrap = document.getElementById('lab-toggles');
+    wrap.innerHTML = '<span class="lab-toggles-label">Labs</span>';
+    Object.keys(labs).forEach(key => {
+      const lab = labs[key];
+      const btn = document.createElement('button');
+      const on = visibleLabs.includes(key);
+      btn.className = 'lab-toggle' + (on ? ' on' : '');
+      btn.textContent = lab.name;
+      if (on){ btn.style.backgroundColor = lab.color; btn.style.boxShadow = `0 0 10px ${lab.color}40`; }
+      btn.addEventListener('click', () => {
+        if (visibleLabs.includes(key)) visibleLabs = visibleLabs.filter(k => k !== key);
+        else visibleLabs.push(key);
+        renderLabToggles();
+        drawLabs();
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  // ─── Specialty switch ────────────────────────────────────
+  function applySpecialty(){
+    const presets = {
+      all:    ['hba1c'],
+      cardio: ['ldl','sbp'],
+      endo:   ['hba1c','weight'],
+      nephro: ['egfr','sbp'],
+      hepato: ['ldl','alt']
+    };
+    const headings = {
+      all:    'Patient timeline · 2006 – 2025',
+      cardio: 'Cardiology view · CAD, lipids, BP, cardiac meds',
+      endo:   'Endocrinology view · diabetes control & weight',
+      nephro: 'Nephrology view · renal function & BP',
+      hepato: 'Hepatology view · LDL, statin dose, ALT trend'
+    };
+    visibleLabs = presets[active].slice();
+    document.getElementById('tl-heading').textContent = headings[active];
+    drawDiagnoses(); drawMeds(); drawLabs(); renderLabToggles(); renderInsights();
+  }
+
+  document.getElementById('spec-bar').addEventListener('click', e => {
+    const btn = e.target.closest('.spec-btn');
+    if (!btn) return;
+    document.querySelectorAll('.spec-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    active = btn.dataset.spec;
+    applySpecialty();
+  });
+
+  // ─── Init ────────────────────────────────────────────────
+  drawGrid();
+  drawEvents();
+  applySpecialty();
+  renderEncounters();
+})();
+</script>
+</body>
+</html>
