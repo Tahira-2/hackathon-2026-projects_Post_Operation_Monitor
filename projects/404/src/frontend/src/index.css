@@ -1,0 +1,627 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    
+    /* Premium Healthcare Blue/Teal */
+    --primary: 198 83% 40%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 198 83% 40%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    
+    /* Dark mode teal */
+    --primary: 198 83% 55%;
+    --primary-foreground: 222.2 47.4% 1.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 198 83% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TELEHEALTH VIDEO CONSULTATION — Design System
+   Dark-first, HIPAA-inspired, glassmorphism aesthetic
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Background ── */
+.consultation-bg {
+  background: radial-gradient(ellipse at 20% 10%, hsl(214 50% 8%) 0%, hsl(220 30% 5%) 60%, hsl(215 40% 4%) 100%);
+  min-height: 100vh;
+}
+
+/* ── Main card (permission / ended screens) ── */
+.consultation-card {
+  background: rgba(15, 20, 30, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(99, 179, 237, 0.12);
+  border-radius: 1.5rem;
+  padding: 2.5rem;
+  box-shadow:
+    0 25px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255,255,255,0.03) inset;
+}
+
+/* ── Icon rings ── */
+.consultation-icon-ring {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(6, 182, 212, 0.1);
+  border: 2px solid rgba(6, 182, 212, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 30px rgba(6, 182, 212, 0.15);
+}
+.consultation-icon-ring--error {
+  background: rgba(244, 63, 94, 0.1);
+  border-color: rgba(244, 63, 94, 0.25);
+  box-shadow: 0 0 30px rgba(244, 63, 94, 0.15);
+}
+.consultation-icon-ring--warning {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.25);
+  box-shadow: 0 0 30px rgba(251, 191, 36, 0.15);
+}
+.consultation-icon-ring--success {
+  background: rgba(52, 211, 153, 0.1);
+  border-color: rgba(52, 211, 153, 0.25);
+  box-shadow: 0 0 30px rgba(52, 211, 153, 0.15);
+}
+
+/* ── Badge (pill) ── */
+.consultation-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(99, 179, 237, 0.15);
+  border-radius: 9999px;
+}
+
+/* ── Permission row ── */
+.consultation-permission-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1.125rem;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 0.875rem;
+}
+.consultation-permission-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 182, 212, 0.12);
+  border-radius: 0.5rem;
+  color: rgb(103, 232, 249);
+}
+
+/* ── Alert box ── */
+.consultation-alert-box {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(120, 53, 15, 0.3);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-radius: 0.875rem;
+}
+
+/* ── Primary button ── */
+.consultation-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.5rem;
+  background: linear-gradient(135deg, hsl(193 83% 40%), hsl(210 83% 50%));
+  color: white;
+  font-weight: 600;
+  border-radius: 0.875rem;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(6, 182, 212, 0.3);
+}
+.consultation-btn-primary:hover {
+  background: linear-gradient(135deg, hsl(193 83% 46%), hsl(210 83% 56%));
+  box-shadow: 0 6px 28px rgba(6, 182, 212, 0.45);
+  transform: translateY(-1px);
+}
+.consultation-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Ghost button ── */
+.consultation-btn-ghost {
+  padding: 0.625rem 1.5rem;
+  color: rgb(148 163 184);
+  font-weight: 500;
+  border-radius: 0.875rem;
+  border: 1px solid rgba(99, 179, 237, 0.15);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.consultation-btn-ghost:hover {
+  color: white;
+  background: rgba(99, 179, 237, 0.08);
+  border-color: rgba(99, 179, 237, 0.25);
+}
+
+/* ── Video preview container ── */
+.consultation-video-preview {
+  position: relative;
+  background: rgb(15 23 42);
+  border-radius: 1.25rem;
+  overflow: hidden;
+  aspect-ratio: 4/3;
+  border: 1px solid rgba(99, 179, 237, 0.12);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Small control button (used in setup / waiting room) ── */
+.consultation-control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.consultation-control-btn:hover {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: rgba(6, 182, 212, 0.4);
+}
+.consultation-control-btn--off {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: rgb(252 165 165);
+}
+.consultation-control-btn--off:hover {
+  background: rgba(239, 68, 68, 0.35);
+}
+
+/* ── Device selector card ── */
+.consultation-device-select {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(99, 179, 237, 0.12);
+  border-radius: 0.875rem;
+  padding: 0.875rem 1rem;
+}
+
+/* ── Native select override ── */
+.consultation-select {
+  appearance: none;
+  width: 100%;
+  padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+  background: rgba(2, 8, 23, 0.6);
+  border: 1px solid rgba(99, 179, 237, 0.15);
+  border-radius: 0.625rem;
+  color: white;
+  font-size: 0.8125rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.consultation-select:focus {
+  border-color: rgba(6, 182, 212, 0.5);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+}
+.consultation-select option {
+  background: rgb(15 23 42);
+  color: white;
+}
+
+/* ── Avatar placeholder ── */
+.consultation-avatar-xl {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(30, 41, 59, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(99, 179, 237, 0.15);
+}
+
+/* ── Provider avatar (waiting room info card) ── */
+.consultation-provider-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(59, 130, 246, 0.2));
+  border: 2px solid rgba(6, 182, 212, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.consultation-provider-avatar-sm {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, hsl(193 83% 40%), hsl(210 83% 50%));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── Info card (inside panels / waiting room) ── */
+.consultation-info-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(99, 179, 237, 0.1);
+  border-radius: 0.875rem;
+  padding: 1rem;
+}
+
+/* ─────────────────────────────────────────
+   IN-CALL ROOM
+   ───────────────────────────────────────── */
+
+.consultation-room {
+  position: fixed;
+  inset: 0;
+  background: #030a15;
+  display: flex;
+  overflow: hidden;
+  user-select: none;
+}
+.consultation-room--fullscreen {
+  z-index: 9999;
+}
+
+/* Remote video container */
+.consultation-remote-video {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, #0d1829 0%, #030a15 100%);
+  overflow: hidden;
+}
+
+/* Placeholder for remote participant (no real stream yet) */
+.remote-video-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+.remote-video-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, hsl(193 83% 25%), hsl(215 83% 35%));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid rgba(6, 182, 212, 0.3);
+  box-shadow: 0 0 60px rgba(6, 182, 212, 0.15);
+}
+
+/* Actual video stream */
+.consultation-video-stream {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Top HUD bar ── */
+.consultation-hud-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(to bottom, rgba(3, 10, 21, 0.8) 0%, transparent 100%);
+  z-index: 20;
+}
+
+/* HUD icon buttons */
+.consultation-hud-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 0.625rem;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgb(148 163 184);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.consultation-hud-btn:hover {
+  color: white;
+  background: rgba(6, 182, 212, 0.15);
+  border-color: rgba(6, 182, 212, 0.3);
+}
+
+/* ── PiP (picture-in-picture) local video ── */
+.consultation-pip {
+  position: absolute;
+  bottom: 100px;
+  right: 1.25rem;
+  width: 180px;
+  aspect-ratio: 4/3;
+  border-radius: 0.875rem;
+  overflow: hidden;
+  border: 2px solid rgba(99, 179, 237, 0.25);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  background: rgb(15 23 42);
+  z-index: 20;
+  cursor: move;
+}
+@media (max-width: 640px) {
+  .consultation-pip {
+    width: 120px;
+    bottom: 90px;
+    right: 0.75rem;
+  }
+}
+
+/* ── Bottom controls bar ── */
+.consultation-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1rem 1.5rem 1.5rem;
+  background: linear-gradient(to top, rgba(3, 10, 21, 0.9) 0%, transparent 100%);
+  z-index: 20;
+}
+.consultation-controls-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Large call control buttons */
+.consultation-control-btn-lg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+.consultation-control-btn-lg:hover {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: rgba(6, 182, 212, 0.5);
+  transform: scale(1.05);
+}
+.consultation-control-btn-lg--off {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: rgb(252 165 165);
+}
+.consultation-control-btn-lg--off:hover {
+  background: rgba(239, 68, 68, 0.35);
+  border-color: rgba(239, 68, 68, 0.6);
+}
+
+/* End call button */
+.consultation-end-call-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  box-shadow: 0 4px 24px rgba(220, 38, 38, 0.45);
+}
+.consultation-end-call-btn:hover {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 6px 32px rgba(220, 38, 38, 0.6);
+  transform: scale(1.08);
+}
+
+/* ── Clinical Side Panel ── */
+.consultation-side-panel {
+  width: 320px;
+  flex-shrink: 0;
+  background: rgba(8, 14, 26, 0.95);
+  backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(99, 179, 237, 0.1);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  z-index: 10;
+}
+@media (max-width: 900px) {
+  .consultation-side-panel {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 280px;
+    z-index: 30;
+  }
+}
+
+.consultation-side-panel-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(99, 179, 237, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+/* ── Notes textarea ── */
+.consultation-notes-textarea {
+  width: 100%;
+  resize: none;
+  background: rgba(2, 8, 23, 0.6);
+  border: 1px solid rgba(99, 179, 237, 0.12);
+  border-radius: 0.75rem;
+  padding: 0.875rem;
+  color: white;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+.consultation-notes-textarea::placeholder {
+  color: rgb(71 85 105);
+}
+.consultation-notes-textarea:focus {
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.08);
+}
+
+/* ── Chat input ── */
+.consultation-chat-input {
+  padding: 0.5rem 0.75rem;
+  background: rgba(2, 8, 23, 0.6);
+  border: 1px solid rgba(99, 179, 237, 0.12);
+  border-radius: 0.75rem;
+  color: white;
+  font-size: 0.8125rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.consultation-chat-input:focus {
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.08);
+}
+.consultation-chat-input::placeholder {
+  color: rgb(71 85 105);
+}
+
+/* ── Audio level bars animation ── */
+.audio-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.audio-bars span {
+  width: 2.5px;
+  border-radius: 1px;
+  background: rgb(34 211 238);
+  animation: audio-bar 0.8s ease-in-out infinite alternate;
+}
+.audio-bars span:nth-child(1) { height: 4px; animation-delay: 0s; }
+.audio-bars span:nth-child(2) { height: 10px; animation-delay: 0.15s; }
+.audio-bars span:nth-child(3) { height: 7px; animation-delay: 0.30s; }
+.audio-bars span:nth-child(4) { height: 12px; animation-delay: 0.45s; }
+
+@keyframes audio-bar {
+  from { transform: scaleY(0.3); opacity: 0.6; }
+  to   { transform: scaleY(1);   opacity: 1; }
+}

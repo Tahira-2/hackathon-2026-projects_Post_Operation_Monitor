@@ -1,0 +1,16 @@
+# Web Framework
+fastapi==0.115.0
+uvicorn[standard]==0.30.1
+python-multipart==0.0.9
+
+# Google AI (This handles BOTH Text and Embeddings)
+google-generativeai==0.8.6
+
+# Database & Logic
+neo4j==5.22.0
+pydantic==2.9.1
+pydantic-settings==2.4.0
+python-dotenv==1.0.1
+requests==2.32.3
+
+pyvis==0.3.2

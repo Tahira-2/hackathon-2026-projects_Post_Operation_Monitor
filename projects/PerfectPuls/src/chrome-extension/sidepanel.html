@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Policy Pilot - Coverage Analysis</title>
+  <link rel="stylesheet" href="styles/sidepanel.css">
+</head>
+<body>
+  <div id="sidepanel-container">
+    <!-- Header -->
+    <div id="header">
+      <div class="header-content">
+        <span class="icon">🏥</span>
+        <h1>Policy Pilot</h1>
+      </div>
+      <p class="subtitle">Insurance Coverage Analysis</p>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading" class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading analysis...</p>
+    </div>
+
+    <!-- No Data State -->
+    <div id="no-data" class="no-data-container" style="display: none;">
+      <div class="icon-large">🏥</div>
+      <h2>Policy Pilot</h2>
+      <p>Visit a health or wellness website and analyze your coverage.</p>
+      <button id="analyze-btn" class="analyze-button" disabled>
+        🏥 Analyze Current Page
+      </button>
+      <div class="tip">
+        <strong>Tip:</strong> Look for services like acupuncture, massage, physical therapy, or gym memberships.
+      </div>
+    </div>
+
+    <!-- Results Container -->
+    <div id="results" style="display: none;">
+      <!-- Last Analysis Info -->
+      <div id="last-analysis" class="analysis-info"></div>
+
+      <!-- Summary -->
+      <div id="summary-card" class="card summary-card">
+        <h3><span class="icon">📋</span> Summary</h3>
+        <p id="summary-text"></p>
+      </div>
+
+      <!-- Match Checklist -->
+      <div id="checklist-card" class="card">
+        <h3><span class="icon">✓</span> Coverage Checklist</h3>
+        <div id="checklist-items"></div>
+      </div>
+
+      <!-- Feasibility -->
+      <div id="feasibility-card" class="card">
+        <h3><span class="icon">🎯</span> Feasibility Score</h3>
+        <div id="feasibility-badge"></div>
+      </div>
+
+      <!-- Money Saved -->
+      <div id="savings-card" class="card savings-card">
+        <h3><span class="icon">💰</span> Cost Breakdown</h3>
+        <div id="cost-details"></div>
+      </div>
+
+      <!-- Benefits Details -->
+      <div id="benefits-card" class="card">
+        <h3><span class="icon">📊</span> Benefit Details</h3>
+        <div id="benefit-details"></div>
+      </div>
+
+      <!-- Recommendations -->
+      <div id="recommendations-card" class="card">
+        <h3><span class="icon">💡</span> Recommendations</h3>
+        <div id="recommendation-details"></div>
+      </div>
+
+      <!-- Debug Data Container -->
+      <div id="debug-card" class="card debug-card" style="display: none;">
+        <h3><span class="icon">🔍</span> Scraped Data <button id="toggle-debug" class="toggle-debug">[Show]</button></h3>
+        <div id="debug-content" class="debug-content" style="display: none;">
+          <div class="debug-section">
+            <h4>Basic Info:</h4>
+            <pre id="debug-basic"></pre>
+          </div>
+          <div class="debug-section">
+            <h4>Page Content (first 1000 chars):</h4>
+            <pre id="debug-content-text"></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <div class="action-section">
+        <button id="clear-btn" class="clear-button">Clear Analysis</button>
+      </div>
+      
+      <!-- Footer -->
+      <div class="footer">
+        <p>Policy Pilot v1.0.0</p>
+        <p>CareDevi Hackathon 2026</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/sidepanel.js"></script>
+</body>
+</html>

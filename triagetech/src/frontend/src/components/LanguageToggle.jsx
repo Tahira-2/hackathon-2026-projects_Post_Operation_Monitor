@@ -1,0 +1,20 @@
+import React from 'react';
+import en from '../i18n/en.json';
+import ne from '../i18n/ne.json';
+
+export default function LanguageToggle({ lang, setLang }) {
+  const t = lang === 'ne' ? ne : en;
+
+  return (
+    <button
+      id="language-toggle-btn"
+      onClick={() => setLang(lang === 'en' ? 'ne' : 'en')}
+      className="lang-toggle"
+      aria-label="Toggle language"
+      title="Switch language"
+    >
+      <span className="lang-icon">🌐</span>
+      <span className="lang-label">{t.language_toggle}</span>
+    </button>
+  );
+}

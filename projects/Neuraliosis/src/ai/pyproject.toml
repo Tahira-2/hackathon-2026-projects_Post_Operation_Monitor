@@ -1,0 +1,15 @@
+[project]
+name = "health-assistant"
+version = "0.1.0"
+description = "Health Assistant AI System"
+requires-python = ">=3.11"
+dependencies = [
+    "langgraph>=0.2.0",
+    "openai>=1.0.0",
+    "chromadb>=0.5.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.30.0",
+    "python-dotenv>=1.0.0",
+    "pytest>=8.0.0",
+    "python-multipart>=0.0.9"
+]

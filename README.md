@@ -1,227 +1,133 @@
-# GuardianPost-Op
-Continuous remote monitoring for high-risk surgical recovery — software demo.
+# MedRoute
 
-This repository contains the hackathon software pipeline described in [PROPOSAL.md](PROPOSAL.md). The wearable hardware design lives in the proposal document; this codebase implements every layer above the BLE radio.
+AI-powered medical triage assistant. Describe your symptoms in plain language and get an urgency assessment (Emergency / Urgent / Semi-Urgent / Non-Urgent / Self-Care) with concrete next steps and a map of nearby care facilities — no account or API key required.
 
-## Team Credit
-* **MD Siam Ahmed** – Lead & System Architect
-    * *Computer Science, Texas State University*
-* **Tahira Juhair Boshra** - Developer
-    * *Electrical Engineering, Texas State University*
+Built for the CareDevi AI Innovation Hackathon 2026.
 
----
+**Team Byte Beasts** — Fidel, Eladio, Jeheon
 
-## The Problem
-Post-operative recovery is currently a "black box" once a patient leaves the hospital.
-* **Invisible Deterioration:** Sepsis, internal bleeding, and organ rejection often produce minor vital-sign changes hours or days before a patient feels symptomatic.
-* **Unreliable Self-Assessment:** Patients are often fatigued or medicated, making the "call if you feel worse" instruction a dangerous gamble.
-* **Context Blindness:** Generic wearables use population averages. A cardiac patient on beta-blockers needs personalized thresholds that consumer devices cannot provide.
+**Live demo:** https://hackathon-2026-projects-production.up.railway.app/
+<div align="center">
 
-## The Approach
-GuardianPost-Op introduces a **Prescription-Driven Monitoring Model**. Instead of generic alerts, a clinician defines a "safe envelope" for each specific patient. An AI engine parses these instructions and continuously monitors the patient's data against that unique clinical context. If the data drifts, the system triggers a **Dual-Alert Escalation**—notifying both the patient via the wearable and the clinician via a high-priority dashboard.
+# 🩺 DevCare
+
+### AI-Powered Telerehabilitation Platform
+
+*A virtual AI physiotherapist — available anytime, anywhere.*
+
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
+[![Django](https://img.shields.io/badge/Django-6.0-092E20?logo=django&logoColor=white)](https://www.djangoproject.com)
+[![MediaPipe](https://img.shields.io/badge/MediaPipe-Pose-4285F4?logo=google&logoColor=white)](https://mediapipe.dev)
+[![Gemini](https://img.shields.io/badge/Gemini-2.5_Flash-8E75B2?logo=googlegemini&logoColor=white)](https://ai.google.dev)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+</div>
 
 ---
 ## Solution Description
 
-An integrated platform that connects a patient’s wearable device (via CareDevi) to a specialized clinical dashboard. It uses "Clinical Guardrails" to analyze data and trigger a dual-alert system:
-Patient Alert: Encourages self-care (e.g., "You are dehydrated, drink water").
-Clinician Alert: Escalates critical trends (e.g., "Patient’s heart rate has increased 20% over baseline while activity is 0").
+## 👥 Team Members
 
+| Name | GitHub |
+|---|---|
+| **Safal Bhattarai** | [@safalbhattarai](https://github.com/safalbhattarai) |
+| **Aaditya Sigdel** | [@aadityasigdel](https://github.com/aadityasigdel) |
+| **Saksham Neupane** | [@sakshamneupane](https://github.com/sakshamneupane) |
+| **Rupen Rana Magar** | [@rupenranamagar](https://github.com/rupenranamagar) |
+
+- No "What-If" Scenarios: Patients cannot explore how changing their habits would reduce their risk — there is no tool for preventive decision-making.
+
+## 🔴 Problem Statement
+
+Patients recovering from injuries or surgeries are often prescribed physiotherapy exercises to perform at home. However, without direct clinical supervision:
+
+## How it works
+
+MedRoute conducts a short conversational interview, asks focused follow-up questions, then returns a structured triage assessment with:
+
+- An urgency level and recommended action
+- Concrete, level-specific next steps (what to do right now)
+- A map of nearby care facilities matched to urgency (ER, urgent care, clinic, or pharmacy)
+- Session history that persists across page refreshes
+
+The app uses Groq's `llama-3.3-70b-versatile` model through a server-side proxy so the API key never touches the browser.
 
 ---
 ## Tech Stack
 
-```
-Backend: Python
-FrontEnd: HTML, CSS, JavaScript
+## Tech stack
 
-APIs used
-API: Anthropic Claude API (anthropic SDK)
-Where: src/prescription_parser.py
-Description: Reads the surgeon's free-text note (e.g., "keep HR under 110, watch for SpO₂ below 92") and returns a structured CSV
-envelope of warn/critical   thresholds per vital, via a tool-use schema. Falls back to a deterministic keyword parser
-if ANTHROPIC_API_KEY is unset.
+- **Frontend** — React + Vite
+- **Backend** — Node.js + Express (proxies Groq API)
+- **AI** — Groq API (`llama-3.3-70b-versatile`)
+- **Maps** — Leaflet + OpenStreetMap + Overpass API (no key required)
+- **History** — localStorage via `historyStorage.js`
 
-API: Mock ID-verification provider
-Where: server/id_verification.py
-Description: Stand-in for a real KYC vendor (Stripe Identity / Persona / Veriff). Doctors must complete it before they can add
-patients. The interface is a small Verifier class — swap the mock for a real provider by implementing start_session / fetch_result.
+The API will be available at `http://localhost:8000`
 
-API: Internal REST API (/api/...)
-Where: server/app.py
-Description: The PWA's only backend. JSON over HTTP, bearer-token auth (PBKDF2 password hashing, opaque session tokens).
+### 3. Frontend Setup (React + Vite)
 
-Note: No external mail, SMS, or cloud-storage APIs are wired up yet — summary delivery is in-app only. Email/SMS would
-slot in at server/summary.py inside deliver_to_consenting_doctors.
-```
----
-## Architecture
-
-```text
-plain-text prescription
- |  (LLM parser)
- v
-CSV-1 envelope ---┐
- |  30-min analysis cycle (every cycle):
- 2-min sensor  |  1. average each vital across the window
- stream ------>|--> 2. compare to envelope
- (CSV-2 buffer)|  3. classify Normal / Warning / Critical
- |  4. append to Recovery Log + emit dual alert
- L----┐
-      v
- Recovery Log + alerts.jsonl ----> clinician dashboard.png
-```
-
-### Data Pipeline Components
-Outputs land in:
-
-| Path | What it is |
-|---|---|
-| `data/csv1_prescription.csv` | The parsed envelope per vital sign (CSV-1). |
-| `data/sensor_full_24h.csv`   | The full 24h simulated stream (720 samples). |
-| `data/csv2_buffer.csv`       | The rolling 30-min buffer for the *final* cycle. |
-| `data/recovery_log.csv`      | One row per 30-min cycle (48 rows). |
-| `data/alerts.jsonl`          | One JSON line per non-normal cycle. |
-| `demo_output/dashboard.png`  | Clinician-facing visualization. |
-| `demo_output/transcript.txt` | Cycle-by-cycle human-readable log. |
-
----
-
-## Data Sources
-The system monitors six critical vital signs selected for their early-warning value in high-risk recovery:
-
-| Vital Sign | Why It Matters Post-Op |
-| :--- | :--- |
-| **Resting Heart Rate** | Early indicator of infection, pain, or cardiac stress. |
-| **HRV** | Reflects autonomic balance and overall recovery state. |
-| **Respiratory Rate** | Flags fluid overload or pulmonary embolisms. |
-| **Sleep Quality** | Essential for tissue repair and immune function. |
-| **Activity (Steps)** | High risk of site injury vs. high risk of blood clots. |
-| **Blood Pressure** | Essential for kidney and liver perfusion. |
-
-*Note: For the hackathon phase, data is provided via a 24-hour simulated sensor stream replaying a mock cardiac crisis.*
-
----
-
-## Prescription Parsing
-
-`src/prescription_parser.py` has two paths:
-
-1. **Anthropic Claude** (preferred). If `ANTHROPIC_API_KEY` is set in the environment, the parser asks Claude (`claude-sonnet-4-6`) to fill out an envelope schema via a forced `set_envelope` tool call. This is the path the demo uses on stage.
-2. **Deterministic fallback**. If the API key is missing or `anthropic` isn't installed, the parser scans the text sentence-by-sentence, attributing each sentence to a vital (with last-mentioned-vital carry-over) and mining `"warn above N"`, `"critical below N"`, `"stay above N"`, `"N-M"` patterns to fill the envelope. This keeps the demo runnable offline / in CI.
-
-The active path is reported in the demo's `[1/4]` line.
-
----
-
-## What the demo shows
-
-The simulated patient is post-CABG day 2, stable through hour 17, then begins an arrhythmia at hour 18 that escalates to sustained tachycardia at hour 20. The pipeline:
-
-- classifies cycles 0-37 as **NORMAL**,
-- raises a **WARNING** at cycle 38 (HR ≈ 101, SpO2 dipping below 94), and
-- escalates to **CRITICAL** from cycle 39 onward (HR > 110, HRV collapsed, RR climbing, SpO2 in the low-90s).
-
-Each non-normal cycle emits a **dual-alert payload**:
-
-- **device payload** — what the wearable's MCU acts on (yellow/red LED + buzzer pattern + kill-switch state),
-- **push payload** — what the mobile gateway forwards to the clinician dashboard, with `bypass_dnd: true` on critical so it cuts through Do Not Disturb (the "emergency-broadcast-grade" channel from the proposal).
-
-The full demo runs in well under a second on a laptop — the proposal calls for real-time 30-minute cadence, but the demo replays the whole 24 hours back-to-back so you can see the entire story arc in one go.
-You can view the [demo](https://github.com/Tahira-2/hackathon-2026-projects_Post_Operation_Monitor/tree/main/demo)
-
----
-
-## Layout
-
-```text
-src/
-  vitals.py              # vital-sign specs + population defaults
-  prescription_parser.py # plain text -> CSV-1 (Claude or fallback)
-  sensor_simulator.py    # 24h synthetic stream w/ engineered crisis
-  analysis_engine.py     # 30-min averaging, classification, recovery log
-  alerts.py              # dual-alert (device + push) payloads
-  dashboard.py           # matplotlib clinician visualization
-  run_demo.py            # end-to-end orchestrator
-data/
-  sample_prescription.txt  # checked-in clinician text for the demo
-PROPOSAL.md              # full project proposal (clinician track)
-```
-
----
-
-## Limitations (Out of scope for Phase 2)
-
-Per the proposal, the hardware itself, the production BLE mobile gateway, and clinical / regulatory validation are documented but not built here. The CSV-2 write in `run_demo.py` simulates the wearable's behavior so the gateway role can be dropped in without changing the analysis or alert layers.
-
-* **Hardware Fabrication:** The forearm ring is fully specified (ESP32-C3, MAX30102 sensors) but currently simulated via software.
-* **Regulatory Pathway:** This is a functional demonstration and has not yet undergone FDA/clinical validation.
-
----
-
-## Setup Instructions (Quick start)
-
-### Prerequisites
-* Python 3.9+
-
-### Installation & Run
 ```bash
-python -m pip install -r requirements.txt
+# Open a new terminal
+cd devcare-client
 
-# (a) one-shot analysis pipeline (renders the dashboard PNG)
-python -m src.run_demo
+## Setup
 
-# (b) gateway PWA (patient + doctor web app on http://127.0.0.1:5050)
-python -m server.app
+**Prerequisites:** Node.js 18+, a free Groq API key from [console.groq.com](https://console.groq.com)
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Add your Groq API key
+echo "GROQ_API_KEY=your_key_here" > .env
+
+# 3. Start the Express backend (port 3001)
+node server.js
+
+# 4. In a second terminal, start the Vite dev server (port 5173)
+npm run dev
 ```
 
-The gateway lives in `server/` (Flask + SQLite) and `webapp/` (vanilla-JS PWA). On first boot it creates `data/guardian.db`; that file persists across restarts, so accounts you create stick around. The "Wipe DB & re-seed demo data" button on the landing page is the only thing that resets it.
+Open [http://localhost:5173](http://localhost:5173).
+
+### Production build
+
+```bash
+npm run build   # outputs to dist/
+node server.js  # serves frontend + API on port 3001
+```
 
 ---
 
-## Deploy to Render (free tier)
+## Project structure
 
-The gateway PWA can be published from this GitHub repo straight to [Render.com](https://render.com) with no credit card. The `render.yaml` blueprint at the repo root describes the service.
-
-1. Fork this repository to your own GitHub account.
-2. Sign in to Render, click **New + → Blueprint**, and connect the fork.
-3. Render reads `render.yaml`, provisions a free Python web service, and runs `gunicorn server.app:app`. First build takes ~3 min.
-4. When deploy completes, open the public URL Render shows you, then click **Wipe DB & re-seed demo data** on the landing page to seed the demo doctor + patient.
-
-Subsequent `git push origin main` triggers an auto-redeploy.
-The Website is live here: [Click](https://guardian-postop.onrender.com/#/)
-
----
-
-### Free-tier caveats
-* The service sleeps after ~15 min of inactivity and takes ~30 s to wake on the next request.
-* Render's free filesystem is **ephemeral on every redeploy and on cold start** — if `DATABASE_URL` is not set, the app falls back to a local SQLite file at `data/guardian.db` that gets wiped each time the container restarts. Wire up `DATABASE_URL` (Neon walkthrough below) to make accounts persist.
-* Single worker (`--workers 1` in `render.yaml`) — the auto-summary scheduler runs in-process and can't be safely sharded across workers without external coordination.
-
----
-
-## Persistent storage with Neon (free Postgres)
-
-GuardianPost-Op auto-detects a Postgres connection string in the `DATABASE_URL` env var. With it set, all accounts, summaries, sessions, and live alerts survive Render's free-tier spin-downs and redeploys. Without it, the app falls back to SQLite (fine for local dev, lost on every Render restart).
-
-[Neon](https://neon.tech) gives you a free Postgres database with no credit card and no time-based expiry. Setup takes ~3 minutes:
-
-1. Sign up at https://neon.tech (use **Continue with GitHub** for the fastest path).
-2. On the dashboard, click **New Project**. Defaults are fine — pick the region closest to your Render region (Oregon if you used the default `render.yaml`).
-3. Once the project finishes creating, you'll land on a "Connection Details" panel. Switch the **Connection mode** dropdown to **Pooled connection** (Neon scales the pool down when idle, which keeps the free tier humming).
-4. Copy the full connection string — it looks like:
-   ```text
-   postgresql://USER:PASSWORD@ep-xxx-pooler.region.aws.neon.tech/neondb?sslmode=require
-   ```
-5. In your Render dashboard, open the `guardian-postop` service → **Environment** → **Add Environment Variable**. Set:
-   * **Key:** `DATABASE_URL`
-   * **Value:** (the Neon connection string from step 4)
-6. Click **Save Changes**. Render will trigger a redeploy automatically.
-7. After the redeploy finishes, open the public URL and click **Wipe DB & re-seed demo data** once. From now on every account you create persists across spin-downs and redeploys.
-
-To verify the migration worked: tail the Render deploy logs — you'll see `gunicorn server.app:app` boot, and the first authenticated request will succeed against Neon. If `DATABASE_URL` is set but unreachable, the deploy crashes on import, so any successful boot means Postgres is live.
-
-If you ever want to fall back to SQLite (e.g. for a quick local change), just unset `DATABASE_URL` in Render's Environment tab and redeploy.
+```
+├── server.js                          # Express backend — proxies /api/chat to Groq
+├── src/
+│   ├── App.jsx                        # Router, active session state, history navigation
+│   ├── historyStorage.js              # localStorage helpers for saving/updating sessions
+│   ├── textFormatting.jsx             # Shared markdown cleanup/rendering helpers
+│   ├── pages/
+│   │   ├── Home.jsx                   # Landing page
+│   │   ├── Triage.jsx                 # Chat UI, triage flow, session save/resume logic
+│   │   ├── History.jsx                # Saved session list with continue/view actions
+│   │   └── History.module.css
+│   └── components/
+│       ├── NearbyFacilities.jsx       # Map + facility list shown after assessment
+│       ├── NearbyFacilities.module.css
+│       ├── NextSteps.jsx              # Urgency-specific action steps shown after assessment
+│       └── NextSteps.module.css
+├── vite.config.js                     # Dev proxy: /api → localhost:3001
+└── .env                               # GROQ_API_KEY (never committed)
+```
 
 ---
 
+## Deployment
+
+Hosted on Railway. Auto-deploys on every push to `main`.
+
+- Build command: `npm run build`
+- Start command: `node server.js`
+- Required env var: `GROQ_API_KEY`
