@@ -1,0 +1,60 @@
+@baseUrl = http://localhost:3000/api
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwNTBhOTVkYS0wMTc5LTRjNWItYmVlYy02M2JhZTg1ZmMwMjYiLCJlbWFpbCI6ImRvY3RvckBnbWFpbC5jb20iLCJyb2xlIjoiRE9DVE9SIiwiaWF0IjoxNzc3MjAxMTA3LCJleHAiOjE3Nzc4MDU5MDd9.AwNZiqQzkFQfwOdmNlYgMubc0Ir6VRZraFLcacMGX7s
+
+### Login to get token (adjust email/password as needed)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "doctor@example.com",
+  "password": "password"
+}
+
+### ========================================
+### APPOINTMENTS API
+### ========================================
+
+### Create an appointment
+# @name createAppointment
+POST {{baseUrl}}/appointments
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "doctorId": "f11d325f-ed06-4bb7-9512-01062a1b15c2",
+  "patientId": "9e0012cb-348b-44bd-b44e-102f117ec324",
+  "startTime": "2024-05-01T10:00:00Z",
+  "endTime": "2024-05-01T11:00:00Z",
+  "status": "PENDING"
+}
+
+### Get all appointments
+GET {{baseUrl}}/appointments
+Authorization: Bearer {{authToken}}
+
+### Get appointments by doctorId
+GET {{baseUrl}}/appointments?doctorId=f11d325f-ed06-4bb7-9512-01062a1b15c2
+Authorization: Bearer {{authToken}}
+
+### Get appointments by patientId
+GET {{baseUrl}}/appointments?patientId=9e0012cb-348b-44bd-b44e-102f117ec324
+Authorization: Bearer {{authToken}}
+
+### Get appointment by ID
+@appointmentId = {{createAppointment.response.body.id}}
+GET {{baseUrl}}/appointments/{{appointmentId}}
+Authorization: Bearer {{authToken}}
+
+### Update appointment
+PATCH {{baseUrl}}/appointments/{{appointmentId}}
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "status": "COMPLETED"
+}
+
+### Delete appointment
+DELETE {{baseUrl}}/appointments/{{appointmentId}}
+Authorization: Bearer {{authToken}}

@@ -1,0 +1,263 @@
+{
+  "common_cold": {
+    "display_name": "Common Cold",
+    "remedies": [
+      "Rest as much as possible for the first 2 to 3 days",
+      "Drink at least 8 glasses of water, herbal tea, or clear broth daily",
+      "Gargle with warm salt water to soothe a sore throat",
+      "Use saline nasal drops or spray to relieve congestion",
+      "Take acetaminophen or ibuprofen for fever or body aches — follow dosage instructions",
+      "Use a humidifier in your room to add moisture to the air",
+      "Avoid alcohol and caffeine — they cause dehydration",
+      "Honey mixed in warm water or tea can help soothe a cough"
+    ],
+    "watch_for": [
+      "Fever above 103F (39.4C) — seek medical care",
+      "Symptoms lasting more than 10 days without improvement",
+      "Symptoms that improve then suddenly worsen",
+      "Shortness of breath or difficulty breathing",
+      "Severe sinus pain or pain around eyes"
+    ],
+    "duration": "7 to 10 days",
+    "source": "CDC",
+    "source_url": "https://www.cdc.gov/antibiotic-use/colds.html"
+  },
+
+  "flu": {
+    "display_name": "Influenza (Flu)",
+    "remedies": [
+      "Stay home and rest — avoid contact with others to prevent spreading",
+      "Drink plenty of fluids: water, broth, sports drinks to prevent dehydration",
+      "Take acetaminophen or ibuprofen to reduce fever and relieve body aches",
+      "Do NOT give aspirin to children or teenagers with flu",
+      "Use a humidifier to ease congestion and sore throat",
+      "Eat light easy-to-digest foods: soup, toast, crackers, bananas",
+      "Stay in bed during the worst of the illness — your body needs energy to fight the virus",
+      "See a doctor within 48 hours if you are high risk — antiviral medication (Tamiflu) works best when started early"
+    ],
+    "watch_for": [
+      "Difficulty breathing or shortness of breath — seek emergency care",
+      "Persistent chest pain or pressure",
+      "Sudden dizziness or confusion",
+      "Severe or persistent vomiting",
+      "Symptoms improve then return with fever and worse cough",
+      "Bluish lips or face — call 911 immediately"
+    ],
+    "duration": "5 to 7 days, fatigue may last 2 weeks",
+    "source": "CDC",
+    "source_url": "https://www.cdc.gov/flu/treatment/index.html"
+  },
+
+  "fever": {
+    "display_name": "Fever",
+    "remedies": [
+      "Take acetaminophen (Tylenol) or ibuprofen (Advil) as directed on the package",
+      "Drink plenty of cool fluids — water, juice, broth — to prevent dehydration",
+      "Rest and avoid strenuous activity",
+      "Wear light comfortable clothing and use a light blanket",
+      "Apply a cool damp washcloth to your forehead, wrists, or back of neck",
+      "Keep room temperature comfortable — not too hot or too cold",
+      "Take a lukewarm bath or sponge bath — avoid cold water which can cause shivering",
+      "Do NOT bundle up in heavy blankets if you have chills — this traps heat"
+    ],
+    "watch_for": [
+      "Fever above 103F (39.4C) in adults — call your doctor",
+      "Fever in any infant under 3 months — seek immediate care",
+      "Fever with stiff neck and severe headache — possible meningitis, call 911",
+      "Fever with difficulty breathing or chest pain — call 911",
+      "Fever lasting more than 3 days",
+      "Fever with confusion, seizures, or loss of consciousness — call 911",
+      "Fever with severe rash"
+    ],
+    "duration": "Typically 3 to 5 days depending on cause",
+    "source": "MedlinePlus",
+    "source_url": "https://medlineplus.gov/fever.html"
+  },
+
+  "headache": {
+    "display_name": "Headache",
+    "remedies": [
+      "Take over the counter pain relief: acetaminophen, ibuprofen, or aspirin (not for children)",
+      "Rest in a quiet dark room — light and noise can worsen headaches",
+      "Apply a cold ice pack or warm compress to your head or neck — try both and use whichever helps",
+      "Drink a full glass of water — dehydration is a very common headache trigger",
+      "Massage your temples, neck, and shoulders gently",
+      "Try to sleep — many headaches resolve with rest",
+      "Avoid screens, bright lights, and loud sounds",
+      "For tension headaches: gentle neck stretches can relieve muscle tightness",
+      "Avoid caffeine if prone to headaches — but if you regularly drink coffee, withdrawal can cause headaches"
+    ],
+    "watch_for": [
+      "Sudden severe headache described as the worst headache of your life — call 911 immediately, possible brain bleed",
+      "Headache with fever and stiff neck — possible meningitis, call 911",
+      "Headache with vision changes, confusion, or weakness on one side",
+      "Headache after a head injury",
+      "Headache that gets progressively worse over days",
+      "Headache with vomiting that is not related to nausea",
+      "Headache in someone over 50 that is new or different from usual"
+    ],
+    "duration": "30 minutes to several hours for tension headache",
+    "source": "MedlinePlus",
+    "source_url": "https://medlineplus.gov/headache.html"
+  },
+
+  "sore_throat": {
+    "display_name": "Sore Throat",
+    "remedies": [
+      "Gargle with warm salt water (half teaspoon of salt in 8 ounces of warm water) several times a day",
+      "Drink warm liquids: herbal tea with honey, warm broth, or warm water with lemon",
+      "Suck on ice chips, popsicles, or throat lozenges to numb the pain",
+      "Take acetaminophen or ibuprofen for pain and fever",
+      "Use a humidifier to keep air moist — dry air worsens sore throat",
+      "Rest your voice and avoid talking loudly",
+      "Avoid irritants: cigarette smoke, strong chemicals, very dry air",
+      "Stay well hydrated throughout the day"
+    ],
+    "watch_for": [
+      "Severe sore throat with high fever above 101F and no cough — possible strep throat, needs antibiotics",
+      "White patches or pus on tonsils — see a doctor",
+      "Difficulty swallowing or breathing — seek emergency care",
+      "Drooling because you cannot swallow your saliva — go to ER",
+      "Rash along with sore throat — possible scarlet fever",
+      "Sore throat lasting more than a week without improvement",
+      "Swollen lymph nodes in the neck that are very tender"
+    ],
+    "duration": "5 to 7 days for viral sore throat",
+    "source": "MedlinePlus",
+    "source_url": "https://medlineplus.gov/sorethroat.html"
+  },
+
+  "nausea": {
+    "display_name": "Nausea and Vomiting",
+    "remedies": [
+      "Stop eating solid food until vomiting has completely stopped",
+      "Take small sips of clear liquids every 5 to 10 minutes: water, clear broth, ginger ale, electrolyte drinks",
+      "Suck on ice chips if you cannot keep liquids down",
+      "Gradually introduce bland foods once vomiting stops: crackers, toast, rice, bananas, applesauce",
+      "Avoid dairy products, greasy or fatty foods, spicy foods, alcohol, and caffeine",
+      "Rest with your head elevated — lying flat can worsen nausea",
+      "Try ginger: ginger tea, ginger ale, or ginger candies can help settle the stomach",
+      "Fresh air and a cool environment can help reduce nausea",
+      "Over the counter antiemetics like Dramamine may help with motion sickness related nausea"
+    ],
+    "watch_for": [
+      "Blood in vomit — looks red or like dark coffee grounds — call 911",
+      "Vomiting combined with severe chest pain — possible heart attack, call 911",
+      "Vomiting combined with severe headache and stiff neck — possible meningitis, call 911",
+      "Signs of severe dehydration: no urination for 8 hours, extreme dry mouth, dizziness",
+      "Cannot keep any liquids down for more than 12 hours",
+      "High fever above 103F with vomiting",
+      "Vomiting after a head injury"
+    ],
+    "duration": "24 to 48 hours for most cases of stomach flu",
+    "source": "MedlinePlus",
+    "source_url": "https://medlineplus.gov/nauseaandvomiting.html"
+  },
+
+  "indigestion": {
+    "display_name": "Indigestion and Heartburn",
+    "remedies": [
+      "Eat smaller meals more frequently instead of large meals",
+      "Eat slowly and chew food thoroughly",
+      "Avoid trigger foods: spicy foods, fatty or greasy foods, chocolate, citrus, tomatoes, onions, garlic",
+      "Avoid alcohol and caffeine — both increase stomach acid",
+      "Do not lie down for at least 2 to 3 hours after eating",
+      "Elevate the head of your bed by 6 to 8 inches if you get nighttime heartburn",
+      "Take over the counter antacids (Tums, Rolaids) for immediate relief",
+      "Wear loose comfortable clothing — tight clothing puts pressure on the stomach",
+      "Maintain a healthy weight — excess weight puts pressure on the stomach"
+    ],
+    "watch_for": [
+      "Chest pain that could be confused with heartburn — if severe or radiates to arm, call 911",
+      "Difficulty swallowing",
+      "Persistent vomiting",
+      "Black or bloody stools — see a doctor immediately",
+      "Unexplained weight loss with indigestion",
+      "Symptoms lasting more than 2 weeks despite home treatment",
+      "Indigestion that wakes you from sleep regularly"
+    ],
+    "duration": "Usually resolves within a few hours with antacids",
+    "source": "MedlinePlus",
+    "source_url": "https://medlineplus.gov/indigestion.html"
+  },
+
+  "seasonal_allergies": {
+    "display_name": "Seasonal Allergies",
+    "remedies": [
+      "Take over the counter antihistamines: cetirizine (Zyrtec), loratadine (Claritin), or fexofenadine (Allegra)",
+      "Use nasal corticosteroid sprays (Flonase, Nasacort) for nasal congestion — most effective allergy treatment",
+      "Use saline nasal rinse (neti pot or spray) to flush allergens from nasal passages",
+      "Check daily pollen counts and stay indoors when counts are very high",
+      "Keep windows closed during high pollen season — use air conditioning instead",
+      "Shower and change clothes after spending time outdoors",
+      "Wear sunglasses outdoors to protect eyes from pollen",
+      "Vacuum frequently using a HEPA filter vacuum",
+      "Decongestants (Sudafed) can help with nasal congestion but should not be used more than 3 days"
+    ],
+    "watch_for": [
+      "Difficulty breathing or wheezing — may indicate allergic asthma, see a doctor",
+      "Symptoms that do not improve with antihistamines after 2 weeks",
+      "Facial pain or pressure that may indicate a sinus infection",
+      "Symptoms that worsen significantly despite treatment",
+      "Hives or skin rash developing along with respiratory symptoms",
+      "Throat tightening or swelling — this could indicate anaphylaxis, call 911"
+    ],
+    "duration": "Varies by season — typically weeks to months",
+    "source": "MedlinePlus",
+    "source_url": "https://medlineplus.gov/seasonalallergies.html"
+  },
+
+  "back_pain": {
+    "display_name": "Back Pain",
+    "remedies": [
+      "Apply ice packs wrapped in a cloth to the painful area for 20 minutes several times a day for the first 48 to 72 hours",
+      "After 72 hours switch to a heating pad or warm compress to relax tight muscles",
+      "Take ibuprofen or acetaminophen as directed to reduce pain and inflammation",
+      "Stay as active as possible — complete bed rest is NOT recommended and slows recovery",
+      "Try gentle walking for 10 to 20 minutes several times a day",
+      "Avoid activities that worsen the pain but do not stop all movement",
+      "Sleep on your side with a pillow between your knees to reduce spine pressure",
+      "Avoid lifting heavy objects — if you must lift, bend your knees not your back",
+      "Gentle stretching of the lower back and hip muscles can help after the first 72 hours"
+    ],
+    "watch_for": [
+      "Loss of bladder or bowel control — this is a spinal emergency, go to ER immediately",
+      "Numbness or tingling in the groin or inner thighs (saddle area)",
+      "Back pain with fever — possible spinal infection or kidney infection",
+      "Severe pain that does not improve at all after 72 hours of home treatment",
+      "Pain that radiates down both legs with weakness",
+      "Back pain after a fall or trauma",
+      "Upper back pain with chest pain or shortness of breath — possible heart issue, call 911"
+    ],
+    "duration": "Most acute back pain improves within 4 to 6 weeks",
+    "source": "MedlinePlus",
+    "source_url": "https://medlineplus.gov/backpain.html"
+  },
+
+  "dizziness": {
+    "display_name": "Dizziness",
+    "remedies": [
+      "Sit or lie down immediately when you feel dizzy — do not try to walk around",
+      "Do not drive or operate machinery while dizzy",
+      "Drink a full glass of water — dizziness is often caused by dehydration",
+      "Move slowly when changing positions — stand up gradually from sitting or lying",
+      "Rest in a quiet cool dark room until dizziness passes",
+      "Avoid caffeine, alcohol, salt, and tobacco which can worsen dizziness",
+      "If dizziness is caused by BPPV (room spinning), ask your doctor about the Epley maneuver",
+      "Eat small regular meals to prevent low blood sugar related dizziness",
+      "Check your medications — dizziness is a common side effect of many drugs"
+    ],
+    "watch_for": [
+      "Sudden dizziness with facial drooping, arm weakness, or slurred speech — possible stroke, call 911",
+      "Dizziness with severe headache and stiff neck — possible meningitis, call 911",
+      "Dizziness with chest pain or shortness of breath — possible heart issue, call 911",
+      "Dizziness after a head injury",
+      "Dizziness with fainting or loss of consciousness",
+      "Dizziness with sudden hearing loss in one ear",
+      "Dizziness that is new, severe, or lasts more than one hour"
+    ],
+    "duration": "Mild dizziness usually passes within minutes to hours",
+    "source": "MedlinePlus",
+    "source_url": "https://medlineplus.gov/dizziness.html"
+  }
+}

@@ -1,0 +1,121 @@
+@baseUrl = http://localhost:3000/api
+
+### Login as admin (to test admin-only delete)
+# @name loginAdmin
+POST {{baseUrl}}/auth/admin/login
+Content-Type: application/json
+
+{
+  "email": "admin@gmail.com",
+  "password": "admin123"
+}
+
+###
+
+### Login as patient (to test user-scoped endpoints)
+# @name loginPatient
+POST {{baseUrl}}/auth/patient/login
+Content-Type: application/json
+
+{
+  "email": "munalpoudel3@gmail.com",
+  "password": "munal@829"
+}
+
+###
+
+@patientToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlOTAyNTAyMy1lYThlLTRiNDItOTQ3MS1hMDNlOWE2NTBmZWEiLCJlbWFpbCI6Im11bmFscG91ZGVsM0BnbWFpbC5jb20iLCJyb2xlIjoiUEFUSUVOVCIsImlhdCI6MTc3NzIwOTI3NCwiZXhwIjoxNzc3ODE0MDc0fQ.y1Hdi5H-_sV5ErvIoUW_bG3BxU8L9A99sA34igWmi9U
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzYThkNDRhMi1jM2Q3LTRiODctYmQxZC1hYmJhOWQ4YTFmYmEiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc3NzIwODkzNiwiZXhwIjoxNzc3ODEzNzM2fQ.JPFYoxfg403JpoZ2osf9oxy2u2o8j18Di5pYKeiNJTo
+
+### ========================================
+### NOTIFICATIONS API
+### ========================================
+
+### Create a notification (as admin, explicit userId)
+# @name createNotification
+POST {{baseUrl}}/notifications
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "userId": "e9025023-ea8e-4b42-9471-a03e9a650fea",
+  "title": "Appointment Confirmed",
+  "message": "Your appointment on 2024-05-01 at 10:00 AM has been confirmed.",
+  "type": "APPOINTMENT"
+}
+
+###
+
+### Create a notification (as patient, userId defaults to current user)
+POST {{baseUrl}}/notifications
+Content-Type: application/json
+Authorization: Bearer {{patientToken}}
+
+{
+  "title": "Reminder",
+  "message": "You have an upcoming appointment tomorrow.",
+  "type": "REMINDER"
+}
+
+###
+
+### Get all notifications (patient sees only their own)
+GET {{baseUrl}}/notifications
+Authorization: Bearer {{patientToken}}
+
+### Get all notifications (admin can filter by userId)
+GET {{baseUrl}}/notifications?userId=e9025023-ea8e-4b42-9471-a03e9a650fea
+Authorization: Bearer {{adminToken}}
+
+### Get notifications filtered by isRead=false (unread only)
+GET {{baseUrl}}/notifications?isRead=false
+Authorization: Bearer {{patientToken}}
+
+### Get notifications filtered by isRead=true (read only)
+GET {{baseUrl}}/notifications?isRead=true
+Authorization: Bearer {{patientToken}}
+
+### Get notifications with pagination
+GET {{baseUrl}}/notifications?page=1&pageSize=10
+Authorization: Bearer {{patientToken}}
+
+### Get notifications with all filters (admin)
+GET {{baseUrl}}/notifications?userId=9e0012cb-348b-44bd-b44e-102f117ec324&isRead=false&page=1&pageSize=5
+Authorization: Bearer {{adminToken}}
+
+### Get a single notification by ID
+@notificationId = {{createNotification.response.body.id}}
+GET {{baseUrl}}/notifications/{{notificationId}}
+Authorization: Bearer {{patientToken}}
+
+### Update notification — mark as read
+PATCH {{baseUrl}}/notifications/{{notificationId}}
+Content-Type: application/json
+Authorization: Bearer {{patientToken}}
+
+{
+  "isRead": true
+}
+
+###
+
+### Update notification — change title and message
+PATCH {{baseUrl}}/notifications/{{notificationId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "title": "Updated Title",
+  "message": "Updated notification message.",
+  "type": "SYSTEM"
+}
+
+###
+
+### Delete a notification (admin only — expect 200)
+DELETE {{baseUrl}}/notifications/{{notificationId}}
+Authorization: Bearer {{adminToken}}
+
+### Delete a notification as non-admin (expect 403)
+DELETE {{baseUrl}}/notifications/{{notificationId}}
+Authorization: Bearer {{patientToken}}

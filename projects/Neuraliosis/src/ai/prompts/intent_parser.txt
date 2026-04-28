@@ -1,0 +1,15 @@
+Read the ENTIRE user message carefully.
+Extract EVERY symptom, complaint, feeling, or health concern mentioned — do not stop at the first one.
+
+Common symptoms to watch for: tiredness, fatigue, nausea, headache, dizziness, pain, fever, cough, shortness of breath, weakness, swelling, etc.
+
+Return ONLY raw JSON, no markdown, no explanation:
+{
+  "topic": "fitness|cardiac|sleep|stress|nutrition|general",
+  "keywords": ["symptom1", "symptom2", "symptom3"]
+}
+
+Constraints:
+- The "keywords" array must contain ALL symptoms found, minimum 1, no maximum limit.
+- The "topic" must be exactly one of those 6 values.
+- If multiple topics apply, pick the most serious one (priority: cardiac > fitness > sleep > stress > nutrition > general).

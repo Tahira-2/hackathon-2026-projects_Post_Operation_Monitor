@@ -7,8 +7,38 @@ Built for the CareDevi AI Innovation Hackathon 2026.
 **Team Byte Beasts** — Fidel, Eladio, Jeheon
 
 **Live demo:** https://hackathon-2026-projects-production.up.railway.app/
+<div align="center">
+
+# 🩺 DevCare
+
+### AI-Powered Telerehabilitation Platform
+
+*A virtual AI physiotherapist — available anytime, anywhere.*
+
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
+[![Django](https://img.shields.io/badge/Django-6.0-092E20?logo=django&logoColor=white)](https://www.djangoproject.com)
+[![MediaPipe](https://img.shields.io/badge/MediaPipe-Pose-4285F4?logo=google&logoColor=white)](https://mediapipe.dev)
+[![Gemini](https://img.shields.io/badge/Gemini-2.5_Flash-8E75B2?logo=googlegemini&logoColor=white)](https://ai.google.dev)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+</div>
 
 ---
+
+## 👥 Team Members
+
+| Name | GitHub |
+|---|---|
+| **Safal Bhattarai** | [@safalbhattarai](https://github.com/safalbhattarai) |
+| **Aaditya Sigdel** | [@aadityasigdel](https://github.com/aadityasigdel) |
+| **Saksham Neupane** | [@sakshamneupane](https://github.com/sakshamneupane) |
+| **Rupen Rana Magar** | [@rupenranamagar](https://github.com/rupenranamagar) |
+
+- No "What-If" Scenarios: Patients cannot explore how changing their habits would reduce their risk — there is no tool for preventive decision-making.
+
+## 🔴 Problem Statement
+
+Patients recovering from injuries or surgeries are often prescribed physiotherapy exercises to perform at home. However, without direct clinical supervision:
 
 ## How it works
 
@@ -31,7 +61,13 @@ The app uses Groq's `llama-3.3-70b-versatile` model through a server-side proxy 
 - **Maps** — Leaflet + OpenStreetMap + Overpass API (no key required)
 - **History** — localStorage via `historyStorage.js`
 
----
+The API will be available at `http://localhost:8000`
+
+### 3. Frontend Setup (React + Vite)
+
+```bash
+# Open a new terminal
+cd devcare-client
 
 ## Setup
 

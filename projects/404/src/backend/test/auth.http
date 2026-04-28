@@ -1,0 +1,74 @@
+@baseUrl = http://localhost:3000/api
+
+# Seeded users for login (see prisma/seed.ts)
+@patientEmail = patient@gmail.com
+@patientPassword = patient123
+@doctorEmail = doctor@gmail.com
+@doctorPassword = doctor@123
+@adminEmail = admin@gmail.com
+@adminPassword = admin123
+
+# Unique patient signup
+@signupEmail = test123@example.com
+@signupPassword = Test123!
+
+### Patient signup (expect 201)
+# @name signupPatient
+POST {{baseUrl}}/auth/patient/signup
+Content-Type: application/json
+
+{
+	"fullName": "Test Patient",
+	"email": "{{patientEmail}}",
+	"password": "{{patientPassword}}"
+}
+
+### Patient signup duplicate email (expect 409)
+POST {{baseUrl}}/auth/patient/signup
+Content-Type: application/json
+
+{
+	"fullName": "Duplicate Patient",
+	"email": "{{signupEmail}}",
+	"password": "{{signupPassword}}"
+}
+
+### Patient login (expect 201)
+# @name loginPatient
+POST {{baseUrl}}/auth/patient/login
+Content-Type: application/json
+
+{
+	"email": "{{patientEmail}}",
+	"password": "{{patientPassword}}"
+}
+
+### Doctor login (expect 201)
+# @name loginDoctor
+POST {{baseUrl}}/auth/doctor/login
+Content-Type: application/json
+
+{
+	"email": "{{doctorEmail}}",
+	"password": "{{doctorPassword}}"
+}
+
+### Admin login (expect 201)
+# @name loginAdmin
+POST {{baseUrl}}/auth/admin/login
+Content-Type: application/json
+
+{
+	"email": "{{adminEmail}}",
+	"password": "{{adminPassword}}"
+}
+
+### Doctor login with patient credentials (expect 401)
+POST {{baseUrl}}/auth/doctor/login
+Content-Type: application/json
+
+{
+	"email": "{{patientEmail}}",
+	"password": "{{patientPassword}}"
+}
+

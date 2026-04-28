@@ -1,0 +1,74 @@
+@baseUrl = http://localhost:3000/api
+@adminEmail = admin@example.com
+@adminPassword = admin@123
+@patientEmail = munalpoudel3@gmail.com
+@patientPassword = munal@829
+@doctorEmail = doctor@gmail.com
+@doctorPassword = doctor@123
+
+### Signup patient (expect 201)
+@name signupPatient
+POST {{baseUrl}}/auth/patient/signup
+Content-Type: application/json
+
+{
+  "fullName": "Munal Poudel",
+  "email": "{{patientEmail}}",
+  "password": "{{patientPassword}}"
+}
+
+### Signup duplicate email (expect 409)
+POST {{baseUrl}}/auth/patient/signup
+Content-Type: application/json
+
+{
+  "fullName": "Duplicate User",
+  "email": "{{patientEmail}}",
+  "password": "{{patientPassword}}"
+}
+
+### Login admin (expect 201)
+@name loginAdmin
+POST {{baseUrl}}/auth/admin/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### Login doctor (expect 201)
+POST {{baseUrl}}/auth/doctor/login
+Content-Type: application/json
+
+{
+  "email": "{{doctorEmail}}",
+  "password": "{{doctorPassword}}"
+}
+
+### Login patient (expect 201)
+POST {{baseUrl}}/auth/patient/login
+Content-Type: application/json
+
+{
+  "email": "{{patientEmail}}",
+  "password": "{{patientPassword}}"
+}
+
+### Login invalid password (expect 401)
+POST {{baseUrl}}/auth/patient/login
+Content-Type: application/json
+
+{
+  "email": "{{patientEmail}}",
+  "password": "WrongPassword!"
+}
+
+### Login unknown user (expect 401)
+POST {{baseUrl}}/auth/patient/login
+Content-Type: application/json
+
+{
+  "email": "missing@example.com",
+  "password": "SomePassword123!"
+}

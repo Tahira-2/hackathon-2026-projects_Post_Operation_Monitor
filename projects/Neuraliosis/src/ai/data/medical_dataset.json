@@ -1,0 +1,184 @@
+{
+  "medical_knowledge_base": [
+    {
+      "id": "dehydration_001",
+      "category": "fitness",
+      "title": "Dehydration After Exercise",
+      "symptoms": ["dizziness", "lightheadedness", "fatigue", "dry mouth", "reduced urination"],
+      "causes": ["inadequate water intake", "excessive sweating", "hot weather", "high intensity exercise"],
+      "guidance": "Dehydration after exercise is common when fluid intake is insufficient. Drink water gradually (not all at once) with electrolytes if exercising longer than 60 minutes. Typical signs include thirst, dark urine, dizziness, and fatigue. Rehydrate within 30 minutes of exercise completion.",
+      "prevention": "Drink 16-20 oz of water 2-3 hours before exercise, 8-10 oz 20 minutes before, and 7-10 oz every 10-20 minutes during exercise. Drink 16-24 oz after exercise for every pound lost.",
+      "when_to_see_doctor": "Severe persistent dizziness, confusion, rapid heartbeat, or lack of sweating despite heat exposure"
+    },
+    {
+      "id": "overexertion_001",
+      "category": "fitness",
+      "title": "Exercise Overexertion",
+      "symptoms": ["extreme fatigue", "muscle soreness", "decreased performance", "elevated heart rate", "difficulty sleeping"],
+      "causes": ["too much too soon", "inadequate recovery time", "ignoring body signals", "sudden increase in intensity"],
+      "guidance": "Overexertion occurs when training volume or intensity increases too rapidly without adequate recovery. Rest days are essential for muscle repair and adaptation. Follow the 10% rule: increase training volume by no more than 10% per week.",
+      "prevention": "Have 1-2 complete rest days weekly. Include active recovery (light walking, stretching). Gradually increase workout intensity. Listen to your body.",
+      "when_to_see_doctor": "Persistent severe fatigue lasting weeks, unexplained muscle pain with weakness, or signs of injury"
+    },
+    {
+      "id": "low_blood_sugar_001",
+      "category": "fitness",
+      "title": "Low Blood Sugar During/After Exercise",
+      "symptoms": ["dizziness", "shakiness", "difficulty concentrating", "irritability", "excessive sweating", "weakness"],
+      "causes": ["exercising fasted", "skipping meals", "prolonged intense exercise", "inadequate carbohydrate intake"],
+      "guidance": "Low blood sugar (hypoglycemia) during exercise can cause dizziness and weakness. Eat a small carbohydrate-rich snack 30-60 minutes before exercise. For exercise longer than 60 minutes, consume 30-60g carbs per hour during activity. Include protein and fat to sustain energy.",
+      "prevention": "Eat balanced meals with carbs, protein, and healthy fats. Never exercise on completely empty stomach. Have quick carbs available (banana, energy bar, sports drink).",
+      "when_to_see_doctor": "Frequent hypoglycemic episodes, inability to recover with carbs, or suspected diabetes symptoms"
+    },
+    {
+      "id": "heart_palpitations_001",
+      "category": "cardiovascular",
+      "title": "Heart Palpitations and Irregular Heartbeat",
+      "symptoms": ["rapid heart rate", "fluttering sensation", "pounding heart", "chest discomfort", "shortness of breath"],
+      "causes": ["caffeine consumption", "stress", "dehydration", "electrolyte imbalance", "overexertion", "atrial fibrillation"],
+      "guidance": "Occasional heart palpitations can result from caffeine, dehydration, or anxiety. Mild palpitations during or after intense exercise are often normal as heart works harder. However, persistent palpitations warrant evaluation.",
+      "prevention": "Reduce caffeine intake. Stay hydrated. Manage stress through meditation and breathing exercises. Warm up before intense exercise.",
+      "when_to_see_doctor": "Frequent palpitations, palpitations with chest pain or shortness of breath, fainting, or persistent irregular heartbeat. This is a critical symptom requiring immediate medical attention."
+    },
+    {
+      "id": "poor_sleep_001",
+      "category": "wellness",
+      "title": "Sleep Issues and Recovery",
+      "symptoms": ["difficulty falling asleep", "waking frequently", "not feeling rested", "daytime fatigue", "mood changes"],
+      "causes": ["excessive late-night exercise", "stress", "irregular sleep schedule", "screen time before bed", "caffeine"],
+      "guidance": "Quality sleep is essential for fitness recovery and immune function. Aim for 7-9 hours nightly. Avoid intense exercise 2-3 hours before bedtime as it raises body temperature and heart rate. Create a cool, dark sleeping environment.",
+      "prevention": "Maintain consistent sleep schedule. Exercise earlier in day. Avoid caffeine after 2 PM. Limit screens 30 minutes before bed. Practice relaxation techniques.",
+      "when_to_see_doctor": "Chronic insomnia lasting weeks, sleep apnea symptoms (loud snoring, gasping during sleep), or extreme daytime sleepiness"
+    },
+    {
+      "id": "muscle_soreness_001",
+      "category": "fitness",
+      "title": "Delayed Onset Muscle Soreness (DOMS)",
+      "symptoms": ["muscle soreness 24-72 hours after exercise", "stiffness", "reduced range of motion", "mild swelling"],
+      "causes": ["new exercise routine", "increased intensity or volume", "eccentric exercises (lengthening under load)", "lack of warm-up"],
+      "guidance": "DOMS is normal muscular adaptation and typically peaks 24-72 hours after exercise. Soreness does not indicate injury unless accompanied by sharp pain or significant swelling. Soreness improves as body adapts.",
+      "prevention": "Gradually increase exercise intensity. Warm up properly. Cool down and stretch. Stay hydrated. Adequate protein aids recovery.",
+      "when_to_see_doctor": "Severe swelling, inability to move affected muscle, sharp stabbing pain, or soreness lasting beyond 5-7 days"
+    },
+    {
+      "id": "dizziness_general_001",
+      "category": "general",
+      "title": "Dizziness: Causes and When to Worry",
+      "symptoms": ["spinning sensation", "lightheadedness", "unsteadiness", "vertigo", "difficulty focusing"],
+      "causes": ["dehydration", "low blood pressure", "anemia", "inner ear issues", "anxiety", "overexertion", "blood sugar changes"],
+      "guidance": "Dizziness has multiple causes and context matters. Mild dizziness immediately after intense exercise often relates to dehydration or sudden position changes. Persistent dizziness or dizziness with other symptoms may indicate underlying conditions.",
+      "prevention": "Stay hydrated. Rise slowly from lying/sitting positions. Eat regular balanced meals. Manage stress. Get adequate sleep.",
+      "when_to_see_doctor": "Dizziness with chest pain, severe headache, difficulty speaking, weakness, numbness, vision changes, or lasting more than a few days. If dizziness comes suddenly or worsens, seek immediate medical attention."
+    },
+    {
+      "id": "chest_pain_exercise_001",
+      "category": "cardiovascular_critical",
+      "title": "Chest Pain During or After Exercise - CRITICAL",
+      "symptoms": ["chest pain or pressure", "pain radiating to arm or jaw", "shortness of breath", "nausea", "cold sweat"],
+      "causes": ["muscle strain (benign)", "heart-related issues (serious)", "anxiety", "acid reflux"],
+      "guidance": "ANY chest pain during or after exercise requires medical evaluation. While muscle strain from exercise is often benign, chest pain can indicate serious cardiovascular issues. Do not ignore or self-diagnose.",
+      "prevention": "Get cardiovascular fitness assessment before starting new exercise program, especially if you have risk factors. Warm up gradually.",
+      "when_to_see_doctor": "ANY chest pain during exercise = STOP EXERCISE IMMEDIATELY AND SEEK MEDICAL ATTENTION. This is a medical emergency."
+    },
+    {
+      "id": "breathing_difficulty_001",
+      "category": "respiratory_critical",
+      "title": "Breathing Difficulty - CRITICAL",
+      "symptoms": ["shortness of breath at rest", "wheezing", "difficulty catching breath", "chest tightness", "rapid shallow breathing"],
+      "causes": ["asthma", "exercise-induced bronchoconstriction", "severe deconditioning", "allergies", "heart issues", "anxiety"],
+      "guidance": "While some breathlessness during intense exercise is normal, any persistent difficulty breathing warrants medical evaluation. Exercise-induced asthma is common but manageable with proper treatment.",
+      "prevention": "Get fitness assessment before starting program. Warm up before intense exercise. Use prescribed inhalers if needed. Gradually increase intensity.",
+      "when_to_see_doctor": "Difficulty breathing that persists after exercise stops, wheezing, repeated episodes, or breathing difficulty at rest. Seek immediate emergency care if severe."
+    },
+    {
+      "id": "high_heart_rate_001",
+      "category": "cardiovascular",
+      "title": "Elevated Resting Heart Rate",
+      "symptoms": ["resting heart rate consistently above 100 bpm", "rapid pulse at rest", "sometimes with palpitations"],
+      "causes": ["stress", "caffeine", "dehydration", "fever", "hyperthyroidism", "overtraining", "cardiovascular issues"],
+      "guidance": "Normal resting heart rate is 60-100 bpm. Trained athletes may have lower rates. Consistently elevated resting heart rate may indicate overtraining, stress, or other issues. Check resting heart rate in morning before getting up.",
+      "prevention": "Manage stress. Reduce caffeine. Ensure adequate recovery days. Stay hydrated. Get 7-9 hours sleep.",
+      "when_to_see_doctor": "Resting heart rate consistently above 100 bpm, accompanied by dizziness or chest pain, or sudden significant increase in resting heart rate"
+    },
+    {
+      "id": "nausea_post_exercise_001",
+      "category": "fitness",
+      "title": "Nausea During or After Exercise",
+      "symptoms": ["feeling sick to stomach", "queasiness", "dizziness with nausea", "loss of appetite"],
+      "causes": ["eating too close to exercise", "dehydration", "exercising too intensely too soon", "heat stress", "anxiety"],
+      "guidance": "Post-exercise nausea is common and usually not serious. Avoid eating 2-3 hours before intense exercise. Eat light snacks if needed. Start with moderate intensity if new to exercise.",
+      "prevention": "Wait 2-3 hours after large meals before intense exercise. Hydrate properly. Build intensity gradually. Exercise in cooler environments.",
+      "when_to_see_doctor": "Nausea with vomiting and fever, persistent nausea lasting hours, nausea with chest pain or severe dizziness"
+    },
+    {
+      "id": "joint_pain_001",
+      "category": "musculoskeletal",
+      "title": "Joint Pain During Exercise",
+      "symptoms": ["pain in joints", "swelling", "stiffness", "reduced range of motion", "clicking or popping"],
+      "causes": ["poor form", "sudden increase in activity", "inadequate warm-up", "underlying joint issues", "improper footwear"],
+      "guidance": "Joint pain during exercise should not be ignored. Mild discomfort that resolves may be normal, but sharp pain or persistent issues indicate need for form correction or rest. Do not push through sharp joint pain.",
+      "prevention": "Use proper exercise form. Warm up 5-10 minutes. Increase intensity gradually. Wear appropriate footwear. Include strength training for stability.",
+      "when_to_see_doctor": "Sharp joint pain, significant swelling, joint that feels unstable, pain that worsens or persists for weeks"
+    },
+    {
+      "id": "low_energy_001",
+      "category": "wellness",
+      "title": "Persistent Low Energy and Fatigue",
+      "symptoms": ["extreme tiredness", "difficulty with usual activities", "mental fog", "lack of motivation", "persistent after rest"],
+      "causes": ["inadequate sleep", "poor nutrition", "overtraining", "stress", "iron deficiency", "thyroid issues", "illness"],
+      "guidance": "Fatigue lasting weeks despite adequate rest warrants investigation. Common causes include poor sleep, inadequate nutrition, or overtraining. Ensure you're eating enough calories, especially carbs for training.",
+      "prevention": "Get 7-9 hours quality sleep. Eat balanced meals with adequate calories. Include rest days. Manage stress. Consider iron and B12 levels if concerned.",
+      "when_to_see_doctor": "Fatigue lasting more than 2 weeks despite good sleep and nutrition, fatigue with weight loss or other symptoms, or suspected nutritional deficiency"
+    },
+    {
+      "id": "hydration_guide_001",
+      "category": "wellness",
+      "title": "Proper Hydration Guidelines",
+      "symptoms": [],
+      "causes": [],
+      "guidance": "Proper hydration is essential for exercise performance and recovery. Drink when thirsty and monitor urine color (pale yellow is ideal). Needs increase with heat, humidity, and exercise intensity. Electrolytes (sodium, potassium) are important for longer workouts.",
+      "prevention": "Drink 8-10 glasses of water daily. Before exercise: 16-20 oz 2-3 hours prior. During exercise: 7-10 oz every 10-20 minutes. After: 16-24 oz per pound lost.",
+      "when_to_see_doctor": "Signs of severe dehydration: extreme thirst, confusion, lack of sweating despite heat, severe dizziness"
+    },
+    {
+      "id": "nutrition_recovery_001",
+      "category": "wellness",
+      "title": "Post-Exercise Nutrition and Recovery",
+      "symptoms": [],
+      "causes": [],
+      "guidance": "Recovery nutrition within 30-60 minutes post-exercise accelerates muscle repair. Include carbohydrates to replenish glycogen and protein for muscle repair. Ratio of 3:1 or 4:1 carbs to protein is ideal.",
+      "prevention": "Prepare post-workout snacks: banana with peanut butter, Greek yogurt with berries, chocolate milk, or protein smoothie. Include hydration with electrolytes.",
+      "when_to_see_doctor": "Persistent poor recovery despite good nutrition and sleep warrants medical evaluation"
+    },
+    {
+      "id": "fever_exercise_001",
+      "category": "illness",
+      "title": "Fever and Exercise",
+      "symptoms": ["elevated body temperature", "chills", "body aches", "fatigue", "sometimes cough or sore throat"],
+      "causes": ["viral infection", "bacterial infection", "flu", "cold"],
+      "guidance": "Exercising with fever can be dangerous and worsen illness. General rule: if symptoms are above neck only (runny nose, sneezing) light activity may be okay. If symptoms below neck (cough, body aches, fever) avoid exercise.",
+      "prevention": "Get adequate sleep. Wash hands regularly. Maintain proper nutrition. Stay hydrated.",
+      "when_to_see_doctor": "Fever above 103°F, fever lasting more than 3-5 days, fever with severe symptoms, or fever with confusion or difficulty breathing"
+    },
+    {
+      "id": "anxiety_exercise_001",
+      "category": "mental_wellness",
+      "title": "Exercise Anxiety and Panic Attacks",
+      "symptoms": ["rapid heartbeat", "rapid breathing", "chest tightness", "dizziness", "fear of heart problems", "feeling out of control"],
+      "causes": ["health anxiety", "past negative experience", "fear of overexertion", "performance pressure"],
+      "guidance": "Anxiety during exercise can mimic cardiac symptoms but is usually not dangerous. Recognizing anxiety symptoms helps reduce fear. Gradual exposure and relaxation techniques help. Exercise actually reduces long-term anxiety.",
+      "prevention": "Start slowly with exercise. Practice deep breathing. Avoid caffeine before workouts. Progressive training builds confidence.",
+      "when_to_see_doctor": "Anxiety that interferes with daily life, panic attacks unrelated to exercise, or difficulty distinguishing anxiety from real physical symptoms"
+    },
+    {
+      "id": "back_pain_001",
+      "category": "musculoskeletal",
+      "title": "Back Pain and Exercise",
+      "symptoms": ["lower or upper back pain", "stiffness", "pain radiating to legs", "muscle tightness"],
+      "causes": ["poor posture", "weak core", "tight hamstrings", "incorrect form", "sudden movements"],
+      "guidance": "Back pain is common but often preventable with proper form, core strength, and flexibility. Strengthening core muscles supports spine. Stretching hip flexors and hamstrings reduces strain.",
+      "prevention": "Maintain proper posture. Do core strengthening exercises 3x weekly. Include flexibility work. Lift with legs, not back. Take breaks if desk job.",
+      "when_to_see_doctor": "Severe back pain, pain radiating to legs with numbness/tingling, back pain from injury, or pain lasting more than 2 weeks"
+    }
+  ]
+}

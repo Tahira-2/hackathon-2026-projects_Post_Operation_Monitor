@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: vitalsflow-api
+    env: python
+    rootDir: projects/vitalsflow/src/backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false          # set manually in Render dashboard (secret)
+      - key: FHIR_BASE_URL
+        value: http://hapi.fhir.org/baseR4
+      - key: USE_LLM
+        value: "true"
+      - key: LOG_LEVEL
+        value: INFO

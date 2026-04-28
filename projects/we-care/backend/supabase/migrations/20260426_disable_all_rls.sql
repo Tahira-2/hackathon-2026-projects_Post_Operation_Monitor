@@ -1,0 +1,14 @@
+-- ============================================================
+-- RefAI Migration
+-- Disable RLS across all app tables
+-- ============================================================
+
+ALTER TABLE IF EXISTS doctors DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS specialists DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS specialties DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS hospitals DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS patients DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS referrals DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS referral_status_history DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS patient_tokens DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS appointments DISABLE ROW LEVEL SECURITY;

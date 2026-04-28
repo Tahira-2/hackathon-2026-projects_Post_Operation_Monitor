@@ -1,0 +1,39 @@
+services:
+  backend:
+    build:
+      context: ./projects/we-care/backend
+      dockerfile: Dockerfile.dev
+    image: we-care-backend:dev
+    working_dir: /app
+    command: pnpm dev
+    volumes:
+      - ./projects/we-care/backend/src:/app/src
+      - ./projects/we-care/backend/package.json:/app/package.json
+      - ./projects/we-care/backend/tsconfig.json:/app/tsconfig.json
+    env_file:
+      - .env
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./projects/we-care/frontend
+      dockerfile: Dockerfile.dev
+    image: we-care-frontend:dev
+    working_dir: /app
+    command: pnpm dev --host
+    volumes:
+      - ./projects/we-care/frontend/src:/app/src
+      - ./projects/we-care/frontend/index.html:/app/index.html
+      - ./projects/we-care/frontend/vite.config.ts:/app/vite.config.ts
+      - ./projects/we-care/frontend/tsconfig.json:/app/tsconfig.json
+      - ./projects/we-care/frontend/tsconfig.app.json:/app/tsconfig.app.json
+      - ./projects/we-care/frontend/tsconfig.node.json:/app/tsconfig.node.json
+    environment:
+      - VITE_API_URL=http://localhost:${PORT:-3000}
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    restart: unless-stopped
