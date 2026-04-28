@@ -41,6 +41,15 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Database
+*.sqlite3
+db.sqlite3
 # Python virtual environments
 .venv/
 venv/

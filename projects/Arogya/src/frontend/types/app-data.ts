@@ -76,3 +76,27 @@ export type ProfileSummary = {
   settingsItems: ProfileSettingsItem[];
   footerText: string;
 };
+
+export type RiskMetric = {
+  id: string;
+  title: string;
+  icon: keyof typeof MaterialIcons.glyphMap;
+  iconColor: string;
+  value: string;
+  unit?: string;
+  badgeLabel: string;
+  badgeColor: string;
+  badgeBackground: string;
+};
+
+export type RiskResultSummary = {
+  title: string;
+  severityLabel: string;
+  message: string;
+  metrics: RiskMetric[];
+  physicianInsightTitle: string;
+  physicianInsightMessage: string;
+  primaryActionLabel: string;
+  secondaryActionLabel: string;
+  supportMessage: string;
+};

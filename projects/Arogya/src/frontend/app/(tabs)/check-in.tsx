@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-
 import { BreathingCard } from '@/components/checkin/breathing-card';
-import { HomeHeader } from '@/components/home/home-header';
+import { CheckInHeader } from '@/components/checkin/check-in-header';
 import { CheckInSection } from '@/components/checkin/check-in-section';
 import { FeverCard } from '@/components/checkin/fever-card';
 import { NotesCard } from '@/components/checkin/notes-card';
@@ -12,9 +12,10 @@ import { PainLevelCard } from '@/components/checkin/pain-level-card';
 import { SubmitCheckInButton } from '@/components/checkin/submit-checkin-button';
 import { SymptomChip } from '@/components/checkin/symptom-chip';
 import { useAsyncData } from '@/hooks/use-asynce-data';
-import { getCheckInForm } from '@/services/checkin';
+import { getCheckInForm, submitCheckIn } from '@/services/checkin';
 
 export default function DailyCheckInScreen() {
+  const router = useRouter();
   const { data, isLoading, error } = useAsyncData(getCheckInForm);
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [painLevel, setPainLevel] = useState(5);
@@ -22,6 +23,8 @@ export default function DailyCheckInScreen() {
   const [temperature, setTemperature] = useState('98.6');
   const [hasBreathingIssues, setHasBreathingIssues] = useState(false);
   const [notes, setNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!data) return;
@@ -41,9 +44,34 @@ export default function DailyCheckInScreen() {
     );
   };
 
+  const handleSubmit = async () => {
+    if (!data || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      await submitCheckIn({
+        ...data,
+        selectedSymptoms,
+        painLevel,
+        hasFever,
+        temperature,
+        hasBreathingIssues,
+        notes,
+      });
+
+      router.push('/risk-result');
+    } catch {
+      setSubmitError('Unable to submit check-in right now.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <HomeHeader brandName="CareLoop" />
+      <CheckInHeader brandName="CareLoop" />
 
       <ScrollView
         style={styles.scrollView}
@@ -60,6 +88,7 @@ export default function DailyCheckInScreen() {
         {isLoading && !data ? (
           <Text style={styles.loadingText}>Loading check-in form...</Text>
         ) : null}
+        {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
 
         <CheckInSection title="Current Symptoms">
           <View style={styles.symptomGrid}>
@@ -95,7 +124,11 @@ export default function DailyCheckInScreen() {
           onChangeText={setNotes}
         />
 
-        <SubmitCheckInButton label="Submit Check-in" />
+        <SubmitCheckInButton
+          label={isSubmitting ? 'Submitting...' : 'Submit Check-in'}
+          onPress={handleSubmit}
+          disabled={!data || isSubmitting}
+        />
       </ScrollView>
     </SafeAreaView>
   );
