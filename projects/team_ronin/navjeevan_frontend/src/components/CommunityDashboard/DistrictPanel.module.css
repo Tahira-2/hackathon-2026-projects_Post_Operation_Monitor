@@ -1,0 +1,249 @@
+.panel {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.empty {
+  background: rgba(255,255,255,0.02);
+  border: 1px dashed rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 40px 24px;
+  text-align: center;
+  color: rgba(232,228,240,0.35);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.emptyIcon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+/* ─── Title ─────────────────────────────────────────────────────────────── */
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.districtName {
+  font-size: 18px;
+  font-weight: 700;
+  color: #e8e4f0;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.province {
+  font-size: 11px;
+  color: rgba(232,228,240,0.45);
+  margin: 4px 0 0;
+}
+
+.imrBadge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.imrBadge[data-level="LOW"]    { background: rgba(29,158,117,0.2); color: #4ecfa0; }
+.imrBadge[data-level="MEDIUM"] { background: rgba(186,117,23,0.2); color: #f0b84d; }
+.imrBadge[data-level="HIGH"]   { background: rgba(216,90,48,0.2);  color: #f08060; }
+
+/* ─── Metrics ────────────────────────────────────────────────────────────── */
+.metricsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.metric {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.metricHighlight {
+  background: rgba(159,132,232,0.1);
+  border-color: rgba(159,132,232,0.25);
+}
+
+.metricLabel {
+  display: block;
+  font-size: 10px;
+  color: rgba(232,228,240,0.45);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metricValue {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  color: #e8e4f0;
+  letter-spacing: -0.02em;
+}
+
+/* ─── Section ────────────────────────────────────────────────────────────── */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionTitle {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(232,228,240,0.4);
+  margin: 0;
+}
+
+/* ─── Bars ───────────────────────────────────────────────────────────────── */
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.barRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.barLabel {
+  font-size: 11px;
+  color: rgba(232,228,240,0.7);
+  width: 60px;
+  flex-shrink: 0;
+}
+
+.barTrack {
+  flex: 1;
+  height: 5px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.barPct {
+  font-size: 11px;
+  color: rgba(232,228,240,0.5);
+  width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ─── Risk chips ─────────────────────────────────────────────────────────── */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  font-size: 10px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.chip[data-risk="low"]  { background: rgba(29,158,117,0.15); color: #4ecfa0; }
+.chip[data-risk="med"]  { background: rgba(186,117,23,0.15); color: #f0b84d; }
+.chip[data-risk="high"] { background: rgba(216,90,48,0.15);  color: #f08060; }
+
+/* ─── Charts ─────────────────────────────────────────────────────────────── */
+.chartWrap {
+  background: rgba(255,255,255,0.025);
+  border-radius: 10px;
+  padding: 8px 4px 4px;
+}
+
+.aiHint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(232,228,240,0.5);
+}
+
+.aiActions {
+  display: flex;
+  gap: 8px;
+}
+
+.aiInput {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: #e8e4f0;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.aiInput:focus {
+  outline: none;
+  border-color: rgba(159,132,232,0.55);
+  box-shadow: 0 0 0 2px rgba(159,132,232,0.15);
+}
+
+.aiButton {
+  border: 1px solid rgba(159,132,232,0.45);
+  background: rgba(159,132,232,0.2);
+  color: #e8e4f0;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.aiButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.aiOutput {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 12px;
+  color: rgba(232,228,240,0.9);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.aiError {
+  margin: 0;
+  color: #f08060;
+  font-size: 11px;
+}

@@ -1,0 +1,5 @@
+npm install d3 topojson-client recharts
+
+npm install -D tailwindcss postcss autoprefixer
+
+npm install redux redux-thunk

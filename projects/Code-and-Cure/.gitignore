@@ -1,0 +1,52 @@
+# ─── AI context / prompt files ───────────────────────────────────────────────
+AI.md
+context.md
+questions.md
+biggerscope.md
+teammate.md
+plan.md
+merged_phase_alignment.md
+design_document.md
+.cursorrules
+
+# ─── Local tooling & editor state ────────────────────────────────────────────
+.claude/
+.cursor/
+refs/rewritten/
+
+# ─── Environment & secrets ───────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+src/api/.env
+
+# ─── Python build artifacts ───────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+*.log
+
+# ─── Node / Next.js ───────────────────────────────────────────────────────────
+node_modules/
+src/frontend/node_modules/
+src/frontend/.next/
+src/frontend/out/
+src/frontend/.vercel/
+*.tsbuildinfo
+
+# ─── OS noise ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Demo / generated output artifacts ───────────────────────────────────────
+demo/
+*.pdf
+generated/

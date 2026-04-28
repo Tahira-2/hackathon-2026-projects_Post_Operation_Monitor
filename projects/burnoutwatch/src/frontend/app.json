@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "BurnoutWatch",
+    "slug": "burnoutwatch",
+    "splash": {
+      "image": "./asset/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "react-native-health",
+        {
+          "healthSharePermission": "Allow BurnoutWatch to read sleep, step, workout, and heart metrics.",
+          "healthUpdatePermission": "Allow BurnoutWatch to write workout data in future releases."
+        }
+      ],
+      "expo-health-connect",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
+            "minSdkVersion": 26
+          }
+        }
+      ]
+    ],
+    "android": {
+      "permissions": [
+        "android.permission.health.READ_SLEEP",
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.READ_RESTING_HEART_RATE",
+        "android.permission.health.READ_HEART_RATE_VARIABILITY",
+        "android.permission.health.READ_EXERCISE"
+      ]
+    }
+  }
+}

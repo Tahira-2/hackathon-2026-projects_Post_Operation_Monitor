@@ -1,0 +1,30 @@
+# Node
+node_modules/
+dist/
+build/
+
+# Env
+.env
+
+# Python
+__pycache__/
+*.pyc
+
+# ML models (IMPORTANT 🚨)
+*.bin
+*.pt
+*.safetensors
+*.h5
+*.ckpt
+
+# Model folders
+ml-api/models/
+
+# Media (optional depending on project)
+# *.mp4
+*.zip
+*.rar
+
+# OS
+.DS_Store
+Thumbs.db

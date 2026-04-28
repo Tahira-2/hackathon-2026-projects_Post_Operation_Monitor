@@ -1,0 +1,49 @@
+Source: CDC - Food Poisoning Symptoms
+URL: https://www.cdc.gov/foodsafety/symptoms.html
+
+OVERVIEW:
+Food poisoning results from eating food contaminated with bacteria, 
+viruses, parasites, or toxins. Most cases resolve on their own within 
+a few days. Some cases require medical attention.
+
+COMMON SYMPTOMS:
+- Nausea
+- Vomiting
+- Diarrhea — may be bloody in serious cases
+- Stomach cramps and abdominal pain
+- Fever
+- Headache
+- Weakness and fatigue
+
+ONSET TIMING:
+Symptoms can start within hours or up to several days after eating 
+contaminated food depending on the organism:
+- 30 minutes to 6 hours: Staph aureus or Bacillus cereus
+- 6 to 24 hours: Clostridium perfringens
+- 1 to 3 days: Salmonella or E. coli
+- 1 to 4 weeks: Listeria
+
+WHEN TO SEE A DOCTOR:
+- High fever above 102F (39C)
+- Blood in stools
+- Signs of dehydration: dry mouth, little or no urination, dizziness
+- Diarrhea lasting more than 3 days
+- Symptoms in pregnant women, elderly, infants, or immunocompromised
+
+WHEN TO GO TO EMERGENCY ROOM:
+- Inability to keep any liquids down for 24 hours
+- Signs of severe dehydration
+- Bloody vomit or stools
+- Difficulty breathing (may indicate botulism)
+- Blurred or double vision (may indicate botulism)
+- Muscle weakness or paralysis
+
+HOME CARE:
+- Stay hydrated — sip water, broth, or electrolyte solutions slowly
+- Avoid solid foods until vomiting stops
+- Gradually reintroduce bland foods: toast, rice, bananas
+- Avoid dairy, fatty foods, spicy foods, alcohol, caffeine
+- Rest and allow your body to recover
+
+RISK TIER: LOW to MEDIUM — Most cases resolve at home with rest and fluids.
+Seek emergency care if severely dehydrated, very high fever, or bloody stool.

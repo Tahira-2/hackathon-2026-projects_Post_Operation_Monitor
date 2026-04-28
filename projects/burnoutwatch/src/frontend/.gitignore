@@ -1,0 +1,16 @@
+node_modules/
+.expo/
+.expo-shared/
+.metro-cache/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+.env
+.env.*
+!.env.example
+
+ios/build/
+android/build/
