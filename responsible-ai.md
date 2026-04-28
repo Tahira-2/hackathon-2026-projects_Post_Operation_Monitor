@@ -1,87 +1,84 @@
-# Responsible AI
+# Responsible AI Documentation
+## MedRoute — CareDevi AI Innovation Hackathon 2026
 
-## Data Sources Listed
+---
 
-This project uses the following data sources:
+## 1. Project Overview
+MedRoute is a conversational triage tool that uses a large language model (LLM) to help patients understand the urgency of their symptoms and identify the appropriate care setting. After a short multi-turn interview, it returns a structured urgency assessment (emergency / urgent / semi_urgent / non_urgent / self_care), concrete next steps, and a map of nearby relevant care facilities.
 
-- src/Training.csv: Primary dataset used to train the disease classification model.
-- src/Testing.csv: Holdout-style dataset used for external evaluation.
-- src/ml_service/symptoms.json: Ordered symptom vocabulary used to build inference feature vectors.
+**Live URL:** https://hackathon-2026-projects-production.up.railway.app/
 
-Data format notes:
+---
 
-- Features are symptom indicators (binary style, present or absent).
-- Target label is prognosis (disease name).
-- Dataset is structured and relatively small, so results are suitable for prototype validation, not clinical validation.
+## 2. Data Sources
+- **Patient input:** Free-text symptom descriptions entered by the user
+- **No real patient data is used.** All testing conducted with synthetic and hypothetical symptom scenarios.
+- **OpenStreetMap / Overpass API:** Used to surface nearby care facilities based on urgency level. Public data, no PHI involved.
+- **Model:** Groq API — `llama-3.3-70b-versatile`
 
-## Model Choices Explained
+---
 
-The system uses a hybrid approach:
+## 3. Model Choices & Rationale
+| Decision | Rationale |
+|---|---|
+| Groq + llama-3.3-70b-versatile | Fast inference, strong instruction-following, suitable for conversational triage |
+| Server-side API proxy | API key never reaches the browser; reduces misuse risk |
+| Structured JSON output (delimited) | Reduces hallucination risk vs. open-ended prose; enables reliable parsing |
+| Multi-turn interview (3–6 turns) | Gathers enough context before assessing; avoids premature or under-informed triage |
+| Urgency-specific next steps | Gives users concrete, actionable guidance rather than generic advice |
+| Nearby facility map | Closes the loop from assessment to action without requiring users to search independently |
 
-1. Supervised ML classifier
+---
 
-- Model: RandomForestClassifier (scikit-learn).
-- Why this choice:
-  - Works well with tabular binary features.
-  - Handles non-linear interactions among symptoms.
-  - Robust and fast for hackathon-scale training and inference.
-  - Provides class probabilities (predict_proba) for confidence display.
-- Current configuration in training script:
-  - n_estimators = 100
-  - max_depth = 20
-  - random_state = 42
+## 4. Intended Use
+- **For:** Patients seeking guidance on how urgently they need care
+- **Not for:** Clinical diagnosis, treatment decisions, or replacing professional medical judgment
+- **Intended setting:** Pre-visit triage support only
 
-2. Rule-based risk adjustment engine
+---
 
-- Input: model confidence plus lifestyle factors (for example smoking, sleep, pollution).
-- Purpose: convert base disease likelihood into an adjusted, explainable risk score with recommendations.
-- Why this choice:
-  - Improves transparency for users and judges.
-  - Enables actionable guidance and intervention simulation.
-  - Separates statistical prediction from policy-style risk communication.
+## 5. Known Limitations & Failure Cases
+| Failure Case | Mitigation |
+|---|---|
+| Vague or incomplete symptom input | Model asks focused follow-up questions before assessing |
+| Rare or complex presentations | Model may under-triage; system prompt includes red flag escalation to emergency |
+| Non-English or informal language | May reduce accuracy of symptom interpretation |
+| Pediatric edge cases | Model not specialized for pediatric physiology |
+| Mental health crises | Tool routes to appropriate care but is not a crisis counselor |
+| Groq free-tier rate limits | 100k tokens/day limit; heavy testing can exhaust quota |
 
-## Bias Considerations Addressed
+---
 
-Potential bias and fairness risks:
+## 6. Bias Considerations
+- LLMs trained on general data may reflect historical biases in healthcare (e.g., underrepresentation of certain demographics in training data)
+- Symptom descriptions using non-clinical or culturally specific language may be interpreted inconsistently
+- The tool has not been validated across diverse patient populations
 
-- Dataset representativeness risk: Training data may not reflect all demographics, regions, or comorbidity patterns.
-- Label quality risk: If labels are noisy or simplified, the model can learn biased associations.
-- Feature coverage risk: Symptom-only input excludes socioeconomic, longitudinal, and clinical test context.
-- Rule bias risk: Risk multipliers in the rule engine are heuristic and can over- or under-estimate risk for some populations.
+---
 
-Current mitigations:
+## 7. Hallucination Risk & Mitigations
+- Model is explicitly instructed to only use patient-provided information
+- Structured JSON output (wrapped in `|||ASSESSMENT|||` delimiters) reduces free-form fabrication
+- No drug dosages, diagnoses, or treatment plans are generated
+- Mandatory disclaimer is appended to every assessment
 
-- Explicit disclaimer that output is informational and not a medical diagnosis.
-- Explainable outputs (factors, adjusted risk, recommendation blocks) to reduce blind trust.
-- Separation between model score and rule adjustments to make assumptions auditable.
-- Prototype framing in demo: performance is reported as dataset-level, not clinical-grade.
+---
 
-Planned improvements:
+## 8. Human Oversight
+- This tool is designed as a **decision support aid**, not a decision-maker
+- All outputs include a mandatory disclaimer directing users to seek professional medical advice
+- A clinician or triage nurse should always make the final call
 
-- Expand and diversify datasets before any real-world deployment.
-- Add subgroup evaluation and calibration checks.
-- Add clinician review for rule multipliers and recommendation safety.
-- Add uncertainty communication (confidence bands and abstain/fallback logic).
+---
 
-## Failure Cases Documented
+## 9. Disclaimer (displayed in product)
+*"Not a substitute for professional medical advice. In emergencies, call 911."*
 
-Known failure modes:
+---
 
-- Ambiguous symptoms across multiple diseases can cause incorrect top-1 prediction.
-- Rare or unseen symptom patterns may produce unstable predictions.
-- Missing or incorrect symptom inputs can significantly alter model output.
-- Rule adjustments may overreact when lifestyle data is incomplete or self-reported inaccurately.
-- High confidence does not imply clinical correctness in real-world settings.
-
-Operational limitations:
-
-- No online learning from each user execution.
-- No clinician-in-the-loop validation step in the current prototype.
-- Not designed for emergency diagnosis or treatment decisions.
-
-Safety handling and response strategy:
-
-- Include clear medical disclaimer in user-facing output.
-- Provide urgency messaging and encourage professional consultation.
-- Keep human-readable explanation for risk drivers to support review.
-- Treat this system as decision support, not autonomous diagnosis.
+## 10. Team
+| Name | Role |
+|---|---|
+| Fidel | Deployment (Railway), infrastructure |
+| Eladio | Frontend, nearby facility map (Leaflet + Overpass API) |
+| Jeheon | History persistence (localStorage), session management |
