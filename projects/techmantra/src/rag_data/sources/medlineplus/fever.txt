@@ -1,0 +1,57 @@
+Source: MedlinePlus - Fever
+URL: https://medlineplus.gov/fever.html
+
+OVERVIEW:
+A fever is a body temperature above the normal range, usually defined 
+as 100.4F (38C) or higher. Fever is not a disease itself — it is a 
+sign that your body is fighting an infection or illness.
+
+TEMPERATURE RANGES:
+- Normal: 97F to 99F (36.1C to 37.2C)
+- Low grade fever: 99F to 100.4F (37.2C to 38C)
+- Fever: 100.4F (38C) and above
+- High fever: 103F (39.4C) and above
+- Very high fever: 104F (40C) — seek medical care
+- Dangerous fever: 106F (41.1C) or above — emergency
+
+COMMON CAUSES:
+- Viral infections: cold, flu, COVID-19, COVID variants
+- Bacterial infections: strep throat, urinary tract infection, pneumonia
+- Ear infections
+- Sinus infections
+- Heat exhaustion
+- Some inflammatory conditions
+
+ASSOCIATED SYMPTOMS:
+- Sweating and chills
+- Headache
+- Muscle aches
+- Loss of appetite
+- Dehydration
+- General weakness and fatigue
+- Sensitivity to light
+
+WHEN TO SEEK EMERGENCY CARE:
+Adults — go to emergency room if:
+- Fever above 103F (39.4C) that does not respond to medication
+- Fever with stiff neck, severe headache, and sensitivity to light
+- Fever with difficulty breathing or chest pain
+- Fever with confusion or altered mental status
+- Fever with severe abdominal pain
+- Fever lasting more than 3 days
+
+Infants — call doctor immediately if:
+- Any fever in baby under 3 months
+- Fever above 104F in older infants
+
+HOME CARE FOR MILD FEVER:
+- Take ibuprofen or acetaminophen as directed — do not give aspirin to children
+- Drink plenty of fluids — water, broth, juice
+- Rest and stay home
+- Wear lightweight clothing
+- Use a lukewarm (not cold) compress on forehead
+- Keep room temperature comfortable
+
+RISK TIER: LOW — mild fever can be managed at home.
+MEDIUM — fever above 103F or lasting more than 3 days needs medical attention.
+HIGH — fever with stiff neck, confusion, or difficulty breathing is an emergency.

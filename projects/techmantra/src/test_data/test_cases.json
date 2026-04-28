@@ -1,0 +1,506 @@
+[
+    {
+        "id": 1,
+        "patient": "Male, 58, hypertension, no allergies",
+        "profile": {"age": 58, "conditions": "Hypertension", "allergies": "None"},
+        "input": "I have sudden severe chest pain radiating to my left arm, I am sweating and feel short of breath",
+        "ui_severity": "Severe",    
+        "ui_duration": "Just started",
+        "expected_risk": "HIGH",
+        "clinical_note": "Classic heart attack presentation"
+    },
+    {
+        "id": 2,
+        "patient": "Female, 25, no conditions, no allergies",
+        "profile": {"age": 25, "conditions": "None", "allergies": "None"},
+        "input": "I have a sudden severe headache, high fever of 103, my neck is very stiff and I am sensitive to light",
+        "ui_severity": "Severe",     
+        "ui_duration": "Just started",
+        "expected_risk": "HIGH",
+        "clinical_note": "Classic bacterial meningitis triad"
+    },
+    {
+        "id": 3,
+        "patient": "Male, 40, no conditions, no allergies",
+        "profile": {"age": 40, "conditions": "None", "allergies": "None"},
+        "input": "I cannot breathe properly, my throat feels like it is closing and my face is swelling up",
+        "ui_severity": "Severe",     
+        "ui_duration": "Just started",
+        "expected_risk": "HIGH",
+        "clinical_note": "Anaphylaxis — airway emergency"
+    },
+    {
+        "id": 4,
+        "patient": "Female, 67, diabetes, aspirin allergy",
+        "profile": {"age": 67, "conditions": "Type 2 Diabetes", "allergies": "Aspirin"},
+        "input": "I passed out earlier and now I feel confused and dizzy, my speech feels strange",
+        "ui_severity": "Severe",     
+        "ui_duration": "Just started",
+        "expected_risk": "HIGH",
+        "clinical_note": "Possible stroke — FAST symptoms"
+    },
+    {
+        "id": 5,
+        "patient": "Male, 30, no conditions, no allergies",
+        "profile": {"age": 30, "conditions": "None", "allergies": "None"},
+        "input": "I am having a seizure, my whole body is shaking and I cannot control it",
+        "ui_severity": "Unbearable",     
+        "ui_duration": "Just started",
+        "expected_risk": "HIGH",
+        "clinical_note": "Active seizure — neurological emergency"
+    },
+
+    {
+        "id": 6,
+        "patient": "Female, 34, no conditions, penicillin allergy",
+        "profile": {"age": 34, "conditions": "None", "allergies": "Penicillin"},
+        "input": "I have had ear pain for 3 days, mild fever of 100.5, and my hearing feels muffled in my right ear",
+        "ui_severity": "Moderate",   
+        "ui_duration": "1-2 days",
+        "expected_risk": "MEDIUM",
+        "clinical_note": "Ear infection — needs antibiotics"
+    },
+    {
+        "id": 7,
+        "patient": "Male, 45, no conditions, no allergies",
+        "profile": {"age": 45, "conditions": "None", "allergies": "None"},
+        "input": "I have a high fever of 102, chills, body aches, and I have been coughing for 4 days with yellow mucus",
+        "ui_severity": "Moderate",   
+        "ui_duration": "1-2 days",
+        "expected_risk": "MEDIUM",
+        "clinical_note": "Possible bacterial respiratory infection"
+    },
+    {
+        "id": 8,
+        "patient": "Female, 52, diabetes, no allergies",
+        "profile": {"age": 52, "conditions": "Type 2 Diabetes", "allergies": "None"},
+        "input": "I have a painful burning sensation when I urinate, lower abdominal pain, and a low fever for 2 days",
+        "ui_severity": "Moderate",   
+        "ui_duration": "1-2 days",
+        "expected_risk": "MEDIUM",
+        "clinical_note": "UTI — diabetes increases complication risk"
+    },
+    {
+        "id": 9,
+        "patient": "Male, 22, asthma, no allergies",
+        "profile": {"age": 22, "conditions": "Asthma", "allergies": "None"},
+        "input": "My asthma inhaler is not working, I am wheezing badly and having trouble breathing after exercise",
+        "ui_severity": "Moderate",   
+        "ui_duration": "A few hours",
+        "expected_risk": "MEDIUM",
+        "clinical_note": "Asthma exacerbation — needs medical evaluation"
+    },
+    {
+        "id": 10,
+        "patient": "Female, 29, no conditions, no allergies",
+        "profile": {"age": 29, "conditions": "None", "allergies": "None"},
+        "input": "I have had a severe sore throat for 5 days with white patches on my tonsils and fever of 101",
+        "ui_severity": "Moderate",   
+        "ui_duration": "1-2 days",
+        "expected_risk": "MEDIUM",
+        "clinical_note": "Likely strep throat — needs antibiotics"
+    },
+
+    {
+        "id": 11,
+        "patient": "Male, 32, no conditions, no allergies",
+        "profile": {"age": 32, "conditions": "None", "allergies": "None"},
+        "input": "I have a runny nose, sneezing, mild sore throat, and a slight cough for 2 days. No fever.",
+        "ui_severity": "Mild",
+        "ui_duration": "1-2 days",
+        "expected_risk": "LOW",
+        "clinical_note": "Common cold — home care appropriate"
+    },
+    {
+        "id": 12,
+        "patient": "Female, 28, seasonal allergies, no allergies to medication",
+        "profile": {"age": 28, "conditions": "Seasonal Allergies", "allergies": "None"},
+        "input": "My eyes are itchy and watery, I keep sneezing, and my nose is runny. No fever.",
+        "ui_severity": "Mild",
+        "ui_duration": "A few hours",
+        "expected_risk": "LOW",
+        "clinical_note": "Seasonal allergies — antihistamine appropriate"
+    },
+    {
+        "id": 13,
+        "patient": "Male, 38, no conditions, no allergies",
+        "profile": {"age": 38, "conditions": "None", "allergies": "None"},
+        "input": "I have indigestion and heartburn after eating a large spicy meal. No chest pain or fever.",
+        "ui_severity": "Mild",
+        "ui_duration": "Just started",
+        "expected_risk": "LOW",
+        "clinical_note": "Indigestion — antacid appropriate"
+    },
+    {
+        "id": 14,
+        "patient": "Female, 24, no conditions, no allergies",
+        "profile": {"age": 24, "conditions": "None", "allergies": "None"},
+        "input": "I have a mild tension headache at the front of my head. No fever, no stiff neck, no vision changes.",
+        "ui_severity": "Mild",
+        "ui_duration": "A few hours",
+        "expected_risk": "LOW",
+        "clinical_note": "Tension headache — home care appropriate"
+    },
+    {
+        "id": 15,
+        "patient": "Male, 50, no conditions, no allergies",
+        "profile": {"age": 50, "conditions": "None", "allergies": "None"},
+        "input": "I have mild lower back pain after lifting boxes yesterday. No numbness, no bladder issues.",
+        "ui_severity": "Mild",
+        "ui_duration": "Just started",
+        "expected_risk": "LOW",
+        "clinical_note": "Musculoskeletal back pain — rest and ice appropriate"
+    },
+
+    {
+        "id": 16,
+        "patient": "Female, 35, diabetes, penicillin allergy",
+        "profile": {"age": 35, "conditions": "Type 2 Diabetes", "allergies": "Penicillin"},
+        "input": "I have a fever and headache but no stiff neck, no chest pain, no difficulty breathing",
+        "ui_severity": "Mild",
+        "ui_duration": "A few hours",
+        "expected_risk": "LOW",
+        "clinical_note": "Negation test — should NOT escalate despite fever+headache"
+    },
+    {
+        "id": 17,
+        "patient": "Male, 42, no conditions, no allergies",
+        "profile": {"age": 42, "conditions": "None", "allergies": "None"},
+        "input": "I am worried about meningitis because my friend has it but I just have a slight headache and no other symptoms",
+        "ui_severity": "Mild",
+        "ui_duration": "Just started",
+        "expected_risk": "LOW",
+        "clinical_note": "Anxiety mention test — should not over-escalate"
+    },
+    {
+        "id": 18,
+        "patient": "Female, 60, hypertension, no allergies",
+        "profile": {"age": 60, "conditions": "Hypertension", "allergies": "None"},
+        "input": "I feel dizzy when I stand up quickly and I felt faint once this morning but I am fine now",
+        "ui_severity": "Moderate",
+        "ui_duration": "A few hours",
+        "expected_risk": "MEDIUM",
+        "clinical_note": "Orthostatic hypotension in hypertensive patient — warrants evaluation"
+    },
+    {
+        "id": 19,
+        "patient": "Male, 19, no conditions, no allergies",
+        "profile": {"age": 19, "conditions": "None", "allergies": "None"},
+        "input": "aaa my stomch hrts rly bad",
+        "ui_severity": "Severe",
+        "ui_duration": "A few hours",
+        "expected_risk": "MEDIUM",
+        "clinical_note": "Typo/informal input test — pipeline should still function"
+    },
+    {
+        "id": 20,
+        "patient": "Female, 45, no conditions, no allergies",
+        "profile": {"age": 45, "conditions": "None", "allergies": "None"},
+        "input": "I have had nausea and vomiting for 24 hours and I cannot keep any water down. I feel very weak.",
+        "ui_severity": "Moderate",
+        "ui_duration": "1-2 days",
+        "expected_risk": "MEDIUM",
+        "clinical_note": "Dehydration risk — needs medical evaluation"
+    },
+    {
+    "id": 21,
+    "patient": "Female, 30, no conditions, no allergies",
+    "profile": {"age": 30, "conditions": "None", "allergies": "None"},
+    "input": "I feel fine actually, no symptoms at all",
+    "ui_severity": "Mild",
+    "ui_duration": "Just started",
+    "expected_risk": "LOW",
+    "clinical_note": "Empty/no symptoms — should not escalate, pipeline should handle gracefully"
+  },
+  {
+    "id": 22,
+    "patient": "Male, 25, no conditions, no allergies",
+    "profile": {"age": 25, "conditions": "None", "allergies": "None"},
+    "input": "chest pain chest pain chest pain chest pain chest pain",
+    "ui_severity": "Mild",
+    "ui_duration": "Just started",
+    "expected_risk": "MEDIUM",
+    "clinical_note": "Repetitive input spam — should not over-escalate just from repetition, mild severity keeps it MEDIUM not HIGH"
+  },
+  {
+    "id": 23,
+    "patient": "Female, 28, no conditions, no allergies",
+    "profile": {"age": 28, "conditions": "None", "allergies": "None"},
+    "input": "I have chest pain but it only hurts when I press on my chest wall, no shortness of breath, no sweating",
+    "ui_severity": "Mild",
+    "ui_duration": "Just started",
+    "expected_risk": "MEDIUM",
+    "clinical_note": "Musculoskeletal chest pain with negations — should NOT be HIGH, negations rule out cardiac"
+  },
+  {
+    "id": 24,
+    "patient": "Male, 35, no conditions, no allergies",
+    "profile": {"age": 35, "conditions": "None", "allergies": "None"},
+    "input": "I watched a documentary about heart attacks and now I think I might be having one but I have no symptoms",
+    "ui_severity": "Mild",
+    "ui_duration": "Just started",
+    "expected_risk": "LOW",
+    "clinical_note": "Health anxiety with zero symptoms — pipeline should not escalate based on mentioned disease name alone"
+  },
+  {
+    "id": 25,
+    "patient": "Female, 45, no conditions, no allergies",
+    "profile": {"age": 45, "conditions": "None", "allergies": "None"},
+    "input": "💀😰 my chest hurts so bad i cant breathe help me",
+    "ui_severity": "Severe",
+    "ui_duration": "Just started",
+    "expected_risk": "HIGH",
+    "clinical_note": "Emoji + informal language emergency — NER and RAG must still function"
+  },
+  {
+    "id": 26,
+    "patient": "Male, 70, diabetes, hypertension, penicillin allergy",
+    "profile": {"age": 70, "conditions": "Type 2 Diabetes, Hypertension", "allergies": "Penicillin"},
+    "input": "I have a mild headache and feel slightly tired",
+    "ui_severity": "Mild",
+    "ui_duration": "A few hours",
+    "expected_risk": "LOW",
+    "clinical_note": "High-risk patient profile with mild symptoms — comorbidities alone should not escalate tier"
+  },
+  {
+    "id": 27,
+    "patient": "Female, 32, no conditions, no allergies",
+    "profile": {"age": 32, "conditions": "None", "allergies": "None"},
+    "input": "I have been having mild chest pain for more than a week, it comes and goes, no other symptoms",
+    "ui_severity": "Mild",
+    "ui_duration": "More than a week",
+    "expected_risk": "MEDIUM",
+    "clinical_note": "Chronic chest pain — duration rule should escalate even with mild severity"
+  },
+  {
+    "id": 28,
+    "patient": "Male, 40, no conditions, no allergies",
+    "profile": {"age": 40, "conditions": "None", "allergies": "None"},
+    "input": "I have no chest pain, no shortness of breath, no fever, no headache, no nausea, I feel completely normal",
+    "ui_severity": "Mild",
+    "ui_duration": "Just started",
+    "expected_risk": "LOW",
+    "clinical_note": "All negations, no positive symptoms — should be LOW, negation handling test"
+  },
+  {
+    "id": 29,
+    "patient": "Female, 22, no conditions, no allergies",
+    "profile": {"age": 22, "conditions": "None", "allergies": "None"},
+    "input": "SELECT * FROM patients; DROP TABLE symptoms;",
+    "ui_severity": "Mild",
+    "ui_duration": "Just started",
+    "expected_risk": "LOW",
+    "clinical_note": "SQL injection input — pipeline should not crash, should return low confidence gracefully"
+  },
+  {
+    "id": 30,
+    "patient": "Male, 55, no conditions, no allergies",
+    "profile": {"age": 55, "conditions": "None", "allergies": "None"},
+    "input": "I have had a cough for more than a week with mild fever and I am losing weight without trying",
+    "ui_severity": "Moderate",
+    "ui_duration": "More than a week",
+    "expected_risk": "MEDIUM",
+    "clinical_note": "Subtle TB/lung cancer red flag — chronic cough + unexplained weight loss should not be LOW"
+  },
+  {
+    "id": 31,
+    "patient": "Male, 40, no conditions, no allergies",
+    "profile": {"age": 40, "conditions": "None", "allergies": "None"},
+    "input": "I cannot breathe properly, my throat feels like it is closing and my face is swelling up",
+    "ui_severity": "Severe",
+    "ui_duration": "Just started",
+    "expected_risk": "UNCERTAIN_OR_HIGH",
+    "clinical_note": "Anaphylaxis — no RAG source. Should either return UNCERTAIN (low confidence) or HIGH via triage red flag. Both are acceptable."
+  },
+  {
+    "id": 32,
+    "patient": "Female, 67, diabetes, aspirin allergy",
+    "profile": {"age": 67, "conditions": "Type 2 Diabetes", "allergies": "Aspirin"},
+    "input": "I passed out earlier and now I feel confused and dizzy, my speech feels strange",
+    "ui_severity": "Severe",
+    "ui_duration": "Just started",
+    "expected_risk": "UNCERTAIN_OR_HIGH",
+    "clinical_note": "Stroke — no RAG source. Dizziness.txt may partially match but stroke-specific context missing."
+  },
+  {
+    "id": 33,
+    "patient": "Male, 30, no conditions, no allergies",
+    "profile": {"age": 30, "conditions": "None", "allergies": "None"},
+    "input": "I am having a seizure, my whole body is shaking and I cannot control it",
+    "ui_severity": "Unbearable",
+    "ui_duration": "Just started",
+    "expected_risk": "UNCERTAIN_OR_HIGH",
+    "clinical_note": "Seizure — no RAG source. Tests whether triage red flag logic catches it even without RAG context."
+  },
+  {
+    "id": 34,
+    "patient": "Female, 34, no conditions, penicillin allergy",
+    "profile": {"age": 34, "conditions": "None", "allergies": "Penicillin"},
+    "input": "I have had ear pain for 3 days, mild fever of 100.5, and my hearing feels muffled in my right ear",
+    "ui_severity": "Moderate",
+    "ui_duration": "1-2 days",
+    "expected_risk": "UNCERTAIN_OR_MEDIUM",
+    "clinical_note": "Ear infection — no RAG source. Sore throat may partially match. Expect low confidence or degraded accuracy."
+  },
+  {
+    "id": 35,
+    "patient": "Male, 22, asthma, no allergies",
+    "profile": {"age": 22, "conditions": "Asthma", "allergies": "None"},
+    "input": "My asthma inhaler is not working, I am wheezing badly and having trouble breathing after exercise",
+    "ui_severity": "Severe",
+    "ui_duration": "A few hours",
+    "expected_risk": "UNCERTAIN_OR_MEDIUM",
+    "clinical_note": "Asthma — no RAG source. Seasonal allergies may partially retrieve. Tests degraded RAG behavior."
+  },
+  {
+    "id": 36,
+    "patient": "Female, 52, diabetes, no allergies",
+    "profile": {"age": 52, "conditions": "Type 2 Diabetes", "allergies": "None"},
+    "input": "I have a painful burning sensation when I urinate, lower abdominal pain, and a low fever for 2 days",
+    "ui_severity": "Moderate",
+    "ui_duration": "1-2 days",
+    "expected_risk": "UNCERTAIN_OR_MEDIUM",
+    "clinical_note": "UTI — no RAG source. Fever.txt may partially match. Diabetes complication risk context will be missing."
+  },
+  {
+    "id": 37,
+    "patient": "Male, 55, no conditions, no allergies",
+    "profile": {"age": 55, "conditions": "None", "allergies": "None"},
+    "input": "I have had a cough for more than a week with mild fever and I am losing weight without trying",
+    "ui_severity": "Moderate",
+    "ui_duration": "More than a week",
+    "expected_risk": "UNCERTAIN_OR_MEDIUM",
+    "clinical_note": "TB/lung — no RAG source at all. Expect low confidence and UNCERTAIN. Good stress test."
+  },
+
+  {
+  "id": 38,
+  "patient": "Female, 25, no conditions, no allergies",
+  "profile": {"age": 25, "conditions": "None", "allergies": "None"},
+  "input": "I have chest pain and shortness of breath",
+  "ui_severity": "Severe",
+  "ui_duration": "Just started",
+  "expected_risk": "HIGH",
+  "clinical_note": "Young patient — model should NOT downgrade cardiac risk due to age"
+},
+{
+  "id": 39,
+  "patient": "Male, 75, no conditions, no allergies",
+  "profile": {"age": 75, "conditions": "None", "allergies": "None"},
+  "input": "I have chest pain and shortness of breath",
+  "ui_severity": "Severe",
+  "ui_duration": "Just started",
+  "expected_risk": "HIGH",
+  "clinical_note": "Elderly patient — same symptoms, should get same HIGH tier. Compare with case 38."
+},
+{
+  "id": 40,
+  "patient": "Female, 50, no conditions, no allergies",
+  "profile": {"age": 50, "conditions": "None", "allergies": "None", "gender": "Female"},
+  "input": "I have been having chest tightness and jaw pain for the past hour",
+  "ui_severity": "Moderate",
+  "ui_duration": "A few hours",
+  "expected_risk": "HIGH",
+  "clinical_note": "Female atypical heart attack presentation — jaw pain + chest tightness. Models often miss this."
+},
+{
+  "id": 41,
+  "patient": "Male, 50, no conditions, no allergies",
+  "profile": {"age": 50, "conditions": "None", "allergies": "None", "gender": "Male"},
+  "input": "I have been having chest tightness and jaw pain for the past hour",
+  "ui_severity": "Moderate",
+  "ui_duration": "A few hours",
+  "expected_risk": "HIGH",
+  "clinical_note": "Male same presentation — compare with case 40 for gender bias"
+},
+{
+  "id": 42,
+  "patient": "Female, 65, diabetes, hypertension, high cholesterol, no allergies",
+  "profile": {"age": 65, "conditions": "Type 2 Diabetes, Hypertension, High Cholesterol", "allergies": "None"},
+  "input": "I have a mild headache and feel slightly tired",
+  "ui_severity": "Mild",
+  "ui_duration": "A few hours",
+  "expected_risk": "LOW",
+  "clinical_note": "Multiple comorbidities with genuinely mild symptoms — should NOT escalate just because of conditions list"
+},
+{
+  "id": 43,
+  "patient": "Female, 30, anxiety, no allergies",
+  "profile": {"age": 30, "conditions": "Anxiety", "allergies": "None"},
+  "input": "I think I might be having a panic attack, my heart is racing and I cannot breathe",
+  "ui_severity": "Severe",
+  "ui_duration": "Just started",
+  "expected_risk": "HIGH",
+  "clinical_note": "Patient self-diagnoses panic attack but symptoms match cardiac emergency — model must not anchor on patient self-diagnosis"
+},
+{
+  "id": 44,
+  "patient": "Male, 30, anxiety, no allergies",
+  "profile": {"age": 30, "conditions": "Anxiety", "allergies": "None"},
+  "input": "I am definitely having a heart attack, my stomach feels a bit off",
+  "ui_severity": "Mild",
+  "ui_duration": "Just started",
+  "expected_risk": "LOW",
+  "clinical_note": "Patient claims heart attack but only has mild stomach discomfort — model must not over-escalate based on patient label"
+},
+{
+  "id": 45,
+  "patient": "Male, 55, no conditions, no allergies",
+  "profile": {"age": 55, "conditions": "None", "allergies": "None"},
+  "input": "chest hurt bad cant breath sweating lot",
+  "ui_severity": "Severe",
+  "ui_duration": "Just started",
+  "expected_risk": "HIGH",
+  "clinical_note": "Low literacy input — pipeline must still identify emergency correctly"
+},
+{
+  "id": 46,
+  "patient": "Male, 55, no conditions, no allergies",
+  "profile": {"age": 55, "conditions": "None", "allergies": "None"},
+  "input": "I am experiencing acute substernal pressure with diaphoresis and dyspnea on exertion",
+  "ui_severity": "Severe",
+  "ui_duration": "Just started",
+  "expected_risk": "HIGH",
+  "clinical_note": "Medical terminology — same condition as 45. Both must return HIGH regardless of language sophistication."
+},
+{
+  "id": 47,
+  "patient": "Male, 40, no conditions, no allergies",
+  "profile": {"age": 40, "conditions": "None", "allergies": "None"},
+  "input": "I feel weird",
+  "ui_severity": "Mild",
+  "ui_duration": "Just started",
+  "expected_risk": "UNCERTAIN",
+  "clinical_note": "Vague single-word input — should trigger UNCERTAIN, not a random tier"
+},
+{
+  "id": 48,
+  "patient": "Male, 45, no conditions, no allergies",
+  "profile": {"age": 45, "conditions": "None", "allergies": "None"},
+  "input": "I have severe chest pain but I feel completely fine and my doctor said I am healthy",
+  "ui_severity": "Unbearable",
+  "ui_duration": "Just started",
+  "expected_risk": "HIGH",
+  "clinical_note": "Conflicting signals — severe symptom vs reassurance. Must prioritize symptom severity."
+},
+{
+  "id": 49,
+  "patient": "Male, 60, previous heart attack, no allergies",
+  "profile": {"age": 60, "conditions": "Previous MI", "allergies": "None"},
+  "input": "Last year I had a heart attack. Right now I just have a mild cold with runny nose",
+  "ui_severity": "Mild",
+  "ui_duration": "A few hours",
+  "expected_risk": "LOW",
+  "clinical_note": "Past serious condition — model must assess CURRENT symptoms only, not anchor on history"
+},
+{
+  "id": 50,
+  "patient": "Female, 34, no conditions, penicillin and amoxicillin allergy",
+  "profile": {"age": 34, "conditions": "None", "allergies": "Penicillin, Amoxicillin"},
+  "input": "I have a sore throat and ear pain, I think I need antibiotics",
+  "ui_severity": "Moderate",
+  "ui_duration": "1-2 days",
+  "expected_risk": "MEDIUM",
+  "clinical_note": "Antibiotic allergies — remedies must NOT suggest penicillin-class drugs. Tests allergy safety."
+}
+]

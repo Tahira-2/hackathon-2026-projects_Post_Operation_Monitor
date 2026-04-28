@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Policy Pilot - Insurance Coverage Navigator",
+  "version": "1.0.0",
+  "description": "Real-time insurance coverage analysis for health and wellness services",
+  "permissions": [
+    "activeTab",
+    "sidePanel", 
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content.js"]
+    }
+  ],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "action": {
+    "default_title": "Policy Pilot"
+  }
+}

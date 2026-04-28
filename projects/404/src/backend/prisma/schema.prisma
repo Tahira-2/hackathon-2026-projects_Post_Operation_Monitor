@@ -1,0 +1,354 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["auth", "users", "catalog", "scheduling", "communication"]
+}
+
+enum Role {
+  ADMIN
+  DOCTOR
+  PATIENT
+
+  @@map("role")
+  @@schema("auth")
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  RESCHEDULED
+
+  @@map("appointment_status")
+  @@schema("scheduling")
+}
+
+enum MessageSender {
+  USER
+  SYSTEM
+
+  @@map("message_sender")
+  @@schema("communication")
+}
+
+enum CallStatus {
+  INITIATED
+  ONGOING
+  ENDED
+  MISSED
+
+  @@map("call_status")
+  @@schema("communication")
+}
+
+enum WeekDay {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+
+  @@map("week_day")
+  @@schema("scheduling")
+}
+
+enum BlockType {
+  BREAK
+  BUSY
+  PERSONAL
+  EMERGENCY
+
+  @@map("block_type")
+  @@schema("scheduling")
+}
+
+enum MedicineForm {
+  TABLET
+  CAPSULE
+  SYRUP
+  INJECTION
+  CREAM
+  OINTMENT
+  DROPS
+  INHALER
+  POWDER
+
+  @@map("medicine_forms")
+  @@schema("catalog")
+}
+
+enum MedicineCategory {
+  PRESCRIPTION
+  OTC
+  CONTROLLED
+  SUPPLEMENT
+
+  @@map("medicine_categories")
+  @@schema("catalog")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  fullName  String
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+
+  doctor  Doctor?
+  patient Patient?
+
+  notifications Notification[]
+
+  @@map("users")
+  @@schema("auth")
+}
+
+model Specialization {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+
+  doctors Doctor[]
+
+  @@map("specializations")
+  @@schema("catalog")
+}
+
+model Doctor {
+  id               String @id @default(uuid())
+  userId           String @unique
+  specializationId String
+
+  user           User           @relation(fields: [userId], references: [id])
+  specialization Specialization @relation(fields: [specializationId], references: [id])
+
+  workingHours WorkingHours[]
+  busyBlocks   BusyBlock[]
+  appointments Appointment[]
+
+  @@index([specializationId])
+  @@map("doctors")
+  @@schema("users")
+}
+
+model Patient {
+  id     String @id @default(uuid())
+  userId String @unique
+
+  user         User          @relation(fields: [userId], references: [id])
+  appointments Appointment[]
+  medications  PatientMedication[]
+  carePlans    CarePlan[]
+
+  @@map("patients")
+  @@schema("users")
+}
+
+model Medicine {
+  id String @id @default(uuid())
+  name       String
+  rxnormCode String?
+  drugClass String?
+  category  MedicineCategory?
+  form      MedicineForm
+  description  String?
+  manufacturer String?
+  imageUrl     String?
+
+  @@index([name])
+  @@index([rxnormCode])
+  @@map("medicines")
+  @@schema("catalog")
+}
+
+model WorkingHours {
+  id        String  @id @default(uuid())
+  doctorId  String
+  day       WeekDay
+  startTime String
+  endTime   String
+
+  doctor Doctor @relation(fields: [doctorId], references: [id])
+
+  @@unique([doctorId, day])
+  @@map("working_hours")
+  @@schema("scheduling")
+}
+
+model BusyBlock {
+  id        String    @id @default(uuid())
+  doctorId  String
+  startTime DateTime
+  endTime   DateTime
+  type      BlockType
+  reason    String?
+
+  doctor Doctor @relation(fields: [doctorId], references: [id])
+
+  @@index([doctorId, startTime])
+  @@map("busy_blocks")
+  @@schema("scheduling")
+}
+
+model Appointment {
+  id        String @id @default(uuid())
+  doctorId  String
+  patientId String
+
+  status    AppointmentStatus
+  startTime DateTime
+  endTime   DateTime
+  reason    String?
+  isVirtual Boolean @default(true)
+
+  doctor  Doctor  @relation(fields: [doctorId], references: [id])
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  callSession CallSession?
+
+  createdAt DateTime @default(now())
+
+  @@index([doctorId, startTime])
+  @@index([patientId, startTime])
+  @@map("appointments")
+  @@schema("scheduling")
+}
+
+model CallSession {
+  id            String @id @default(uuid())
+  appointmentId String @unique
+  doctorId      String
+  patientId     String
+
+  status    CallStatus
+  startedAt DateTime?
+  endedAt   DateTime?
+
+  appointment Appointment       @relation(fields: [appointmentId], references: [id])
+  transcripts TranscriptChunk[]
+  summary     ConsultationSummary?
+
+  @@index([doctorId])
+  @@index([patientId])
+  @@map("call_sessions")
+  @@schema("communication")
+}
+
+model TranscriptChunk {
+  id            String   @id @default(uuid())
+  callSessionId String
+  speaker       String
+  content       String
+  timestamp     DateTime @default(now())
+
+  callSession CallSession @relation(fields: [callSessionId], references: [id])
+
+  @@index([callSessionId, timestamp])
+  @@map("transcript_chunks")
+  @@schema("communication")
+}
+
+model ConsultationSummary {
+  id                   String   @id @default(uuid())
+  callSessionId        String   @unique
+  summary              String
+  diagnoses            String[]
+  medications          String[]
+  followUp             String?
+  isMedicationApplied  Boolean  @default(false)
+  createdAt            DateTime @default(now())
+
+  callSession CallSession @relation(fields: [callSessionId], references: [id])
+
+  @@map("consultation_summaries")
+  @@schema("communication")
+}
+
+model PatientMedication {
+  id        String   @id @default(uuid())
+  patientId String
+  name      String
+  dosage    String?
+  frequency String?
+  startDate DateTime @default(now())
+  endDate   DateTime?
+  isActive  Boolean  @default(true)
+  notes     String?
+  
+  patient   Patient  @relation(fields: [patientId], references: [id])
+
+  @@index([patientId])
+  @@map("patient_medications")
+  @@schema("users")
+}
+
+model CarePlan {
+  id        String   @id @default(uuid())
+  patientId String
+  title     String
+  instructions String
+  followUpDate DateTime?
+  createdAt DateTime @default(now())
+  
+  patient   Patient  @relation(fields: [patientId], references: [id])
+
+  @@index([patientId])
+  @@map("care_plans")
+  @@schema("users")
+}
+
+
+model Conversation {
+  id        String   @id @default(uuid())
+  userIds   String[]
+  createdAt DateTime @default(now())
+
+  messages Message[]
+
+  @@map("conversations")
+  @@schema("communication")
+}
+
+model Message {
+  id             String        @id @default(uuid())
+  conversationId String
+  senderId       String
+  senderType     MessageSender
+  content        String
+  metadata       Json?
+  createdAt      DateTime      @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+  @@schema("communication")
+}
+
+model Notification {
+  id      String  @id @default(uuid())
+  userId  String
+  title   String
+  message String
+  type    String?
+  isRead  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@map("notifications")
+  @@schema("communication")
+}

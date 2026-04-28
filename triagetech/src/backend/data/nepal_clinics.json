@@ -1,0 +1,22 @@
+[
+  {"name": "Tribhuvan University Teaching Hospital", "type": "Hospital", "district": "Kathmandu", "lat": 27.7330, "lng": 85.3260, "phone": "01-4412303", "emergency": true},
+  {"name": "Bir Hospital", "type": "Hospital", "district": "Kathmandu", "lat": 27.7060, "lng": 85.3138, "phone": "01-4221119", "emergency": true},
+  {"name": "Patan Hospital", "type": "Hospital", "district": "Lalitpur", "lat": 27.6710, "lng": 85.3200, "phone": "01-5522266", "emergency": true},
+  {"name": "Dhulikhel Hospital", "type": "Hospital", "district": "Kavrepalanchok", "lat": 27.6200, "lng": 85.5583, "phone": "011-490497", "emergency": true},
+  {"name": "Bhaktapur Hospital", "type": "Hospital", "district": "Bhaktapur", "lat": 27.6714, "lng": 85.4278, "phone": "01-6610798", "emergency": false},
+  {"name": "Kirtipur Hospital", "type": "PHC", "district": "Kathmandu", "lat": 27.6789, "lng": 85.2792, "phone": "01-4331816", "emergency": false},
+  {"name": "Sanepa Health Post", "type": "Health Post", "district": "Lalitpur", "lat": 27.6837, "lng": 85.3176, "phone": "01-5547121", "emergency": false},
+  {"name": "Pokhara Provincial Hospital", "type": "Hospital", "district": "Kaski", "lat": 28.2096, "lng": 83.9856, "phone": "061-465056", "emergency": true},
+  {"name": "Gandaki Medical College", "type": "Hospital", "district": "Kaski", "lat": 28.2330, "lng": 83.9740, "phone": "061-431920", "emergency": true},
+  {"name": "Chitwan Medical College", "type": "Hospital", "district": "Chitwan", "lat": 27.6720, "lng": 84.4290, "phone": "056-524390", "emergency": true},
+  {"name": "Bharatpur Hospital", "type": "Hospital", "district": "Chitwan", "lat": 27.6810, "lng": 84.4340, "phone": "056-527432", "emergency": true},
+  {"name": "Narayani Hospital Birgunj", "type": "Hospital", "district": "Parsa", "lat": 27.0110, "lng": 84.8741, "phone": "051-522516", "emergency": true},
+  {"name": "Koshi Hospital Biratnagar", "type": "Hospital", "district": "Morang", "lat": 26.4596, "lng": 87.2718, "phone": "021-525677", "emergency": true},
+  {"name": "BPKIHS Dharan", "type": "Hospital", "district": "Sunsari", "lat": 26.8142, "lng": 87.2742, "phone": "025-525555", "emergency": true},
+  {"name": "Lumbini Provincial Hospital Butwal", "type": "Hospital", "district": "Rupandehi", "lat": 27.7006, "lng": 83.4523, "phone": "071-547855", "emergency": true},
+  {"name": "Seti Provincial Hospital Dhangadhi", "type": "Hospital", "district": "Kailali", "lat": 28.6965, "lng": 80.5984, "phone": "091-524850", "emergency": true},
+  {"name": "Jumla District Hospital", "type": "Hospital", "district": "Jumla", "lat": 29.2747, "lng": 82.1836, "phone": "087-520100", "emergency": false},
+  {"name": "Nepalgunj Medical College", "type": "Hospital", "district": "Banke", "lat": 28.0500, "lng": 81.6167, "phone": "081-521622", "emergency": true},
+  {"name": "Rapti Provincial Hospital Dang", "type": "Hospital", "district": "Dang", "lat": 27.9810, "lng": 82.4630, "phone": "082-520120", "emergency": false},
+  {"name": "Gorkha District Hospital", "type": "Hospital", "district": "Gorkha", "lat": 28.0000, "lng": 84.6333, "phone": "064-420125", "emergency": false}
+]
