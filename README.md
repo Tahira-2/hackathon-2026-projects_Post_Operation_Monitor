@@ -25,7 +25,7 @@
 | **Saksham Neupane** | [@sakshamneupane](https://github.com/sakshamneupane) |
 | **Rupen Rana Magar** | [@rupenranamagar](https://github.com/rupenranamagar) |
 
----
+- No "What-If" Scenarios: Patients cannot explore how changing their habits would reduce their risk — there is no tool for preventive decision-making.
 
 ## 🔴 Problem Statement
 
@@ -39,7 +39,16 @@ Patients recovering from injuries or surgeries are often prescribed physiotherap
 
 Traditional telehealth solutions offer video calls but cannot analyze body movement or provide automated, objective evaluations of exercise performance.
 
----
+1. User selects symptoms and lifestyle factors (smoking, sleep, pollution).
+2. ML model predicts the most likely disease and base confidence.
+3. Risk engine adjusts risk based on disease-specific lifestyle sensitivities.
+4. App returns:
+   - disease prediction,
+   - base and adjusted risk,
+   - key contributing factors,
+   - personalized recommendations,
+   - what-if simulation scenarios (for example, quit smoking, improve sleep).
+5. Prediction and simulation history are saved for demo analytics.
 
 ## ✅ Solution Description
 
@@ -74,7 +83,7 @@ Traditional telehealth solutions offer video calls but cannot analyze body movem
    - Anatomical recovery progress with body-part score visualization
    - Session streaks and completion rates
 
----
+### Windows
 
 ## 🛠️ Tech Stack
 
