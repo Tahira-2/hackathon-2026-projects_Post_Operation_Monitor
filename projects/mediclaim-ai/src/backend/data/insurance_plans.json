@@ -1,0 +1,57 @@
+{
+  "BlueCross": {
+    "name": "BlueCross BlueShield PPO",
+    "provider": "BlueCross",
+    "plan_type": "PPO",
+    "coverage_percentage": 0.80,
+    "deductible": 1500.00,
+    "max_out_of_pocket": 6000.00,
+    "copay": {"office_visit": 30, "specialist": 50, "emergency": 250, "urgent_care": 75},
+    "covered_categories": ["Evaluation & Management", "Laboratory", "Radiology", "Surgery", "Cardiology", "Inpatient", "Critical Care", "Preventive", "Procedures", "Therapy", "Facility", "Pharmacy", "Supplies"],
+    "excluded_categories": ["Cosmetic"]
+  },
+  "Aetna": {
+    "name": "Aetna HMO",
+    "provider": "Aetna",
+    "plan_type": "HMO",
+    "coverage_percentage": 0.85,
+    "deductible": 1000.00,
+    "max_out_of_pocket": 5000.00,
+    "copay": {"office_visit": 25, "specialist": 40, "emergency": 200, "urgent_care": 60},
+    "covered_categories": ["Evaluation & Management", "Laboratory", "Radiology", "Surgery", "Cardiology", "Inpatient", "Critical Care", "Preventive", "Procedures", "Therapy", "Facility", "Pharmacy", "Supplies"],
+    "excluded_categories": ["Cosmetic", "Experimental"]
+  },
+  "UnitedHealth": {
+    "name": "UnitedHealth Choice Plus",
+    "provider": "UnitedHealth",
+    "plan_type": "PPO",
+    "coverage_percentage": 0.75,
+    "deductible": 2000.00,
+    "max_out_of_pocket": 7500.00,
+    "copay": {"office_visit": 35, "specialist": 55, "emergency": 300, "urgent_care": 80},
+    "covered_categories": ["Evaluation & Management", "Laboratory", "Radiology", "Surgery", "Cardiology", "Inpatient", "Critical Care", "Preventive", "Procedures", "Therapy", "Facility", "Pharmacy", "Supplies"],
+    "excluded_categories": ["Cosmetic"]
+  },
+  "Cigna": {
+    "name": "Cigna Open Access Plus",
+    "provider": "Cigna",
+    "plan_type": "PPO",
+    "coverage_percentage": 0.80,
+    "deductible": 1750.00,
+    "max_out_of_pocket": 6500.00,
+    "copay": {"office_visit": 30, "specialist": 50, "emergency": 275, "urgent_care": 70},
+    "covered_categories": ["Evaluation & Management", "Laboratory", "Radiology", "Surgery", "Cardiology", "Inpatient", "Critical Care", "Preventive", "Procedures", "Therapy", "Facility", "Pharmacy", "Supplies"],
+    "excluded_categories": ["Cosmetic", "Experimental"]
+  },
+  "Medicare": {
+    "name": "Medicare Part B",
+    "provider": "Medicare",
+    "plan_type": "Government",
+    "coverage_percentage": 0.80,
+    "deductible": 226.00,
+    "max_out_of_pocket": 0,
+    "copay": {"office_visit": 0, "specialist": 0, "emergency": 0, "urgent_care": 0},
+    "covered_categories": ["Evaluation & Management", "Laboratory", "Radiology", "Surgery", "Cardiology", "Inpatient", "Critical Care", "Preventive", "Procedures", "Therapy", "Facility", "Pharmacy", "Supplies"],
+    "excluded_categories": ["Cosmetic", "Dental", "Vision"]
+  }
+}

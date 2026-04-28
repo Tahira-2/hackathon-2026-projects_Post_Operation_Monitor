@@ -1,0 +1,29 @@
+{
+  "name": "burnoutwatch-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start --clear",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "test": "node --test ./tests/*.test.js"
+  },
+  "dependencies": {
+    "expo": "~54.0.0",
+    "expo-build-properties": "~1.0.10",
+    "expo-health-connect": "^0.1.1",
+    "expo-image-picker": "~17.0.8",
+    "expo-secure-store": "~15.0.8",
+    "lucide-react-native": "^1.11.0",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-health": "^1.19.0",
+    "react-native-health-connect": "^3.5.0",
+    "react-native-svg": "^15.12.1"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.10",
+    "typescript": "~5.9.2"
+  }
+}

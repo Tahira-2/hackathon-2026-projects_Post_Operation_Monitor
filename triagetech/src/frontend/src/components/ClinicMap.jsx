@@ -1,0 +1,159 @@
+import React, { useEffect, useRef, useState } from 'react';
+import en from '../i18n/en.json';
+import ne from '../i18n/ne.json';
+
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
+export default function ClinicMap({ lang, severity }) {
+  const t = lang === 'ne' ? ne : en;
+  const mapRef = useRef(null);
+  const leafletMapRef = useRef(null);
+  const [clinics, setClinics] = useState([]);
+  const [userLoc, setUserLoc] = useState(null);
+  const [emergencyOnly, setEmergencyOnly] = useState(severity === 'red');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const fetchClinics = (lat, lng, emergOnly) => {
+    setLoading(true);
+    setError('');
+    fetch(`${API_BASE}/clinics/nearest?lat=${lat}&lng=${lng}&limit=8&emergency_only=${emergOnly}`)
+      .then(r => r.json())
+      .then(data => {
+        setClinics(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError(t.error);
+        setLoading(false);
+      });
+  };
+
+  const findMe = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation not supported');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        setUserLoc({ lat, lng });
+        fetchClinics(lat, lng, emergencyOnly);
+      },
+      () => {
+        // fallback to Kathmandu center
+        const lat = 27.7172, lng = 85.3240;
+        setUserLoc({ lat, lng });
+        fetchClinics(lat, lng, emergencyOnly);
+      }
+    );
+  };
+
+  // Initialize Leaflet map when clinics are loaded
+  useEffect(() => {
+    if (!clinics.length || !mapRef.current) return;
+
+    // Lazy-load Leaflet from CDN
+    if (!window.L) return;
+    const L = window.L;
+
+    if (leafletMapRef.current) {
+      leafletMapRef.current.remove();
+    }
+
+    const map = L.map(mapRef.current).setView(
+      userLoc ? [userLoc.lat, userLoc.lng] : [27.7172, 85.3240],
+      11
+    );
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+    }).addTo(map);
+
+    if (userLoc) {
+      L.circleMarker([userLoc.lat, userLoc.lng], {
+        radius: 8, color: '#6c63ff', fillColor: '#6c63ff', fillOpacity: 0.9,
+      }).addTo(map).bindPopup('📍 You are here');
+    }
+
+    clinics.forEach((clinic, i) => {
+      const color = clinic.emergency ? '#ef4444' : '#22c55e';
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="background:${color};width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4)">${clinic.emergency ? '🏥' : '🏨'}</div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+      });
+      L.marker([clinic.lat, clinic.lng], { icon })
+        .addTo(map)
+        .bindPopup(`
+          <b>${clinic.name}</b><br/>
+          ${clinic.type} · ${clinic.district}<br/>
+          📞 ${clinic.phone}<br/>
+          📏 ${clinic.distance_km} km away
+          ${clinic.emergency ? '<br/><span style="color:#ef4444">⚡ Emergency</span>' : ''}
+        `);
+    });
+
+    leafletMapRef.current = map;
+  }, [clinics, userLoc]);
+
+  return (
+    <div id="clinic-map-section" className="clinic-section">
+      <h3 className="section-heading">🏥 {t.nearest_clinics}</h3>
+
+      <div className="clinic-controls">
+        <label className="toggle-label">
+          <input
+            id="emergency-toggle"
+            type="checkbox"
+            checked={emergencyOnly}
+            onChange={e => {
+              setEmergencyOnly(e.target.checked);
+              if (userLoc) fetchClinics(userLoc.lat, userLoc.lng, e.target.checked);
+            }}
+          />
+          <span>{t.emergency_only}</span>
+        </label>
+        <button
+          id="find-clinics-btn"
+          className="assess-btn"
+          onClick={findMe}
+          disabled={loading}
+        >
+          {loading ? '...' : `📍 ${t.find_clinics}`}
+        </button>
+      </div>
+
+      {error && <p className="error-msg">{error}</p>}
+
+      {/* Leaflet Map */}
+      {clinics.length > 0 && (
+        <div id="leaflet-map" ref={mapRef} className="leaflet-map" />
+      )}
+
+      {/* Clinic Cards */}
+      {clinics.length > 0 && (
+        <div className="clinic-list">
+          {clinics.map((c, i) => (
+            <div key={i} className={`clinic-card ${c.emergency ? 'clinic-emergency' : ''}`}>
+              <div className="clinic-icon">{c.emergency ? '🏥' : '🏨'}</div>
+              <div className="clinic-info">
+                <h4 className="clinic-name">{c.name}</h4>
+                <p className="clinic-meta">{c.type} · {c.district}</p>
+                <p className="clinic-dist">📏 {c.distance_km} {t.clinic_distance}</p>
+              </div>
+              <a
+                href={`tel:${c.phone}`}
+                className="clinic-call-btn"
+                id={`clinic-call-${i}`}
+              >
+                📞 {t.clinic_call}
+              </a>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,10 @@
+.venv/
+**/.venv/
+data/
+**/data/
+logs/
+**/logs/
+data/annotated/
+**/data/annotated/
+data/processed/
+**/data/processed/

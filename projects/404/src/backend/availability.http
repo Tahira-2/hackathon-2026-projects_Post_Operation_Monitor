@@ -1,0 +1,64 @@
+@baseUrl = http://localhost:3000
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwNTBhOTVkYS0wMTc5LTRjNWItYmVlYy02M2JhZTg1ZmMwMjYiLCJlbWFpbCI6ImRvY3RvckBnbWFpbC5jb20iLCJyb2xlIjoiRE9DVE9SIiwiaWF0IjoxNzc3MjAxMTA3LCJleHAiOjE3Nzc4MDU5MDd9.AwNZiqQzkFQfwOdmNlYgMubc0Ir6VRZraFLcacMGX7s
+
+### ========================================
+### AVAILABILITY API
+### ========================================
+
+### Upsert Working Hours
+POST {{baseUrl}}/availability/working-hours
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "doctorId": "123e4567-e89b-12d3-a456-426614174000",
+  "day": "MONDAY",
+  "startTime": "09:00",
+  "endTime": "17:00"
+}
+
+### List Working Hours
+GET {{baseUrl}}/availability/working-hours?doctorId=123e4567-e89b-12d3-a456-426614174000
+Authorization: Bearer {{authToken}}
+
+### Delete Working Hours
+DELETE {{baseUrl}}/availability/working-hours/MONDAY?doctorId=123e4567-e89b-12d3-a456-426614174000
+Authorization: Bearer {{authToken}}
+
+### Create Busy Block
+# @name createBusyBlock
+POST {{baseUrl}}/availability/busy-blocks
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "doctorId": "123e4567-e89b-12d3-a456-426614174000",
+  "startTime": "2024-05-01T12:00:00Z",
+  "endTime": "2024-05-01T13:00:00Z",
+  "type": "LUNCH",
+  "reason": "Lunch break"
+}
+
+### List Busy Blocks
+GET {{baseUrl}}/availability/busy-blocks?doctorId=123e4567-e89b-12d3-a456-426614174000&from=2024-05-01T00:00:00Z&to=2024-05-31T23:59:59Z
+Authorization: Bearer {{authToken}}
+
+### Delete Busy Block
+@busyBlockId = {{createBusyBlock.response.body.id}}
+DELETE {{baseUrl}}/availability/busy-blocks/{{busyBlockId}}
+Authorization: Bearer {{authToken}}
+
+### List Slots
+GET {{baseUrl}}/availability/slots?doctorId=123e4567-e89b-12d3-a456-426614174000&date=2024-05-01&slotMinutes=30
+Authorization: Bearer {{authToken}}
+
+### Validate Slot
+POST {{baseUrl}}/availability/slots/validate
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "doctorId": "123e4567-e89b-12d3-a456-426614174000",
+  "startTime": "2024-05-01T10:00:00Z",
+  "endTime": "2024-05-01T10:30:00Z"
+}
