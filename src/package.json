@@ -1,0 +1,24 @@
+{
+  "name": "causalcare-ai",
+  "version": "1.0.0",
+  "description": "Root-Cause Health Intelligence Engine - Most AI tells you what will happen. CausalCare tells you why—and how to change it.",
+  "main": "backend/main.py",
+  "scripts": {
+    "setup": "bash setup.sh",
+    "start": "bash start.sh",
+    "backend": "cd backend && python main.py",
+    "frontend": "cd frontend && npm start",
+    "train": "python ml_service/train_model.py",
+    "init-db": "python database/init_db.py"
+  },
+  "keywords": [
+    "healthcare",
+    "ai",
+    "machine-learning",
+    "causal-inference",
+    "disease-prediction",
+    "health-intelligence"
+  ],
+  "author": "CausalCare Team",
+  "license": "MIT"
+}

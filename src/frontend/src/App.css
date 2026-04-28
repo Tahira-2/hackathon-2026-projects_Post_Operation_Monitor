@@ -1,0 +1,342 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family:
+    source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* Smooth page transitions */
+.page-transition {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #6366f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4f46e5;
+}
+
+/* Range Slider Styling */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-track {
+  background: #c7d2fe;
+  height: 8px;
+  border-radius: 10px;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #6366f1;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+input[type='range']::-webkit-slider-thumb:hover {
+  background: #4f46e5;
+  transform: scale(1.2);
+}
+
+input[type='range']::-moz-range-track {
+  background: #c7d2fe;
+  height: 8px;
+  border-radius: 10px;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #6366f1;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+input[type='range']::-moz-range-thumb:hover {
+  background: #4f46e5;
+  transform: scale(1.2);
+}
+
+/* Sleep Slider (scoped override) */
+.sleep-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 26px;
+  --sleep-progress: 44%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.sleep-slider:focus {
+  outline: none;
+}
+
+.sleep-slider::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #6366f1 0%,
+    #4338ca var(--sleep-progress),
+    #e2e8f0 var(--sleep-progress),
+    #e2e8f0 100%
+  );
+  box-shadow:
+    inset 0 1px 2px rgba(15, 23, 42, 0.25),
+    0 0 0 2px rgba(99, 102, 241, 0.12);
+}
+
+.sleep-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-top: -7px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  background: radial-gradient(
+    circle at 30% 30%,
+    #ffffff 0%,
+    #e0e7ff 40%,
+    #6366f1 100%
+  );
+  box-shadow: 0 4px 12px rgba(67, 56, 202, 0.35);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.sleep-slider:hover::-webkit-slider-thumb {
+  transform: scale(1.08);
+  box-shadow: 0 6px 16px rgba(67, 56, 202, 0.45);
+}
+
+.sleep-slider::-moz-range-track {
+  height: 10px;
+  border: none;
+  border-radius: 999px;
+  background: #e2e8f0;
+  box-shadow:
+    inset 0 1px 2px rgba(15, 23, 42, 0.25),
+    0 0 0 2px rgba(99, 102, 241, 0.12);
+}
+
+.sleep-slider::-moz-range-progress {
+  height: 10px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6366f1 0%, #4338ca 100%);
+}
+
+.sleep-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  background: radial-gradient(
+    circle at 30% 30%,
+    #ffffff 0%,
+    #e0e7ff 40%,
+    #6366f1 100%
+  );
+  box-shadow: 0 4px 12px rgba(67, 56, 202, 0.35);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.sleep-slider:hover::-moz-range-thumb {
+  transform: scale(1.08);
+  box-shadow: 0 6px 16px rgba(67, 56, 202, 0.45);
+}
+
+/* Checkbox Styling */
+input[type='checkbox'] {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+input[type='checkbox']:checked {
+  background-color: #6366f1;
+  border-color: #6366f1;
+}
+
+/* Select Dropdown */
+select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236366f1' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+/* Loading Spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Card Hover Effects */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Table Styling */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+/* Focus Styles */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/* Button Transitions */
+button {
+  transition: all 0.2s ease;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* Smooth Transitions */
+* {
+  transition-property:
+    background-color, border-color, color, fill, stroke, opacity, box-shadow,
+    transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Grid Layout Animations */
+.grid > * {
+  animation: slideUp 0.5s ease-out;
+  animation-fill-mode: both;
+}
+
+.grid > *:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.grid > *:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.grid > *:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.grid > *:nth-child(4) {
+  animation-delay: 0.4s;
+}
+.grid > *:nth-child(5) {
+  animation-delay: 0.5s;
+}
+.grid > *:nth-child(6) {
+  animation-delay: 0.6s;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Typography */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none;
+  }
+}
